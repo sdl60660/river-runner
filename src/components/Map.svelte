@@ -1,11 +1,14 @@
 <script>
 	import { onMount, setContext } from 'svelte';
 	import { mapbox } from '../mapbox.js';
+	import { bearingBetween, roundToDigits } from '../utils';
+
 	import { tick } from 'svelte';
 	import { coordinates } from '../state';
 
 	export let bounds;
 	export let featureData;
+	export let coordinateQuadtree;
 	export let visibleIndex;
 	export let mapStyle;
 	export let addTopo;
@@ -13,8 +16,6 @@
 	let container;
 	let map;
 	let mapBounds = bounds;
-	// let scrollIndex = 0;
-	// let scrollProgress = 0;
 
 	onMount(async () => {
 		await tick();
@@ -47,19 +48,27 @@
             });
 
 			map.on('click', (e) => {
+				// Search quadtree for closest river coordiate to click location
+				const originPoint = coordinateQuadtree.find(e.lngLat.lat, e.lngLat.lng, 5);
+				// console.log('Clicked on:', e.lngLat, 'Closest point:', originPoint);
 
+				// Find the river that this coordinate belongs to, using the coordinate's feature_id
+				const river = featureData.slice(Math.max(0, originPoint.feature_id - 200), originPoint.feature_id)
+										 .find(a => a.properties.OBJECTID === +originPoint.feature_id);
+
+				// Find where this coordinate sits in the river
+				const coordinateIndex = river.geometry.coordinates.findIndex(([lng, lat]) => {
+					// There's some discrepancies between coordinate pairs on the feature objects and in the coordinate dataset because of types/rounding
+					return roundToDigits(lng, 5) === +originPoint.lng && roundToDigits(lat, 5) === +originPoint.lat;
+				});
+
+				// Determine the bearing from this coordinate to the river's next point
+				// NOTE: this will break for now if coordinate is last one of river, but that will get fixed once river network flow is mapped
+				const bearing = bearingBetween( [ originPoint.lng, originPoint.lat ], river.geometry.coordinates[coordinateIndex+1] );
+				// console.log('River', river, 'Coordinate Index', coordinateIndex, 'Total Coordinates:', river.geometry.coordinates.length, 'Bearing:', bearing );
+				
 				// Fly to clicked point and pitch camera
-				map.flyTo({
-					center: e.lngLat,
-					zoom: 11,
-					speed: 0.8,
-					curve: 1,
-					pitch: 85,
-					// bearing: 80,
-					easing(t) {
-						return t;
-					}
-				})
+				flyToPoint({ map, center: originPoint, bearing });
 			});
         };
 
@@ -73,9 +82,9 @@
 
 	const addRivers = ({ map, featureData, lineColor="steelblue", lineWidth=1 }) => {
 		const features = featureData.map((river) => {
-		// Some rivers have multiple linestrings (such as the Mississippi)...
-		// their coordinates will be a triple-nested array instead of a double-nested
-		const featureType = Array.isArray(river.geometry.coordinates[0][0]) ? 'MultiLineString' : 'LineString';
+			// Some rivers have multiple linestrings (such as the Mississippi)...
+			// their coordinates will be a triple-nested array instead of a double-nested
+			const featureType = Array.isArray(river.geometry.coordinates[0][0]) ? 'MultiLineString' : 'LineString';
 
 			return ({
 				type: 'Feature',
@@ -149,6 +158,20 @@
 	const handleResize = () => {
 		mapBounds = map.getBounds();
 	};
+
+	const flyToPoint = ({ map, center, bearing=0 }) => {
+		map.flyTo({
+			center,
+			zoom: 13,
+			speed: 0.8,
+			curve: 1,
+			pitch: 70,
+			bearing,
+			easing(t) {
+				return t;
+			}
+		})
+	}
 
 	$: coordinates.update(() => {
 		if (mapBounds._sw) {

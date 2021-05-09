@@ -16,16 +16,29 @@
     import { onMount } from 'svelte';
     import * as topojson from "topojson-client";
 
+	import { contructCoordinateQuadtree } from './utils';
+
     import Map from './components/Map.svelte';
+	import Loader from './components/Loader.svelte';
     // import riversData from '../data/rivers_simplified.json';
 
     // export let riversData;
 
     // const riversGeo = topojson.feature(riversData, riversData.objects.rivers).features;
 
-    const dataLoad = d3.json("data/detailed_rivers_streams_simplified.json").then( data => {
-        const riversGeo = topojson.feature(data, data.objects.rivers).features;
-        return riversGeo.filter(river => river.geometry);
+	const dataFilePromises = [
+        d3.json("data/detailed_rivers_streams_simplified.json"),
+		d3.csv("data/coordinate_set.csv")
+    ];
+
+    const dataLoad = Promise.all(dataFilePromises).then( data => {
+        let riversGeo = topojson.feature(data[0], data[0].objects.rivers).features;
+		riversGeo = riversGeo.filter(river => river.geometry);
+
+		const quadTree = contructCoordinateQuadtree(data[1])
+		// console.log(quadTree);
+
+        return [ riversGeo, quadTree ];
     })
 
     const getDataBounds = (linestringData) => {
@@ -43,7 +56,7 @@
 <!-- <Map bounds={getDataBounds(riversGeo)} featureData={riversGeo} visibleIndex={1} addTopo={true} mapStyle={'mapbox://styles/mapbox/light-v10'}/> -->
 
 {#await dataLoad}
-    <p>Loading Data...</p>
-{:then riversGeo}
-    <Map bounds={getDataBounds(riversGeo)} featureData={riversGeo} visibleIndex={1} addTopo={true} mapStyle={"mapbox://styles/mapbox-map-design/ckhqrf2tz0dt119ny6azh975y"}/>
+    <Loader />
+{:then data }
+    <Map bounds={getDataBounds(data[0])} coordinateQuadtree={data[1]} featureData={data[0]} visibleIndex={1} addTopo={true} mapStyle={"mapbox://styles/mapbox-map-design/ckhqrf2tz0dt119ny6azh975y"}/>
 {/await}
