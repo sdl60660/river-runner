@@ -5,3 +5,5 @@
 
 /public/data/rivers_full_detail.json
 /public/data/detailed_rivers_streams.json
+
+/data_processing/data/simplified_rivers.geojson
