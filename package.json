@@ -22,9 +22,12 @@
     "svelte": "^3.0.0"
   },
   "dependencies": {
+    "@turf/along": "^6.3.0",
     "@turf/bearing": "^6.3.0",
     "@turf/buffer": "^6.3.0",
     "@turf/collect": "^6.3.0",
+    "@turf/helpers": "^6.3.0",
+    "@turf/line-distance": "^4.7.3",
     "d3": "^6.7.0",
     "mapbox-gl": "^2.2.0",
     "scrollama": "^2.2.2",

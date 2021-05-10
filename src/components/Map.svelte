@@ -6,7 +6,13 @@
 	import { tick } from 'svelte';
 	import { coordinates } from '../state';
 
-	export let bounds = [[-122, 25], [-75, 51]];
+	import along from '@turf/along';
+	import { lineString } from '@turf/helpers';
+	import lineDistance from '@turf/line-distance';
+
+	import * as d3 from 'd3';
+
+	export let bounds = [[-125, 24], [-66, 51]];
 	export let basins;
 	export let featureData = undefined;
 	export let coordinateQuadtree = undefined;
@@ -57,7 +63,6 @@
 			map.on('click', async (e) => {
 
 				// https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/position?coords=POINT%28-155.5514478014136%2019.503028809053873%29
-				// https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/position?coords=POINT%28-94.713%2038.09%29
 				// https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/800004144/navigation/DM/flowlines?f=json&distance=1800
 				// https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/800004144/navigation/DM/ref_gage?f=json&distance=1800
 				// https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/800004144/navigation/DM/huc12pp?f=json&distance=1800
@@ -88,7 +93,7 @@
 				console.log('Clicked on:', e.lngLat, 'Closest point:', originPoint);
 				
 				// Draw river lines from flowline features
-				addRivers({ map, featureData: flowlinesData.features, lineWidth: 2 })
+				drawFlowPath({ map, featureData: flowlinesData.features })
 
 				// Fly to clicked point and pitch camera
 				flyToPoint({ map, center: originPoint, bearing });
@@ -97,30 +102,58 @@
 				const coordinatePath = flowlinesData.features.map( feature => feature.geometry.coordinates.slice(-1)[0] );
 				// const coordinatePath = refgageData.features.map( feature => feature.geometry.coordinates );
 				
-				let index = 0;
-				const intervalId = setInterval(() => {
-					const center = coordinatePath[index];
-					// const bearing = index === coordinatePath.length - 1 ?
-					// 	bearingBetween( coordinatePath[index-1], center ) :
-					// 	bearingBetween( center, coordinatePath[index+1] );
+				// let index = 0;
+				// const intervalId = setInterval(() => {
+					// const center = coordinatePath[index];
+				// 	// const bearing = index === coordinatePath.length - 1 ?
+				// 	// 	bearingBetween( coordinatePath[index-1], center ) :
+				// 	// 	bearingBetween( center, coordinatePath[index+1] );
 					
-					console.log(center, coordinatePath[index+1], bearing, `${index+1} of ${coordinatePath.length}`);
+				// 	console.log(center, coordinatePath[index+1], bearing, `${index+1} of ${coordinatePath.length}`);
 
-					map.easeTo({
-						center,
-						bearing,
-						pitch: 75,
-						zoom: 12,
-						duration: 100
-					});
+				// 	map.easeTo({
+				// 		center,
+				// 		bearing,
+				// 		pitch: 75,
+				// 		zoom: 12,
+				// 		duration: 100
+				// 	});
 
-					index += 1;
+				// 	index += 1;
 
-					if (index === coordinatePath.length) {
-						clearInterval(intervalId);
-					}
+				// 	if (index === coordinatePath.length) {
+				// 		clearInterval(intervalId);
+				// 	}
 
-				}, 120)
+				// }, 120)
+
+				const elevationArrayStep = 25;
+				const elevations = await getElevations(coordinatePath, elevationArrayStep);
+
+				map.easeTo({
+					center: originPoint,
+					pitch: 70,
+					bearing,
+					zoom: 11
+				});
+
+				const targetRoute = coordinatePath.slice(5);
+				const cameraRoute = coordinatePath.slice(0, -5);
+
+				// get the overall distance of each route so we can interpolate along them
+				const routeDistance = lineDistance(
+					lineString(targetRoute)
+				);
+				const cameraRouteDistance = lineDistance(
+					lineString(cameraRoute)
+				);
+
+				console.log('Distances:', routeDistance, cameraRouteDistance);
+
+				// Maintain a consistent speed using the route distance
+				const animationDuration = Math.round(200*routeDistance);
+
+				setTimeout(runRiver({ map, animationDuration, targetRoute, cameraRoute, routeDistance, cameraRouteDistance, elevations }), 4500);
 
 				// map.on('moveend', () => {
 				// 
@@ -136,7 +169,104 @@
 		};
 	});
 
-	const addRivers = ({ map, featureData, lineColor="steelblue", lineWidth=1 }) => {
+	const runRiver = ({ map, animationDuration, targetRoute, cameraRoute, routeDistance, cameraRouteDistance, elevations }) => {
+		let start;
+		const cameraBaseAltitude = 4000;
+
+		const frame = (time) => {
+			if (!start) start = time;
+			// phase determines how far through the animation we are
+			const phase = (time - start) / animationDuration;
+
+			const elevationLast = elevations[Math.floor(elevations.length*phase)];
+			const elevationNext = elevations[Math.ceil(elevations.length*phase)] || 0;
+			const elevationStepProgress = elevations.length*phase - Math.floor(elevations.length*phase);
+
+			const elevationEstimate = elevationLast + ((elevationNext - elevationLast)*elevationStepProgress);
+			const tickElevation = cameraBaseAltitude + 1.4*Math.round(elevationEstimate);
+			
+			// phase is normalized between 0 and 1
+			// when the animation is finished, reset start to loop the animation
+			if (phase > 1) {
+				console.log('done');
+
+				// wait 1.5 seconds before looping
+				setTimeout(function () {
+					start = 0.0;
+				}, 5000);
+			}
+			
+			// use the phase to get a point that is the appropriate distance along the route
+			// this approach syncs the camera and route positions ensuring they move
+			// at roughly equal rates even if they don't contain the same number of points
+			const alongRoute = along(
+				lineString(targetRoute),
+				routeDistance * phase
+			).geometry.coordinates;
+			
+			const alongCamera = along(
+				lineString(cameraRoute),
+				cameraRouteDistance * phase
+			).geometry.coordinates;
+			
+			const camera = map.getFreeCameraOptions();
+			
+			// set the position and altitude of the camera
+			camera.position = mapbox.MercatorCoordinate.fromLngLat(
+				{
+					lng: alongCamera[0],
+					lat: alongCamera[1]
+				},
+				tickElevation
+			);
+			
+			// tell the camera to look at a point along the route
+			camera.lookAtPoint({
+				lng: alongRoute[0],
+				lat: alongRoute[1]
+			});
+			
+			map.setFreeCameraOptions(camera);
+
+			console.log(phase);
+			
+			window.requestAnimationFrame(frame);
+		}
+		
+		window.requestAnimationFrame(frame);
+	}
+
+	const getElevations = async (coordinatePath, arrayStep=10) => {
+
+		const elevationCoordinates = coordinatePath.filter((element, index) => {
+			return index % arrayStep === 0;
+		})
+
+		const responses = await Promise.all(
+			elevationCoordinates.map(
+				([lng, lat]) => fetch(`https://api.mapbox.com/v4/mapbox.mapbox-terrain-v2/tilequery/${lng},${lat}.json?&access_token=pk.eyJ1Ijoic2FtbGVhcm5lciIsImEiOiJja2IzNTFsZXMwaG44MzRsbWplbGNtNHo0In0.BmjC6OX6egwKdm0fAmN_Nw`)
+					.then(response => response.json())
+			)
+		)
+
+		const data = responses.map(res => res.features.slice(-1)[0].properties.ele)
+		return data;
+	}
+
+	const drawFlowPath = ({ map, featureData }) => {
+		const sourceID = 'route'
+
+		if (map.getSource(sourceID)) {
+			map.removeSource(sourceID);
+		}
+		if (map.getLayer(sourceID)) {
+			map.removeLayer(sourceID);
+		}
+		
+		addRivers({ map, featureData, lineWidth: 2, sourceID });
+	}
+
+	const addRivers = ({ map, featureData, lineColor="steelblue", lineWidth=1, sourceID='route' }) => {
 		const features = featureData.map((river) => {
 			// Some rivers have multiple linestrings (such as the Mississippi)...
 			// their coordinates will be a triple-nested array instead of a double-nested
@@ -152,7 +282,7 @@
 			})
 		});
 						
-		map.addSource('route', {
+		map.addSource(sourceID, {
 			type: 'geojson',
 			data: {
 				type: 'FeatureCollection',
@@ -161,9 +291,9 @@
 		});
 
 		map.addLayer({
-			id: 'route',
+			id: sourceID,
 			type: 'line',
-			source: 'route',
+			source: sourceID,
 			layout: {
 				'line-join': 'round',
 				'line-cap': 'round'
@@ -236,10 +366,6 @@
 		}
 	});
 
-	// const unsubscribeScroll = scroll.subscribe(({ index, progress }) => {
-	//     scrollIndex = index;
-	//     scrollProgress = progress;
-	// })
 </script>
 
 <svelte:window on:resize={handleResize} />
