@@ -47,28 +47,70 @@
 				}
             });
 
-			map.on('click', (e) => {
-				// Search quadtree for closest river coordiate to click location
-				const originPoint = coordinateQuadtree.find(e.lngLat.lat, e.lngLat.lng, 5);
-				// console.log('Clicked on:', e.lngLat, 'Closest point:', originPoint);
+			map.on('click', async (e) => {
 
-				// Find the river that this coordinate belongs to, using the coordinate's feature_id
-				const river = featureData.slice(Math.max(0, originPoint.feature_id - 200), originPoint.feature_id)
-										 .find(a => a.properties.OBJECTID === +originPoint.feature_id);
+				// https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/position?coords=POINT%28-155.5514478014136%2019.503028809053873%29
+				// https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/position?coords=POINT%28-94.713%2038.09%29
+				// https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/800004144/navigation/DM/flowlines?f=json&distance=1800
+				// https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/800004144/navigation/DM/ref_gage?f=json&distance=1800
 
-				// Find where this coordinate sits in the river
-				const coordinateIndex = river.geometry.coordinates.findIndex(([lng, lat]) => {
-					// There's some discrepancies between coordinate pairs on the feature objects and in the coordinate dataset because of types/rounding
-					return roundToDigits(lng, 5) === +originPoint.lng && roundToDigits(lat, 5) === +originPoint.lat;
-				});
-
-				// Determine the bearing from this coordinate to the river's next point
-				// NOTE: this will break for now if coordinate is last one of river, but that will get fixed once river network flow is mapped
-				const bearing = bearingBetween( [ originPoint.lng, originPoint.lat ], river.geometry.coordinates[coordinateIndex+1] );
-				// console.log('River', river, 'Coordinate Index', coordinateIndex, 'Total Coordinates:', river.geometry.coordinates.length, 'Bearing:', bearing );
+				const closestFeatureURL = `https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/position?coords=POINT%28${e.lngLat.lng}%20${e.lngLat.lat}%29`;
+				const coordinateResponse = await fetch(closestFeatureURL)
+    			const closestFeature = (await coordinateResponse.json()).features[0];
 				
+				const flowlinesURL = closestFeature.properties.navigation + '/DM/flowlines?f=json&distance=1800';
+				const flowlinesResponse = await fetch(flowlinesURL);
+				const flowlinesData = await flowlinesResponse.json();
+
+				const refgageURL = closestFeature.properties.navigation + '/DM/ref_gage?f=json&distance=1800';
+				const refgageResponse = await fetch(refgageURL);
+				const refgageData = await refgageResponse.json();
+
+				// ['flowlines', 'ref_gage'].map(featureType => {
+
+				// })
+
+				console.log(flowlinesData, refgageData);
+
+				const river = flowlinesData.features[0];
+				const originPoint = river.geometry.coordinates[0];
+				const bearing = bearingBetween( river.geometry.coordinates[0], river.geometry.coordinates[1] );
+
+				console.log('Clicked on:', e.lngLat, 'Closest point:', originPoint);
+
 				// Fly to clicked point and pitch camera
 				flyToPoint({ map, center: originPoint, bearing });
+
+				setTimeout(() => {}, 2500);
+
+				// const detailedCoordinatePath = flowlinesData.features.map( feature => feature.geometry.coordinates ).flat();
+				const coordinatePath = flowlinesData.features.map( feature => feature.geometry.coordinates.slice(-1)[0] );
+				// const coordinatePath = refgageData.features.map( feature => feature.geometry.coordinates );
+				
+				let index = 0;
+				setInterval(() => {
+					const center = coordinatePath[index];
+					const bearing = bearingBetween( center, coordinatePath[index+1] );
+					console.log(center, coordinatePath[index+1], bearing, `${index+1} of ${coordinatePath.length}`);
+
+					map.easeTo({
+						center,
+						bearing,
+						pitch: 70,
+						zoom: 13,
+						duration: 80
+					});
+
+					index += 1;
+
+				}, 100)
+
+				// coordinatePath.forEach((coordinate, i) => {
+				// 	const center = coordinate;
+				// 	console.log(center, coordinatePath[i+1])
+				// 	const bearing = bearingBetween( center, coordinatePath[i+1] );
+
+				// })
 			});
         };
 
