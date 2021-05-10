@@ -58,11 +58,11 @@
 				const coordinateResponse = await fetch(closestFeatureURL)
     			const closestFeature = (await coordinateResponse.json()).features[0];
 				
-				const flowlinesURL = closestFeature.properties.navigation + '/DM/flowlines?f=json&distance=1800';
+				const flowlinesURL = closestFeature.properties.navigation + '/DM/flowlines?f=json&distance=4000';
 				const flowlinesResponse = await fetch(flowlinesURL);
 				const flowlinesData = await flowlinesResponse.json();
 
-				const refgageURL = closestFeature.properties.navigation + '/DM/ref_gage?f=json&distance=1800';
+				const refgageURL = closestFeature.properties.navigation + '/DM/ref_gage?f=json&distance=4000';
 				const refgageResponse = await fetch(refgageURL);
 				const refgageData = await refgageResponse.json();
 
@@ -81,36 +81,38 @@
 				// Fly to clicked point and pitch camera
 				flyToPoint({ map, center: originPoint, bearing });
 
-				setTimeout(() => {}, 2500);
-
 				// const detailedCoordinatePath = flowlinesData.features.map( feature => feature.geometry.coordinates ).flat();
 				const coordinatePath = flowlinesData.features.map( feature => feature.geometry.coordinates.slice(-1)[0] );
 				// const coordinatePath = refgageData.features.map( feature => feature.geometry.coordinates );
 				
 				let index = 0;
-				setInterval(() => {
+				const intervalId = setInterval(() => {
 					const center = coordinatePath[index];
-					const bearing = bearingBetween( center, coordinatePath[index+1] );
+					const bearing = index === coordinatePath.length - 1 ?
+						bearingBetween( coordinatePath[index-1], center ) :
+						bearingBetween( center, coordinatePath[index+1] );
+					
 					console.log(center, coordinatePath[index+1], bearing, `${index+1} of ${coordinatePath.length}`);
 
 					map.easeTo({
 						center,
 						bearing,
-						pitch: 70,
-						zoom: 13,
-						duration: 80
+						pitch: 75,
+						zoom: 12,
+						duration: 100
 					});
 
 					index += 1;
 
-				}, 100)
+					if (index === coordinatePath.length) {
+						clearInterval(intervalId);
+					}
 
-				// coordinatePath.forEach((coordinate, i) => {
-				// 	const center = coordinate;
-				// 	console.log(center, coordinatePath[i+1])
-				// 	const bearing = bearingBetween( center, coordinatePath[i+1] );
+				}, 120)
 
-				// })
+				// map.on('moveend', () => {
+				// 
+				// });
 			});
         };
 
