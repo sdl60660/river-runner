@@ -20,6 +20,7 @@
 
     import Map from './components/Map.svelte';
 	import Loader from './components/Loader.svelte';
+import LocatorMap from './components/LocatorMap.svelte';
 
 
 	// const dataFilePromises = [
@@ -62,6 +63,7 @@
 {#await dataLoad}
     <Loader />
 {:then data }
-	<Map bounds={[[-122, 25], [-75, 51]]} basins={data[0]} visibleIndex={1} addTopo={true} mapStyle={"mapbox://styles/mapbox-map-design/ckhqrf2tz0dt119ny6azh975y"} />
+	<LocatorMap bounds={[[-125, 24], [-66, 51]]} visibleIndex={1} />
+	<Map bounds={[[-125, 24], [-66, 51]]} basins={data[0]} visibleIndex={1} addTopo={true} mapStyle={"mapbox://styles/mapbox-map-design/ckhqrf2tz0dt119ny6azh975y"} />
     <!-- <Map bounds={getDataBounds(data[0])} coordinateQuadtree={data[1]} featureData={data[0]} visibleIndex={1} addTopo={true} mapStyle={"mapbox://styles/mapbox-map-design/ckhqrf2tz0dt119ny6azh975y"}/> -->
 {/await}

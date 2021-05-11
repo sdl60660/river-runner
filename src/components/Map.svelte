@@ -10,7 +10,6 @@
 	import { lineString } from '@turf/helpers';
 	import lineDistance from '@turf/line-distance';
 
-	import * as d3 from 'd3';
 
 	export let bounds = [[-125, 24], [-66, 51]];
 	export let basins;
@@ -19,8 +18,6 @@
 	export let visibleIndex;
 	export let mapStyle;
 	export let addTopo;
-
-	console.log(bounds);
 
 	let container;
 	let map;
@@ -79,10 +76,6 @@
 				const refgageResponse = await fetch(refgageURL);
 				const refgageData = await refgageResponse.json();
 
-				// ['flowlines', 'ref_gage'].map(featureType => {
-
-				// })
-
 				console.log(flowlinesData, refgageData);
 
 				const river = flowlinesData.features[0];
@@ -102,32 +95,8 @@
 				const coordinatePath = flowlinesData.features.map( feature => feature.geometry.coordinates.slice(-1)[0] );
 				// const coordinatePath = refgageData.features.map( feature => feature.geometry.coordinates );
 				
-				// let index = 0;
-				// const intervalId = setInterval(() => {
-					// const center = coordinatePath[index];
-				// 	// const bearing = index === coordinatePath.length - 1 ?
-				// 	// 	bearingBetween( coordinatePath[index-1], center ) :
-				// 	// 	bearingBetween( center, coordinatePath[index+1] );
-					
-				// 	console.log(center, coordinatePath[index+1], bearing, `${index+1} of ${coordinatePath.length}`);
 
-				// 	map.easeTo({
-				// 		center,
-				// 		bearing,
-				// 		pitch: 75,
-				// 		zoom: 12,
-				// 		duration: 100
-				// 	});
-
-				// 	index += 1;
-
-				// 	if (index === coordinatePath.length) {
-				// 		clearInterval(intervalId);
-				// 	}
-
-				// }, 120)
-
-				const elevationArrayStep = 25;
+				const elevationArrayStep = 100;
 				const elevations = await getElevations(coordinatePath, elevationArrayStep);
 
 				map.easeTo({
@@ -137,21 +106,20 @@
 					zoom: 11
 				});
 
-				const targetRoute = coordinatePath.slice(5);
-				const cameraRoute = coordinatePath.slice(0, -5);
+				const cameraTargetIndexGap = 8;
+				const smoothedPath = pathSmoother(coordinatePath, 2)
+				const targetRoute = smoothedPath.slice(cameraTargetIndexGap);
+				const cameraRoute = smoothedPath.slice(0, -cameraTargetIndexGap);
 
 				// get the overall distance of each route so we can interpolate along them
-				const routeDistance = lineDistance(
-					lineString(targetRoute)
-				);
-				const cameraRouteDistance = lineDistance(
-					lineString(cameraRoute)
-				);
+				const routeDistance = pathDistance(targetRoute);
+				const cameraRouteDistance = pathDistance(cameraRoute);
+				const trueRouteDistance = pathDistance(coordinatePath);
 
-				console.log('Distances:', routeDistance, cameraRouteDistance);
+				console.log('Distances:', routeDistance, cameraRouteDistance, trueRouteDistance);
 
 				// Maintain a consistent speed using the route distance
-				const animationDuration = Math.round(200*routeDistance);
+				const animationDuration = Math.round(80*routeDistance);
 
 				setTimeout(runRiver({ map, animationDuration, targetRoute, cameraRoute, routeDistance, cameraRouteDistance, elevations }), 4500);
 
@@ -169,9 +137,23 @@
 		};
 	});
 
-	const runRiver = ({ map, animationDuration, targetRoute, cameraRoute, routeDistance, cameraRouteDistance, elevations }) => {
+	const pathDistance = (coordinateSet) => lineDistance(lineString(coordinateSet));
+
+	const pathSmoother = (coordinateSet, smootherVal=1) => {
+		const setLength = coordinateSet.length;
+		const smoothedCoordinatePath = coordinateSet.map((coordinate, index) => {
+			const coordinateGroup = coordinateSet.slice(Math.max(0, index-smootherVal), index+1+smootherVal);
+			const lng = coordinateGroup.map(d => d[0]).reduce((a, b) => a + b, 0) / coordinateGroup.length;
+			const lat = coordinateGroup.map(d => d[1]).reduce((a, b) => a + b, 0) / coordinateGroup.length;
+
+			return [lng, lat];
+		});
+
+		return smoothedCoordinatePath;
+	}
+
+	const runRiver = ({ map, animationDuration, cameraBaseAltitude=5000, targetRoute, cameraRoute, routeDistance, cameraRouteDistance, elevations }) => {
 		let start;
-		const cameraBaseAltitude = 4000;
 
 		const frame = (time) => {
 			if (!start) start = time;
@@ -184,21 +166,21 @@
 
 			const elevationEstimate = elevationLast + ((elevationNext - elevationLast)*elevationStepProgress);
 			const tickElevation = cameraBaseAltitude + 1.4*Math.round(elevationEstimate);
+
+			// console.log(Math.floor(elevations.length*phase), Math.ceil(elevations.length*phase), elevationStepProgress);
+			// console.log(elevationLast, elevationNext, elevationEstimate, tickElevation);
 			
 			// phase is normalized between 0 and 1
 			// when the animation is finished, reset start to loop the animation
 			if (phase > 1) {
 				console.log('done');
 
-				// wait 1.5 seconds before looping
+				// wait 5 seconds before looping
 				setTimeout(function () {
 					start = 0.0;
 				}, 5000);
 			}
 			
-			// use the phase to get a point that is the appropriate distance along the route
-			// this approach syncs the camera and route positions ensuring they move
-			// at roughly equal rates even if they don't contain the same number of points
 			const alongRoute = along(
 				lineString(targetRoute),
 				routeDistance * phase
@@ -228,7 +210,7 @@
 			
 			map.setFreeCameraOptions(camera);
 
-			console.log(phase);
+			// console.log(phase);
 			
 			window.requestAnimationFrame(frame);
 		}
@@ -381,5 +363,6 @@
 		position: absolute;
 		width: 100vw;
 		height: 100vh;
+		z-index: 1;
 	}
 </style>
