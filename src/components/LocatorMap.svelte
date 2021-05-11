@@ -98,11 +98,12 @@
 	const drawFlowPath = ({ map, featureData }) => {
 		const sourceID = 'route'
 
-		if (map.getSource(sourceID)) {
-			map.removeSource(sourceID);
-		}
 		if (map.getLayer(sourceID)) {
 			map.removeLayer(sourceID);
+		}
+
+		if (map.getSource(sourceID)) {
+			map.removeSource(sourceID);
 		}
 		
 		addRivers({ map, featureData, lineWidth: 1, sourceID });
@@ -177,7 +178,7 @@
 		height: 14rem;
         top: 2rem;
         left: 2rem;
-        z-index: 10;
+        /* z-index: 10; */
         border-radius: 3px;
         opacity: 0.9;
 	}
@@ -195,7 +196,7 @@
 
 <!-- <svelte:window on:resize={handleResize} /> -->
 
-<div class="map" style="opacity: {visibleIndex ? 1 : 0}" bind:this={container}>
+<div class="map" style="opacity: {visibleIndex ? 1 : 0}; z-index: {visibleIndex ? 10 : -10}" bind:this={container}>
 	{#if map}
 		<slot />
 	{/if}

@@ -114,7 +114,6 @@
 		
 		const targetRoute = smoothedPath;
 		const cameraRoute = artificalCameraStartPoints.concat(smoothedPath.slice(0, -cameraTargetIndexGap));
-		const maintainedDistance = distance(cameraRoute[0], targetRoute[0]);
 
 		// get the overall distance of each route so we can interpolate along them
 		const routeDistance = pathDistance(targetRoute);
@@ -133,7 +132,7 @@
 
 		const { zoom, center } = getInitialCamera({ map, cameraStart: cameraRoute[0], initialElevation, initialBearing, cameraPitch });
 
-		// Fly to clicked point and pitch camera
+		// Fly to clicked point and pitch camera (initial "raindrop" animation)
 		flyToPoint({ map, center, zoom, bearing: initialBearing, pitch: cameraPitch });
 
 		// Maintain a consistent speed using the route distance. The higher the speed coefficient, the slower the runner will move.
@@ -141,8 +140,8 @@
 		const animationDuration = Math.round(speedCoefficient*routeDistance);
 
 		map.once('moveend', () => {
-			console.log('finished flying');
-			setTimeout(runRiver({ map, animationDuration, cameraBaseAltitude, targetRoute, cameraRoute, routeDistance, cameraRouteDistance, elevations, maintainedDistance, cameraPitch }), 600);
+			// When "raindrop" animation is finished, pause for a moment then begin river run
+			setTimeout(runRiver({ map, animationDuration, cameraBaseAltitude, targetRoute, cameraRoute, routeDistance, cameraRouteDistance, elevations, cameraPitch }), 600);
 		});
 	}
 
@@ -168,13 +167,6 @@
 		);
 		
 		camera.setPitchBearing(pitch, bearing);
-
-		// tell the camera to look at a point along the route
-		// camera.lookAtPoint({
-		// 	lng: alongRoute[0],
-		// 	lat: alongRoute[1]
-		// });
-
 		map.setFreeCameraOptions(camera);
 	}
 
@@ -188,8 +180,6 @@
 
 		const zoom = map.getZoom();
 		const center = map.getCenter();
-
-		// console.log('Calculated:', { zoom, center, cameraStart, initialElevation, initialBearing, cameraPitch });
 
 		map.jumpTo({
 			zoom: currentZoom,
@@ -230,11 +220,12 @@
 		})
 	}
 
-	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4000, cameraPitch=70, targetRoute, cameraRoute, routeDistance, cameraRouteDistance, elevations, maintainedDistance }) => {
+	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4000, cameraPitch=70, targetRoute, cameraRoute, routeDistance, cameraRouteDistance, elevations }) => {
 		let start;
 
 		const frame = (time) => {
 			if (!start) start = time;
+
 			// phase determines how far through the animation we are
 			const phase = (time - start) / animationDuration;
 
@@ -250,13 +241,9 @@
 				console.log('done');
 				map.interactive = true;
 
-				return;
+				showExitPoint({ map });
 
-				// wait 5 seconds before looping
-				setTimeout(function () {
-					start = 0.0;
-					// window.cancelAnimationFrame(frame);
-				}, 5000);
+				return;
 			}
 			
 			const alongRoute = along(
@@ -268,28 +255,29 @@
 				lineString(cameraRoute),
 				cameraRouteDistance * phase
 			).geometry.coordinates;
-			
-			// const modifiedCameraPosition = projectDistance(alongRoute, alongCamera, maintainedDistance);
-			
+						
 			const bearing = bearingBetween( alongCamera, alongRoute );
 
 			// Generate/position a camera along route, pointed in direction of target point at set pitch
 			positionCamera({ map, cameraCoordinates: alongCamera, elevation: tickElevation, pitch: cameraPitch, bearing });
 
-
+			// This will update the location of the marker on the locator map
+			// (may need to add a condition to keep this from updating on every tick, which is probably expensive and not necessary)
 			currentLocation.update(() => alongRoute );
 
-			// if ((time - start) > locationUpdateInterval) {
-			// 	currentLocation.update(() => alongRoute );
-
-			// 	locationUpdateInterval += (time - start);
-			// }
-			
 			window.requestAnimationFrame(frame);
 		}
 		
 		window.requestAnimationFrame(frame);
 	}
+
+	const showExitPoint = ({ map }) => {
+		map.flyTo({
+			bearing: (180+map.getBearing()) % 360,
+			pitch: 30,
+			zoom: 7
+		});
+	};
 
 	const getElevations = async (coordinatePath, arrayStep=10) => {
 
@@ -311,11 +299,12 @@
 	const drawFlowPath = ({ map, featureData }) => {
 		const sourceID = 'route'
 
-		if (map.getSource(sourceID)) {
-			map.removeSource(sourceID);
-		}
 		if (map.getLayer(sourceID)) {
 			map.removeLayer(sourceID);
+		}
+
+		if (map.getSource(sourceID)) {
+			map.removeSource(sourceID);
 		}
 		
 		addRivers({ map, featureData, lineWidth: 2, sourceID });
