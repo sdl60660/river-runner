@@ -3,8 +3,11 @@
     import { Moon } from 'svelte-loading-spinners';
     import { coordinates, riverPath, currentLocation, vizState } from '../state';
 
-    let message = "Click to drop a raindrop anywhere on the contiguous United States and watch where it ends up";
     let loading = false;
+    let message = "Click to drop a raindrop anywhere on the contiguous United States and watch where it ends up";
+
+    // let state = "uninitialized"; 
+
 
     onMount(() => {
         const unsubscribeLocation = currentLocation.subscribe(coordinates => {
@@ -22,7 +25,8 @@
             else if (state === "uninitialized") {
                 message = "Click to drop a raindrop anywhere on the contiguous United States and watch where it ends up";
             }
-        })
+        });
+
     })
 
 </script>

@@ -103,7 +103,7 @@
 
 		riverPath.update(() => [ { geometry: { coordinates: coordinatePath }} ]);
 		currentLocation.update(() => originPoint );
-		vizState.update(() => "running" );
+		vizState.update(() => "calculating" );
 		
 		// Draw river lines from flowline features
 		drawFlowPath({ map, featureData: flowlinesData.features })
@@ -134,6 +134,7 @@
 
 		// Fly to clicked point and pitch camera (initial "raindrop" animation)
 		flyToPoint({ map, center, zoom, bearing: initialBearing, pitch: cameraPitch });
+		vizState.update(() => "running" );
 
 		// Maintain a consistent speed using the route distance. The higher the speed coefficient, the slower the runner will move.
 		const speedCoefficient = 120;
@@ -273,10 +274,16 @@
 
 	const showExitPoint = ({ map }) => {
 		map.flyTo({
-			bearing: (180+map.getBearing()) % 360,
-			pitch: 30,
+			// bearing: (180+map.getBearing()) % 360,
+			// pitch: 30,
+			bearing: 0,
+			pitch: 0,
 			zoom: 7
 		});
+
+		map.once('moveend', () => {
+			vizState.update(() => "uninitialized");
+		})
 	};
 
 	const getElevations = async (coordinatePath, arrayStep=10) => {

@@ -60,7 +60,7 @@
 
             const unsubscribeLocation = currentLocation.subscribe(location => {
                 if (location) {
-                    visibleIndex = 1;
+                    // visibleIndex = 1;
                     plotCurrentLocation({ map, location });
                 } 
                 else if (marker) {
@@ -72,10 +72,6 @@
                 // }
             });
 
-            // const unsubscribeVizState = riverPath.subscribe(state => {
-            //     visibleIndex = state === "running" ? 1 : null;
-            // });
-
             // marker = new mapbox.Marker()
             marker = new mapbox.Marker({element: markerEl})
                 .setLngLat([0,0])
@@ -83,6 +79,10 @@
         };
 
 		document.head.appendChild(link);
+
+		const unsubscribeVizState = vizState.subscribe(state => {
+			visibleIndex = state === "running" ? 1 : null;
+		});
 
 		return () => {
 			map.remove();
