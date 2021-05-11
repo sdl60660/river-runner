@@ -83,7 +83,7 @@
 
 				const river = flowlinesData.features[0];
 				const originPoint = river.geometry.coordinates[0];
-				const bearing = bearingBetween( river.geometry.coordinates[0], flowlinesData.features.slice(-1)[0].geometry.coordinates.slice(-1)[0] )
+				// const bearing = bearingBetween( river.geometry.coordinates[0], flowlinesData.features.slice(-1)[0].geometry.coordinates.slice(-1)[0] )
 
 				console.log('Clicked on:', e.lngLat, 'Closest point:', originPoint);
 
@@ -96,21 +96,7 @@
 				// Draw river lines from flowline features
 				drawFlowPath({ map, featureData: flowlinesData.features })
 
-				// Fly to clicked point and pitch camera
-				flyToPoint({ map, center: originPoint, bearing });
-
-				const elevationArrayStep = 100;
-				const elevations = await getElevations(coordinatePath, elevationArrayStep);
-
-				// map.easeTo({
-				// 	center: originPoint,
-				// 	pitch: 70,
-				// 	bearing,
-				// 	zoom: 11
-				// });
-
 				const smoothedPath = pathSmoother(coordinatePath, 5);
-
 				const cameraTargetIndexGap = 10;
 
 				// const targetRoute = smoothedPath.slice(cameraTargetIndexGap);
@@ -128,11 +114,29 @@
 
 				console.log('Distances:', routeDistance, cameraRouteDistance, trueRouteDistance);
 
+				const initialBearing = bearingBetween( cameraRoute[0], targetRoute[0] );
+				
+				// Fly to clicked point and pitch camera
+				flyToPoint({ map, center: cameraRoute[0], bearing: initialBearing });
+
+				const elevationArrayStep = 100;
+				const elevations = await getElevations(coordinatePath, elevationArrayStep);
+
+				// map.easeTo({
+				// 	center: originPoint,
+				// 	pitch: 70,
+				// 	bearing,
+				// 	zoom: 11
+				// });
+
+
 				// Maintain a consistent speed using the route distance
 				const animationDuration = Math.round(150*routeDistance);
 
 				map.once('moveend', () => {
 					console.log('finished flying');
+					const camera = map.getFreeCameraOptions();
+					console.log(camera.position);
 					setTimeout(runRiver({ map, animationDuration, targetRoute, cameraRoute, routeDistance, cameraRouteDistance, elevations, maintainedDistance }), 1000);
 				});
 			});
@@ -148,10 +152,10 @@
 
 	const pathDistance = (coordinateSet) => lineDistance(lineString(coordinateSet));
 
-	const pathSmoother = (coordinateSet, smootherVal=1) => {
+	const pathSmoother = (coordinateSet, smoothingCoefficient=1) => {
 		const setLength = coordinateSet.length;
 		const smoothedCoordinatePath = coordinateSet.map((coordinate, index) => {
-			const coordinateGroup = coordinateSet.slice(Math.max(0, index-smootherVal), index+1+smootherVal);
+			const coordinateGroup = coordinateSet.slice(Math.max(0, index-smoothingCoefficient), index+1+smoothingCoefficient);
 			const lng = coordinateGroup.map(d => d[0]).reduce((a, b) => a + b, 0) / coordinateGroup.length;
 			const lat = coordinateGroup.map(d => d[1]).reduce((a, b) => a + b, 0) / coordinateGroup.length;
 
@@ -175,7 +179,7 @@
 		})
 	}
 
-	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4000, targetRoute, cameraRoute, routeDistance, cameraRouteDistance, elevations, maintainedDistance }) => {
+	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4000, cameraPitch=70, targetRoute, cameraRoute, routeDistance, cameraRouteDistance, elevations, maintainedDistance }) => {
 		let start;
 		let locationUpdateInterval = 200;
 
@@ -199,7 +203,7 @@
 
 				// wait 5 seconds before looping
 				setTimeout(function () {
-					// start = 0.0;
+					start = 0.0;
 					window.cancelAnimationFrame(frame);
 				}, 5000);
 			}
@@ -216,33 +220,35 @@
 			
 			const camera = map.getFreeCameraOptions();
 
-			const modifiedCameraPosition = projectDistance(alongRoute, alongCamera, maintainedDistance);
+			// const modifiedCameraPosition = projectDistance(alongRoute, alongCamera, maintainedDistance);
 			
 			// set the position and altitude of the camera
 			camera.position = mapbox.MercatorCoordinate.fromLngLat(
-				// {
-				// 	lng: alongCamera[0],
-				// 	lat: alongCamera[1]
-				// },
 				{
-					lng: modifiedCameraPosition[0],
-					lat: modifiedCameraPosition[1]
+					lng: alongCamera[0],
+					lat: alongCamera[1]
 				},
+				// {
+				// 	lng: modifiedCameraPosition[0],
+				// 	lat: modifiedCameraPosition[1]
+				// },
 				tickElevation
 			);
 			
 			// tell the camera to look at a point along the route
-			camera.lookAtPoint({
-				lng: alongRoute[0],
-				lat: alongRoute[1]
-			});
+			// camera.lookAtPoint({
+			// 	lng: alongRoute[0],
+			// 	lat: alongRoute[1]
+			// });
 
 			// console.log('Point distance:', distance(alongCamera, alongRoute))
 
-			// camera.setPitchBearing({
-			// 	pitch: 70,
-			// 	bearing: bearingBetween( alongCamera, alongRoute )
-			// });
+			const bearing = bearingBetween( alongCamera, alongRoute );
+			camera.setPitchBearing(cameraPitch, bearing);
+
+			// console.log(camera);
+
+			// console.log( modifiedCameraPosition, alongRoute, bearingBetween( modifiedCameraPosition, alongRoute ) );
 			
 			map.setFreeCameraOptions(camera);
 
