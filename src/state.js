@@ -1,10 +1,9 @@
 import { writable } from 'svelte/store';
 
 const coordinates = writable([[], []]);
-// const scroll = writable({
-//     index: 0,
-//     progress: 0,
-//     direction: "down"
-// });
+const riverPath = writable(null);
+const currentLocation = writable(null);
 
-export { coordinates };
+const vizState = writable("uninitialized");
+
+export { coordinates, riverPath, currentLocation, vizState };

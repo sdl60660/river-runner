@@ -3,17 +3,21 @@
 	import { mapbox } from '../mapbox.js';
 
 	import { tick } from 'svelte';
-	import { featureData } from '../state';
+	import { riverPath, currentLocation, vizState } from '../state';
 
 	export let bounds = [[-125, 24], [-66, 51]];
 	export let visibleIndex;
 	export let mapStyle;
+    export let stateBoundaries;
 
 	console.log(bounds);
 
 	let container;
 	let map;
 	let mapBounds = bounds;
+    
+    let marker = null;
+    let markerEl;
 
 	onMount(async () => {
 		await tick();
@@ -33,19 +37,49 @@
 				// bearing: 80,
 			});
 
-			map.fitBounds(bounds, { animate: false, padding: 30 });
+			map.fitBounds(bounds, { animate: false, padding: 6 });
 			map.setMaxBounds(map.getBounds());
 			mapBounds = map.getBounds();
 
 
             map.on('load', () => {
 
+                drawStateBoundaries({ map, stateBoundaries })
+
             });
 
 			map.on('click', async (e) => {
-
 				
 			});
+
+            const unsubscribeRiverPath = riverPath.subscribe(featureData => {
+                if (featureData) {
+                    drawFlowPath({ map, featureData, sourceID: 'locatorPath' });
+                }
+            });
+
+            const unsubscribeLocation = currentLocation.subscribe(location => {
+                if (location) {
+                    visibleIndex = 1;
+                    plotCurrentLocation({ map, location });
+                } 
+                else if (marker) {
+                    marker.remove();
+                }
+
+                // if (location && !location.lat) {
+                //     visibleIndex = 1;
+                // }
+            });
+
+            // const unsubscribeVizState = riverPath.subscribe(state => {
+            //     visibleIndex = state === "running" ? 1 : null;
+            // });
+
+            // marker = new mapbox.Marker()
+            marker = new mapbox.Marker({element: markerEl})
+                .setLngLat([0,0])
+                .addTo(map);
         };
 
 		document.head.appendChild(link);
@@ -56,7 +90,10 @@
 		};
 	});
 
-
+    const plotCurrentLocation = ({ map, location }) => {
+        marker.setLngLat(location);
+        marker.addTo(map);
+    }
 
 	const drawFlowPath = ({ map, featureData }) => {
 		const sourceID = 'route'
@@ -68,7 +105,7 @@
 			map.removeLayer(sourceID);
 		}
 		
-		addRivers({ map, featureData, lineWidth: 2, sourceID });
+		addRivers({ map, featureData, lineWidth: 1, sourceID });
 	}
 
 	const addRivers = ({ map, featureData, lineColor="steelblue", lineWidth=1, sourceID='route' }) => {
@@ -110,25 +147,58 @@
 		});
 	}
 
+    const drawStateBoundaries = ({ map, stateBoundaries, sourceID='state-boundaries' }) => {
+
+        map.addSource(sourceID, {
+            'type': 'geojson',
+            'data': {
+                'type': 'FeatureCollection',
+                'features': stateBoundaries
+            }
+        });
+
+        map.addLayer({
+            id: sourceID,
+            source: sourceID,
+            type: 'line',
+            paint: {
+                'line-color': 'rgba(222,222,222,0.7)',
+                'line-width': 0.5
+            }
+        })
+    }
+
 </script>
 
-<!-- <svelte:window on:resize={handleResize} /> -->
-
-<div style="opacity: {visibleIndex ? 1 : 0}" bind:this={container}>
-	{#if map}
-		<slot />
-	{/if}
-</div>
-
 <style>
-	div {
+	.map {
 		position: absolute;
-		width: 25rem;
-		height: 17rem;
+		width: 26rem;
+		height: 14rem;
         top: 2rem;
         left: 2rem;
         z-index: 10;
         border-radius: 3px;
         opacity: 0.9;
 	}
+
+    .marker {
+        background-color: red;
+        opacity: 0.7;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        /* cursor: pointer; */
+    }
 </style>
+
+
+<!-- <svelte:window on:resize={handleResize} /> -->
+
+<div class="map" style="opacity: {visibleIndex ? 1 : 0}" bind:this={container}>
+	{#if map}
+		<slot />
+	{/if}
+</div>
+
+<div class="marker" bind:this={markerEl}></div>

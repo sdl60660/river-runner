@@ -1,10 +1,12 @@
 <script>
 	import { onMount } from 'svelte';
 	import { mapbox } from '../mapbox.js';
-	import { bearingBetween, roundToDigits } from '../utils';
-
 	import { tick } from 'svelte';
-	import { coordinates } from '../state';
+
+	import { bearingBetween, roundToDigits } from '../utils';
+	import { coordinates, riverPath, currentLocation, vizState } from '../state';
+	
+	import Prompt from './Prompt.svelte';
 
 	import along from '@turf/along';
 	import { lineString } from '@turf/helpers';
@@ -58,6 +60,13 @@
             });
 
 			map.on('click', async (e) => {
+				if (map.interactive === false) {
+					return;
+				}
+
+				map.interactive = false;
+
+				currentLocation.update(() => e.lngLat );
 
 				// https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/position?coords=POINT%28-155.5514478014136%2019.503028809053873%29
 				// https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/800004144/navigation/DM/flowlines?f=json&distance=1800
@@ -66,17 +75,19 @@
 
 				const closestFeatureURL = `https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/position?coords=POINT%28${e.lngLat.lng}%20${e.lngLat.lat}%29`;
 				const coordinateResponse = await fetch(closestFeatureURL)
-    			const closestFeature = (await coordinateResponse.json()).features[0];
+				const closestFeature = (await coordinateResponse.json()).features[0];
+				// catch {
+				// 	map.interactive = true;
+				// 	vizState.update(() => "uninitialized");
+				// }
 				
 				const flowlinesURL = closestFeature.properties.navigation + '/DM/flowlines?f=json&distance=5000';
 				const flowlinesResponse = await fetch(flowlinesURL);
 				const flowlinesData = await flowlinesResponse.json();
 
-				const refgageURL = closestFeature.properties.navigation + '/DM/ref_gage?f=json&distance=5000';
-				const refgageResponse = await fetch(refgageURL);
-				const refgageData = await refgageResponse.json();
-
-				console.log(flowlinesData, refgageData);
+				// const refgageURL = closestFeature.properties.navigation + '/DM/ref_gage?f=json&distance=5000';
+				// const refgageResponse = await fetch(refgageURL);
+				// const refgageData = await refgageResponse.json();
 
 				const river = flowlinesData.features[0];
 				const originPoint = river.geometry.coordinates[0];
@@ -84,17 +95,20 @@
 				const bearing = bearingBetween( river.geometry.coordinates[0], flowlinesData.features.slice(-1)[0].geometry.coordinates.slice(-1)[0] )
 
 				console.log('Clicked on:', e.lngLat, 'Closest point:', originPoint);
+
+				// const coordinatePath = flowlinesData.features.map( feature => feature.geometry.coordinates ).flat();
+				const coordinatePath = flowlinesData.features.map( feature => feature.geometry.coordinates.slice(-1)[0] );
+				// const coordinatePath = refgageData.features.map( feature => feature.geometry.coordinates );
+
+				riverPath.update(() => [ { geometry: { coordinates: coordinatePath }} ]);
+				currentLocation.update(() => originPoint );
+				vizState.update(() => "running" );
 				
 				// Draw river lines from flowline features
 				drawFlowPath({ map, featureData: flowlinesData.features })
 
 				// Fly to clicked point and pitch camera
 				flyToPoint({ map, center: originPoint, bearing });
-
-				// const coordinatePath = flowlinesData.features.map( feature => feature.geometry.coordinates ).flat();
-				const coordinatePath = flowlinesData.features.map( feature => feature.geometry.coordinates.slice(-1)[0] );
-				// const coordinatePath = refgageData.features.map( feature => feature.geometry.coordinates );
-				
 
 				const elevationArrayStep = 100;
 				const elevations = await getElevations(coordinatePath, elevationArrayStep);
@@ -119,7 +133,7 @@
 				console.log('Distances:', routeDistance, cameraRouteDistance, trueRouteDistance);
 
 				// Maintain a consistent speed using the route distance
-				const animationDuration = Math.round(80*routeDistance);
+				const animationDuration = Math.round(100*routeDistance);
 
 				setTimeout(runRiver({ map, animationDuration, targetRoute, cameraRoute, routeDistance, cameraRouteDistance, elevations }), 4500);
 
@@ -152,8 +166,9 @@
 		return smoothedCoordinatePath;
 	}
 
-	const runRiver = ({ map, animationDuration, cameraBaseAltitude=5000, targetRoute, cameraRoute, routeDistance, cameraRouteDistance, elevations }) => {
+	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4700, targetRoute, cameraRoute, routeDistance, cameraRouteDistance, elevations }) => {
 		let start;
+		let locationUpdateInterval = 100;
 
 		const frame = (time) => {
 			if (!start) start = time;
@@ -167,17 +182,16 @@
 			const elevationEstimate = elevationLast + ((elevationNext - elevationLast)*elevationStepProgress);
 			const tickElevation = cameraBaseAltitude + 1.4*Math.round(elevationEstimate);
 
-			// console.log(Math.floor(elevations.length*phase), Math.ceil(elevations.length*phase), elevationStepProgress);
-			// console.log(elevationLast, elevationNext, elevationEstimate, tickElevation);
-			
 			// phase is normalized between 0 and 1
 			// when the animation is finished, reset start to loop the animation
 			if (phase > 1) {
 				console.log('done');
+				map.interactive = true;
 
 				// wait 5 seconds before looping
 				setTimeout(function () {
-					start = 0.0;
+					// start = 0.0;
+					window.cancelAnimationFrame(frame);
 				}, 5000);
 			}
 			
@@ -210,7 +224,11 @@
 			
 			map.setFreeCameraOptions(camera);
 
-			// console.log(phase);
+			if ((time - start) > locationUpdateInterval) {
+				currentLocation.update(() => alongRoute );
+
+				locationUpdateInterval += (time - start);
+			}
 			
 			window.requestAnimationFrame(frame);
 		}
@@ -288,18 +306,6 @@
 	}
 
 	const addTopoLayer = ({ map }) => {
-		// map.addSource('dem', {
-		// 	type: 'raster-dem',
-		// 	url: 'mapbox://mapbox.terrain-rgb'
-		// });
-
-		// map.addLayer({
-		// 	id: 'hillshading',
-		// 	source: 'dem',
-		// 	type: 'hillshade',
-		// 	'hillshade-exaggeration': 2.2
-		// });
-
 		map.addSource('mapbox-dem', {
 			'type': 'raster-dem',
 			'url': 'mapbox://mapbox.mapbox-terrain-dem-v1',
@@ -350,14 +356,6 @@
 
 </script>
 
-<svelte:window on:resize={handleResize} />
-
-<div style="opacity: {visibleIndex ? 1 : 0}" bind:this={container}>
-	{#if map}
-		<slot />
-	{/if}
-</div>
-
 <style>
 	div {
 		position: absolute;
@@ -366,3 +364,13 @@
 		z-index: 1;
 	}
 </style>
+
+<svelte:window on:resize={handleResize} />
+
+<div style="opacity: {visibleIndex ? 1 : 0}" bind:this={container}>
+	{#if map}
+		<slot />
+	{/if}
+</div>
+
+<Prompt />
