@@ -97,6 +97,12 @@
 
             font-size: 16px;
         }
+
+        .spinner {
+            position: absolute;
+            right: 10%;
+            bottom: 15%;
+        }
     }
 
 </style>

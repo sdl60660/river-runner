@@ -631,7 +631,7 @@
 
 	@media only screen and (max-width: 600px) {
 		div {
-			height: 80vh;
+			height: calc(100% - 20vh);
 			top: 20vh;
 		}
 	
