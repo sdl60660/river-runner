@@ -10,7 +10,7 @@
 	export let mapStyle;
     export let stateBoundaries;
 
-	console.log(bounds);
+	let width = 0;
 
 	let container;
 	let map;
@@ -195,19 +195,20 @@
 	@media only screen and (max-width: 600px) {
 		.map {
 			width: 100%;
-			height: 12rem;
+			height: 11rem;
 			top: 0;
 			left: 0;
 			border-radius: 0;
+			opacity: 1.0;
 		}
 	}
 
 </style>
 
 
-<!-- <svelte:window on:resize={handleResize} /> -->
+<svelte:window bind:innerWidth={width} />
 
-<div class="map" style="z-index: {visibleIndex ? 10 : -10}" bind:this={container}>
+<div class="map" style="z-index: {visibleIndex ? 10 : -10}; opacity: {!visibleIndex ? 0.0 : width > 600 ? 0.9 : 1.0};" bind:this={container}>
 	{#if map}
 		<slot />
 	{/if}

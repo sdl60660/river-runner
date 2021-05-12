@@ -66,12 +66,17 @@
 
     @media only screen and (max-width: 600px) {
         .message-box {
-            width: calc(100% - 2rem - 6px);
+            width: calc(100% - 2rem);
+            height: calc(11rem - 2rem);
 
-            top: 3px;
-            left: 3px;
+            top: 0;
+            left: 0;
+            border-radius: 0;
 
             transform: unset;
+            box-shadow: unset;
+
+            font-size: 18px;
         }
     }
 

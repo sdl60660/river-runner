@@ -417,6 +417,14 @@
 		height: 100vh;
 		z-index: 1;
 	}
+
+	@media only screen and (max-width: 600px) {
+		div {
+			height: calc(100vh - 11rem);
+			top: 11rem;
+		}
+	
+	}
 </style>
 
 <svelte:window on:resize={handleResize} />
