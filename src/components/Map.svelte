@@ -108,13 +108,13 @@
 		// Draw river lines from flowline features
 		drawFlowPath({ map, featureData: flowlinesData.features })
 
-		const smoothedPath = pathSmoother(coordinatePath, 10);
-		const cameraTargetIndexGap = 8;
+		const smoothedPath = pathSmoother(coordinatePath, Math.min(10, Math.floor(coordinatePath.length / 2)));
+		const cameraTargetIndexGap = Math.min(Math.floor(smoothedPath.length / 2), 8);
 		const artificalCameraStartPoints = createArticialCameraPoints(smoothedPath, cameraTargetIndexGap);
 		
 		const targetRoute = smoothedPath;
 		const cameraRoute = artificalCameraStartPoints.concat(smoothedPath.slice(0, -cameraTargetIndexGap));
-
+		
 		// get the overall distance of each route so we can interpolate along them
 		const routeDistance = pathDistance(targetRoute);
 		const cameraRouteDistance = pathDistance(cameraRoute);
@@ -137,7 +137,7 @@
 		vizState.update(() => "running" );
 
 		// Maintain a consistent speed using the route distance. The higher the speed coefficient, the slower the runner will move.
-		const speedCoefficient = 120;
+		const speedCoefficient = smoothedPath.length < 50 ? 300 : 120;
 		const animationDuration = Math.round(speedCoefficient*routeDistance);
 
 		map.once('moveend', () => {
@@ -148,6 +148,8 @@
 
 	const createArticialCameraPoints = (smoothedPath, cameraTargetIndexGap) => {
 		const firstPointsBearing = bearingBetween( smoothedPath[1], smoothedPath[0] );
+
+		console.log(smoothedPath, cameraTargetIndexGap);
 
 		return smoothedPath.slice(0, cameraTargetIndexGap).map( (coordinate, index) => {
 			const offsetDistance = distance(coordinate, smoothedPath[index+cameraTargetIndexGap]);
@@ -230,14 +232,7 @@
 			// phase determines how far through the animation we are
 			const phase = (time - start) / animationDuration;
 
-			const elevationLast = elevations[Math.floor(elevations.length*phase)];
-			const elevationNext = elevations[Math.ceil(elevations.length*phase)] || 0;
-			const elevationStepProgress = elevations.length*phase - Math.floor(elevations.length*phase);
-
-			const elevationEstimate = elevationLast + ((elevationNext - elevationLast)*elevationStepProgress);
-			const tickElevation = cameraBaseAltitude + 1.4*Math.round(elevationEstimate);
-
-			// When finished
+			// When finished, exit animation loop and zoom out to show ending point
 			if (phase > 1) {
 				console.log('done');
 				map.interactive = true;
@@ -246,7 +241,15 @@
 
 				return;
 			}
-			
+
+			// Calculate camera elevation using the base elevation and the elevation at the specific coordinate point
+			const elevationLast = elevations[Math.floor(elevations.length*phase)];
+			const elevationNext = elevations[Math.ceil(elevations.length*phase)] || 0;
+			const elevationStepProgress = elevations.length*phase - Math.floor(elevations.length*phase);
+
+			const elevationEstimate = elevationLast + ((elevationNext - elevationLast)*elevationStepProgress);
+			const tickElevation = cameraBaseAltitude + 1.4*Math.round(elevationEstimate);
+
 			const alongRoute = along(
 				lineString(targetRoute),
 				routeDistance * phase

@@ -191,6 +191,16 @@
         border-radius: 50%;
         /* cursor: pointer; */
     }
+
+	@media only screen and (max-width: 600px) {
+		.map {
+			width: 100%;
+			height: 12rem;
+			top: 0;
+			left: 0;
+		}
+	}
+
 </style>
 
 
