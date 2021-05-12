@@ -106,11 +106,13 @@
 		vizState.update(() => "calculating" );
 		
 		// Draw river lines from flowline features
-		drawFlowPath({ map, featureData: flowlinesData.features })
+		drawFlowPath({ map, featureData: [ { geometry: { coordinates: coordinatePath }}]});
+		// drawFlowPath({ map, featureData: flowlinesData.features })
 
 		const smoothedPath = pathSmoother(coordinatePath, Math.min(10, Math.floor(coordinatePath.length / 2)));
 		const cameraTargetIndexGap = Math.min(Math.floor(smoothedPath.length / 2), 8);
-		const artificalCameraStartPoints = createArticialCameraPoints(smoothedPath, cameraTargetIndexGap);
+		// const artificalCameraStartPoints = createArticialCameraPoints(smoothedPath, cameraTargetIndexGap);
+		const artificalCameraStartPoints = pathSmoother(createArticialCameraPoints(coordinatePath, cameraTargetIndexGap), 1);
 		
 		const targetRoute = smoothedPath;
 		const cameraRoute = artificalCameraStartPoints.concat(smoothedPath.slice(0, -cameraTargetIndexGap));
@@ -149,7 +151,7 @@
 	const createArticialCameraPoints = (smoothedPath, cameraTargetIndexGap) => {
 		const firstPointsBearing = bearingBetween( smoothedPath[1], smoothedPath[0] );
 
-		console.log(smoothedPath, cameraTargetIndexGap);
+		// console.log(smoothedPath, cameraTargetIndexGap);
 
 		return smoothedPath.slice(0, cameraTargetIndexGap).map( (coordinate, index) => {
 			const offsetDistance = distance(coordinate, smoothedPath[index+cameraTargetIndexGap]);
@@ -281,7 +283,7 @@
 			// pitch: 30,
 			bearing: 0,
 			pitch: 0,
-			zoom: 7
+			zoom: 6
 		});
 
 		map.once('moveend', () => {
@@ -420,8 +422,8 @@
 
 	@media only screen and (max-width: 600px) {
 		div {
-			height: calc(100vh - 11rem);
-			top: 11rem;
+			height: 80vh;
+			top: 20vh;
 		}
 	
 	}

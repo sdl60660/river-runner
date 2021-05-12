@@ -61,13 +61,13 @@
     } */
 
     .message-text {
-        margin: 0px 8px;
+        margin: auto 8px;
     }
 
     @media only screen and (max-width: 600px) {
         .message-box {
             width: calc(100% - 2rem);
-            height: calc(11rem - 2rem);
+            height: calc(20vh - 2rem);
 
             top: 0;
             left: 0;

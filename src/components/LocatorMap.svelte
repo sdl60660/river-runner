@@ -195,7 +195,7 @@
 	@media only screen and (max-width: 600px) {
 		.map {
 			width: 100%;
-			height: 11rem;
+			height: 20vh;
 			top: 0;
 			left: 0;
 			border-radius: 0;
