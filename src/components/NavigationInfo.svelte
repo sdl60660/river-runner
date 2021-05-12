@@ -5,6 +5,7 @@
     let features = [];
     let activeIndex = null;
     let visible = false;
+    let width = 0;
 
     onMount(() => {
 
@@ -76,7 +77,9 @@
 
 </style>
 
-<div style={`display: ${visible === true ? "block" : "none"};`} class="info-box">
+<svelte:window bind:innerWidth={width} />
+
+<div style={`display: ${visible === true && width > 600 ? "block" : "none"};`} class="info-box">
     {#each features as { name, length_km, index }, i}
         <div style="font-weight:{index === activeIndex ? "bold" : "normal"};" key={i} class="feature-listing">{i+1}. {name} ({length_km} km)</div>
     {/each}
