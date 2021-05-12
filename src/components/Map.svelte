@@ -66,6 +66,7 @@
 				}
 
 				map.interactive = false;
+				map.scrollZoom.disable();
 				initRunner({ map, e });
 			});
         };
@@ -93,6 +94,7 @@
 			console.log('coordinate error');
 
 			map.interactive = true;
+			map.scrollZoom.enable();
 			currentLocation.update(() => undefined );
 			vizState.update(() => "uninitialized");
 			return;
@@ -379,7 +381,6 @@
 			// When finished, exit animation loop and zoom out to show ending point
 			if (phase > 1) {
 				// console.log('done');
-				map.interactive = true;
 				showExitPoint({ map });
 				return;
 			}
@@ -439,6 +440,8 @@
 		});
 
 		map.once('moveend', () => {
+			map.interactive = true;
+			map.scrollZoom.enable();
 			vizState.update(() => "uninitialized");
 		})
 	};

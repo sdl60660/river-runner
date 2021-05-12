@@ -13,6 +13,7 @@
                 visible = true;
             }
             else if (state === "uninitialized") {
+                activeIndex = null;
                 visible = false;
             }
         });
