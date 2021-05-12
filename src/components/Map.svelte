@@ -131,6 +131,7 @@
 		const flowlinesResponse = await fetch(flowlinesURL);
 		let flowlinesData = await flowlinesResponse.json();
 		flowlinesData.features = await addVAAData(flowlinesData.features);
+		console.log('flowlines', flowlinesData);
 
 		const riverFeatures = getFeatureGroups(flowlinesData);
 		featureGroups.update(() => riverFeatures);
@@ -140,8 +141,10 @@
 
 		console.log('Clicked on:', e.lngLat, 'Closest point:', originPoint);
 
-		const coordinatePath = flowlinesData.features.map( feature => feature.geometry.coordinates.slice(-1)[0] );
+		const coordinatePath = flowlinesData.features.length > 2 ? flowlinesData.features.map( feature => feature.geometry.coordinates.slice(-1)[0] )
+															 : flowlinesData.features.map( feature => feature.geometry.coordinates).flat().filter((d,i) => i % 10 === 0);
 
+		console.log('Coordinate path:', coordinatePath);
 		riverPath.update(() => [ { geometry: { coordinates: coordinatePath }} ]);
 		currentLocation.update(() => originPoint );
 		vizState.update(() => "calculating" );
@@ -152,6 +155,7 @@
 
 		const smoothedPath = pathSmoother(coordinatePath, Math.min(9, Math.floor(coordinatePath.length / 2)));
 		const cameraTargetIndexGap = Math.min(Math.floor(smoothedPath.length / 2), 8);
+		console.log(smoothedPath, coordinatePath);
 		const artificalCameraStartPoints = createArticialCameraPoints(smoothedPath, cameraTargetIndexGap);
 		// const artificalCameraStartPoints = pathSmoother(createArticialCameraPoints(coordinatePath, cameraTargetIndexGap), 1);
 		
@@ -213,19 +217,24 @@
 				feature_data_index: featureIndex,
 				progress: (featureIndex / flowlinesData.features.length),
 				name: feature,
-				distance_from_destination: featureData.properties.pathlength,
+				distance_from_destination: featureData.properties.pathlength === -9999 ? 0 : featureData.properties.pathlength,
 				index,
 				stream_level: featureData.properties.streamlvl,
 				active: false
 			})
-		})
+		});
 
 		// Because I'm not sampling every flowline, sometimes I get weird results at the end of the flowpath where, for example, there's a flowline
 		// that's part of the Mississippi Delta, but isn't technically isn't grouped under the Mississippi river, and it considers it the last step
 		// Here, I'm going to treat anyting with streamlevel 1 (which means it's a terminal feature) as the last feature in the sequence, but add an 
 		// exception case for paths that stop at inland lakes, just in case their last feature isn't encoded as stream level 1
-		const trueStopFeatureIndex = riverFeatures.findIndex(feature => feature.stream_level === 1) || riverFeatures.length-1;
+		let trueStopFeatureIndex = riverFeatures.findIndex(feature => feature.stream_level === 1);
+		if (trueStopFeatureIndex === -1) {
+			trueStopFeatureIndex = riverFeatures.length-1;
+		};
 		riverFeatures = riverFeatures.slice(0, trueStopFeatureIndex+1);
+
+		console.log('check 2', trueStopFeatureIndex, riverFeatures);
 
 		riverFeatures.forEach( (feature, i) => {
 			if (i === riverFeatures.length - 1) {
@@ -400,6 +409,7 @@
 	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4000, cameraPitch=70, targetRoute, cameraRoute, coordinatePath, routeDistance, cameraRouteDistance, trueRouteDistance, elevations, riverFeatures }) => {
 		let start;
 		let currentFeature = riverFeatures[0];
+		console.log(riverFeatures, currentFeature);
 		activeFeatureIndex.update(() => 0);
 		// dispatchFeatureGroupUpdate(riverFeatures, currentFeature);
 
