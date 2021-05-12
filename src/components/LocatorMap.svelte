@@ -198,6 +198,7 @@
 			height: 12rem;
 			top: 0;
 			left: 0;
+			border-radius: 0;
 		}
 	}
 
@@ -206,7 +207,7 @@
 
 <!-- <svelte:window on:resize={handleResize} /> -->
 
-<div class="map" style="opacity: {visibleIndex ? 1 : 0}; z-index: {visibleIndex ? 10 : -10}" bind:this={container}>
+<div class="map" style="z-index: {visibleIndex ? 10 : -10}" bind:this={container}>
 	{#if map}
 		<slot />
 	{/if}
