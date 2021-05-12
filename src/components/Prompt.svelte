@@ -4,7 +4,8 @@
     import { coordinates, riverPath, currentLocation, vizState } from '../state';
 
     let loading = false;
-    let message = "Click to drop a raindrop anywhere on the contiguous United States and watch where it ends up";
+    let eventActionName = window.innerWidth > 600 ? "Click" : "Tap"
+    let message = `${eventActionName} to drop a raindrop anywhere on the contiguous United States and watch where it ends up`;
 
     onMount(() => {
         const unsubscribeLocation = currentLocation.subscribe( async ( coordinates )=> {
@@ -24,7 +25,7 @@
 
                 const fullLocationString = placeName ? `${placeName}, ${stateName}` : `${countyName}, ${stateName}`;
 
-                message = `Finding downstream flow path from ${fullLocationString}`;
+                message = `Finding downstream path from ${fullLocationString}`;
                 loading = true;
             }
         })
@@ -42,7 +43,7 @@
     })
 
     const resetPrompt = () => {
-        message = "Click to drop a raindrop anywhere on the contiguous United States and watch where it ends up";
+        message = `${eventActionName} to drop a raindrop anywhere on the contiguous United States and watch where it ends up`;
         loading = false;
     }
 
@@ -94,7 +95,7 @@
             transform: unset;
             box-shadow: unset;
 
-            font-size: 18px;
+            font-size: 16px;
         }
     }
 

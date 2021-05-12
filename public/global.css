@@ -75,6 +75,7 @@ button:focus {
 		top: unset !important;
 		right: unset !important;
 		margin: auto;
+		font-size: 16px !important;
 		/* transform: translateX(-50%) !important; */
 	}
 }
