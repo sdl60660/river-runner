@@ -5,7 +5,7 @@
     let features = [];
     let activeIndex = null;
     let visible = false;
-    let width = 0;
+    let screenWidth = 0;
 
     onMount(() => {
 
@@ -54,34 +54,43 @@
     }
 
     .feature-listing {
-        /* font-weight: bold; */
-    }
-
-    /* .spinner {
-        margin-left: 20px;
-    } */
-
-    .feature-listing {
         margin: auto 8px;
     }
 
     @media only screen and (max-width: 600px) {
         .info-box {
-            
+            background-color: rgba(243, 243, 243, 0.9);
+            z-index: 20;
+            border: 1px solid black;
+            left: 50%;
+            top: 20vh;
+            transform: translate(-50%, -50%);
+            font-size: 14px;
+            width: 70vw;
+            padding: 0.5rem;
+            box-shadow: unset;
         }
 
         .feature-listing {
-
+            font-weight: bold;
+            margin: auto;
+            text-align: center;
         }
     }
 
 </style>
 
-<svelte:window bind:innerWidth={width} />
+<svelte:window bind:innerWidth={screenWidth} />
 
-<div style={`display: ${visible === true && width > 600 ? "block" : "none"};`} class="info-box">
-    {#each features as { name, length_km, index }, i}
-        <div style="font-weight:{index === activeIndex ? "bold" : "normal"};" key={i} class="feature-listing">{i+1}. {name} ({length_km} km)</div>
-    {/each}
+<div style={`display: ${visible === true && (screenWidth > 600 || (activeIndex && features)) ? "block" : "none"};`} class="info-box">
+
+    {#if screenWidth > 600}
+        {#each features as { name, length_km, index }, i}
+            <div style="font-weight:{index === activeIndex ? "bold" : "normal"};" key={i} class="feature-listing">{i+1}. {name} ({length_km} km)</div>
+        {/each}
+    {:else if activeIndex && features}
+        <div class="feature-listing">{features[activeIndex].name} ({features[activeIndex].length_km} km)</div>
+    {/if}
+
 </div>
 
