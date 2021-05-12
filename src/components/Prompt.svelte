@@ -56,8 +56,12 @@
         box-shadow: 4px 2px 2px rgba(56, 56, 56, 0.925);
     }
 
-    .spinner {
-        margin-left: 3px;
+    /* .spinner {
+        margin-left: 20px;
+    } */
+
+    .message-text {
+        margin: 0px 8px;
     }
 
     @media only screen and (max-width: 600px) {
@@ -66,7 +70,7 @@
 
             top: 3px;
             left: 3px;
-            
+
             transform: unset;
         }
     }
