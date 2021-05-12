@@ -3,17 +3,16 @@
 	import { mapbox } from '../mapbox.js';
 	import { tick } from 'svelte';
 
-	import { bearingBetween, roundToDigits } from '../utils';
-	import { coordinates, riverPath, currentLocation, vizState } from '../state';
+	import { bearingBetween } from '../utils';
+	import { coordinates, riverPath, currentLocation, vizState, featureGroups, activeFeatureIndex } from '../state';
 	
 	import Prompt from './Prompt.svelte';
 
 	import along from '@turf/along';
-	import { lineString } from '@turf/helpers';
+	import { featureCollection, lineString } from '@turf/helpers';
 	import lineDistance from '@turf/line-distance';
 	import distance from '@turf/distance';
 	import destination from '@turf/destination';
-
 
 	export let bounds = [[-125, 24], [-66, 51]];
 	export let basins;
@@ -86,7 +85,6 @@
 		const coordinateResponse = await fetch(closestFeatureURL)
 		
 		let closestFeature;
-
 		try {
 			const data = await coordinateResponse.json()
 			closestFeature = data.features[0];
@@ -100,9 +98,13 @@
 			return;
 		}
 		
-		const flowlinesURL = closestFeature.properties.navigation + '/DM/flowlines?f=json&distance=5000';
+		const flowlinesURL = closestFeature.properties.navigation + '/DM/flowlines?f=json&distance=6000';
 		const flowlinesResponse = await fetch(flowlinesURL);
-		const flowlinesData = await flowlinesResponse.json();
+		let flowlinesData = await flowlinesResponse.json();
+		flowlinesData.features = await addVAAData(flowlinesData.features);
+
+		const riverFeatures = getFeatureGroups(flowlinesData);
+		featureGroups.update(() => riverFeatures);
 
 		const river = flowlinesData.features[0];
 		const originPoint = river.geometry.coordinates[0];
@@ -165,9 +167,43 @@
 								routeDistance,
 								cameraRouteDistance,
 								trueRouteDistance,
-								elevations }),
+								elevations,
+								riverFeatures
+							 }),
 							600);
 		});
+	}
+
+	const getFeatureGroups = (flowlinesData) => {
+		const featureNames = flowlinesData.features.filter( feature => feature.properties.feature_name ).map( feature => feature.properties.feature_name );
+		const riverFeatures = featureNames.filter((item, i, ar) => ar.indexOf(item) === i).map((feature, index) => {
+			return ({
+				feature_data_index: flowlinesData.features.findIndex(item => item.properties.feature_name === feature),
+				progress: (flowlinesData.features.findIndex(item => item.properties.feature_name === feature) / flowlinesData.features.length),
+				name: feature,
+				distance_from_destination: flowlinesData.features.find(item => item.properties.feature_name === feature).properties.pathlength,
+				index,
+				active: false
+			})
+		})
+
+		riverFeatures.forEach( (feature, i) => {
+			if (i === riverFeatures.length - 1) {
+				feature.length_km = Math.round(feature.distance_from_destination);
+				feature.stop_point = null;
+
+				feature.feature_data = [ { geometry: { coordinates: flowlinesData.features.slice(feature.feature_data_index).map( feature => feature.geometry.coordinates.slice(-1)[0] ) }} ];
+			}
+			else {
+				const featureLength = feature.distance_from_destination - riverFeatures[i+1].distance_from_destination;
+				feature.length_km = Math.round(featureLength);
+				feature.stop_point = riverFeatures[i+1].progress;
+
+				feature.feature_data = [ { geometry: { coordinates: flowlinesData.features.slice(feature.feature_data_index, riverFeatures[i+1].feature_data_index).map( feature => feature.geometry.coordinates.slice(-1)[0] ) }} ];
+			}
+		})
+
+		return riverFeatures;
 	}
 
 	const addLocationMarker = ({ map, origin, pointID='location-marker' }) => {
@@ -215,6 +251,33 @@
 		});
 
 		return point;
+	}
+
+	const getFeatureVAA = async (feature, index) => {
+		if (index > 40 && index % 10 !== 0) {
+			return feature;
+		}
+		else {
+			const baseUrl = 'https://river-runner-20db3-default-rtdb.firebaseio.com/';
+			const response = await fetch(baseUrl + feature.properties.nhdplus_comid + '.json');
+			const featureData = await response.json();
+
+			feature.properties = {
+				...feature.properties,
+				...featureData,
+				// feature_name: featureData.gnis_name || `Unnamed River/Stream (${featureData.levelpathid})`
+				feature_name: featureData.gnis_name || `Unnamed River/Stream`
+
+			};
+
+			return feature;
+		}
+	}
+
+	const addVAAData = (flowlineFeatures) => {
+		return Promise.all(
+			flowlineFeatures.map(async (feature, i) => await getFeatureVAA(feature, i))
+		)
 	}
 
 	const createArticialCameraPoints = (smoothedPath, cameraTargetIndexGap) => {
@@ -294,8 +357,18 @@
 		})
 	}
 
-	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4000, cameraPitch=70, targetRoute, cameraRoute, coordinatePath, routeDistance, cameraRouteDistance, trueRouteDistance, elevations }) => {
+	const dispatchFeatureGroupUpdate = (riverFeatures, currentFeature) => {
+		// riverFeatures.forEach(feature => feature.active = false);
+		// riverFeatures[currentFeature.index].active = true;
+		// featureGroups.update(() => riverFeatures);
+		activeFeatureIndex.update(() => currentFeature.index);
+	}
+
+	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4000, cameraPitch=70, targetRoute, cameraRoute, coordinatePath, routeDistance, cameraRouteDistance, trueRouteDistance, elevations, riverFeatures }) => {
 		let start;
+		let currentFeature = riverFeatures[0];
+		activeFeatureIndex.update(() => 0);
+		// dispatchFeatureGroupUpdate(riverFeatures, currentFeature);
 
 		const frame = (time) => {
 			if (!start) start = time;
@@ -309,6 +382,12 @@
 				map.interactive = true;
 				showExitPoint({ map });
 				return;
+			}
+
+			if (currentFeature.stop_point && phase >= currentFeature.stop_point) {
+				currentFeature = riverFeatures[currentFeature.index + 1];
+				activeFeatureIndex.update(() => currentFeature.index);
+				// dispatchFeatureGroupUpdate(riverFeatures, currentFeature);
 			}
 
 			// Calculate camera elevation using the base elevation and the elevation at the specific coordinate point
@@ -397,7 +476,7 @@
 
 	const addRivers = ({ map, featureData, lineColor="steelblue", lineWidth=1, sourceID='route' }) => {
 		const features = featureData.map((river) => {
-			// Some rivers have multiple linestrings (such as the Mississippi)...
+			// Some rivers in some files have multiple linestrings (such as the Mississippi)...
 			// their coordinates will be a triple-nested array instead of a double-nested
 			const featureType = Array.isArray(river.geometry.coordinates[0][0]) ? 'MultiLineString' : 'LineString';
 

@@ -22,17 +22,11 @@
                 const countyName = addressData.features.find(d => d.place_type.includes('district'))?.text;
                 const stateName = addressData.features.find(d => d.place_type.includes('region'))?.text;
 
-                
-
                 const fullLocationString = placeName ? `${placeName}, ${stateName}` : `${countyName}, ${stateName}`;
 
                 message = `Finding downstream flow path from ${fullLocationString}`;
                 loading = true;
             }
-
-            // else if (coordinates === undefined) {
-            //     resetPrompt();
-            // }
         })
 
         const unsubscribeState = vizState.subscribe(state => {

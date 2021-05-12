@@ -3,7 +3,7 @@
 	import { mapbox } from '../mapbox.js';
 
 	import { tick } from 'svelte';
-	import { riverPath, currentLocation, vizState } from '../state';
+	import { riverPath, currentLocation, vizState, featureGroups, activeFeatureIndex } from '../state';
 
 	export let bounds = [[-125, 24], [-66, 51]];
 	export let visibleIndex;
@@ -15,6 +15,7 @@
 	let container;
 	let map;
 	let mapBounds = bounds;
+	let featureGroupData;
     
     let marker = null;
     let markerEl;
@@ -52,7 +53,7 @@
 
             const unsubscribeRiverPath = riverPath.subscribe(featureData => {
                 if (featureData) {
-                    drawFlowPath({ map, featureData, sourceID: 'locatorPath' });
+                    drawFlowPath({ map, featureData, sourceID: 'locator-path' });
                 }
             });
 
@@ -64,6 +65,24 @@
                     marker.remove();
                 }
             });
+
+			const unsubscribeFeatureGroups = featureGroups.subscribe(featureGroups => {
+				if (featureGroups.length > 0) {
+					featureGroupData = featureGroups;
+
+					featureGroupData.forEach(({ feature_data, index }) => {
+						drawFlowPath({ map, featureData: feature_data, sourceID: `active-path-${index}`, lineColor: "yellow", lineWidth: 2, visible: false });
+					})
+				}
+			})
+
+			const unsubscribeActiveFeatureIndex = activeFeatureIndex.subscribe(featureIndex => {
+				if (featureIndex !== null) {
+					// const featureData = featureGroupData[featureIndex].feature_data;
+					// drawFlowPath({ map, featureData, sourceID: 'active-path', lineColor: "yellow", lineWidth: 2 });
+					// map.setLayoutProperty(`active-path-${featureIndex}`, "visibility", "visible");
+				}	
+			})
 
             marker = new mapbox.Marker({element: markerEl})
                 .setLngLat([0,0])
@@ -88,9 +107,7 @@
         marker.addTo(map);
     }
 
-	const drawFlowPath = ({ map, featureData }) => {
-		const sourceID = 'route'
-
+	const drawFlowPath = ({ map, featureData, sourceID='route', lineColor="steelblue", lineWidth=1, visible=true }) => {
 		if (map.getLayer(sourceID)) {
 			map.removeLayer(sourceID);
 		}
@@ -99,10 +116,10 @@
 			map.removeSource(sourceID);
 		}
 		
-		addRivers({ map, featureData, lineWidth: 1, sourceID });
+		addRivers({ map, featureData, lineWidth, sourceID, lineColor, visible });
 	}
 
-	const addRivers = ({ map, featureData, lineColor="steelblue", lineWidth=1, sourceID='route' }) => {
+	const addRivers = ({ map, featureData, lineColor="steelblue", lineWidth=1, sourceID='route', visible=true }) => {
 		const features = featureData.map((river) => {
 			// Some rivers have multiple linestrings (such as the Mississippi)...
 			// their coordinates will be a triple-nested array instead of a double-nested
@@ -132,7 +149,8 @@
 			source: sourceID,
 			layout: {
 				'line-join': 'round',
-				'line-cap': 'round'
+				'line-cap': 'round',
+				'visibility': (visible ? "visible" : "none")
 			},
 			paint: {
 				'line-color': lineColor,
