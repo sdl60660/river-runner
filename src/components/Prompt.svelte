@@ -47,13 +47,17 @@
         background-color: rgba(248, 248, 248, 0.85);
         padding: 1rem;
         border-radius: 3px;
+
         position: absolute;
         z-index: 20;
         left: 50%;
         transform: translateX(-50%);
         top: 1rem;
+
         display: flex;
         box-shadow: 4px 2px 2px rgba(56, 56, 56, 0.925);
+
+        font-family: "Roboto","Inter", Arial, Helvetica, sans-serif;
     }
 
     /* .spinner {
