@@ -61,3 +61,20 @@ button:not(:disabled):active {
 button:focus {
 	border-color: #666;
 }
+
+.mapboxgl-ctrl-geocoder {
+	position: absolute !important;
+	top: 1rem !important;
+	right: 2rem !important;
+	z-index: 15;
+}
+
+@media only screen and (max-width: 600px) {
+	.mapboxgl-ctrl-geocoder {
+		position: unset !important;
+		top: unset !important;
+		right: unset !important;
+		margin: auto;
+		/* transform: translateX(-50%) !important; */
+	}
+}

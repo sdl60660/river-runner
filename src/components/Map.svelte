@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { mapbox } from '../mapbox.js';
 	import { tick } from 'svelte';
+	import * as d3 from 'd3';
 
 	import { bearingBetween } from '../utils';
 	import { coordinates, riverPath, currentLocation, vizState, featureGroups, activeFeatureIndex } from '../state';
@@ -58,15 +59,11 @@
 				if (addTopo) {
 					addTopoLayer({ map });
 				}
+
+				const geocoder = initGeocoder({ map });		
             });
 
 			map.on('click', async (e) => {
-				if (map.interactive === false) {
-					return;
-				}
-
-				map.interactive = false;
-				map.scrollZoom.disable();
 				initRunner({ map, e });
 			});
         };
@@ -79,7 +76,41 @@
 		};
 	});
 
+	const initGeocoder = ({ map }) => {
+		const geocoder = new MapboxGeocoder({
+			accessToken: "pk.eyJ1Ijoic2FtbGVhcm5lciIsImEiOiJja2IzNTFsZXMwaG44MzRsbWplbGNtNHo0In0.BmjC6OX6egwKdm0fAmN_Nw",
+			countries: 'us',
+			bbox: bounds.flat(),
+			mapboxgl: mapbox,
+			placeholder: "Search for any location",
+			marker: false,
+			flyTo: false
+		});
+
+		geocoder.on('result', (e) => { 
+			const result = e.result;
+			result.lngLat = {
+				lng: result.geometry.coordinates[0],
+				lat: result.geometry.coordinates[1]
+			};
+			geocoder.clear();
+
+			initRunner({ map, e: result });
+		});
+
+		const position = window.innerWidth > 600 ? 'top-right' : 'bottom-left';
+		map.addControl(geocoder, position);				
+	}
+
 	const initRunner = async ({ map, e }) => {
+		if (map.interactive === false) {
+			return;
+		}
+
+		map.interactive = false;
+		map.scrollZoom.disable();
+		d3.select(".mapboxgl-ctrl-geocoder").style("display", "none");
+
 		currentLocation.update(() => e.lngLat );
 
 		const closestFeatureURL = `https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/position?coords=POINT%28${e.lngLat.lng.toFixed(4)}%20${e.lngLat.lat.toFixed(4)}%29`;
@@ -92,11 +123,7 @@
 		}
 		catch {
 			console.log('coordinate error');
-
-			map.interactive = true;
-			map.scrollZoom.enable();
-			currentLocation.update(() => undefined );
-			vizState.update(() => "uninitialized");
+			resetMapState({ map });
 			return;
 		}
 		
@@ -123,7 +150,7 @@
 		// drawFlowPath({ map, featureData: [ { geometry: { coordinates: coordinatePath }}]});
 		drawFlowPath({ map, featureData: flowlinesData.features, lineWidth: 2 })
 
-		const smoothedPath = pathSmoother(coordinatePath, Math.min(8, Math.floor(coordinatePath.length / 2)));
+		const smoothedPath = pathSmoother(coordinatePath, Math.min(9, Math.floor(coordinatePath.length / 2)));
 		const cameraTargetIndexGap = Math.min(Math.floor(smoothedPath.length / 2), 8);
 		const artificalCameraStartPoints = createArticialCameraPoints(smoothedPath, cameraTargetIndexGap);
 		// const artificalCameraStartPoints = pathSmoother(createArticialCameraPoints(coordinatePath, cameraTargetIndexGap), 1);
@@ -178,16 +205,27 @@
 
 	const getFeatureGroups = (flowlinesData) => {
 		const featureNames = flowlinesData.features.filter( feature => feature.properties.feature_name ).map( feature => feature.properties.feature_name );
-		const riverFeatures = featureNames.filter((item, i, ar) => ar.indexOf(item) === i).map((feature, index) => {
+		let riverFeatures = featureNames.filter((item, i, ar) => ar.indexOf(item) === i).map((feature, index) => {
+			const featureData = flowlinesData.features.find(item => item.properties.feature_name === feature);
+			const featureIndex = flowlinesData.features.findIndex(item => item.properties.feature_name === feature);
+
 			return ({
-				feature_data_index: flowlinesData.features.findIndex(item => item.properties.feature_name === feature),
-				progress: (flowlinesData.features.findIndex(item => item.properties.feature_name === feature) / flowlinesData.features.length),
+				feature_data_index: featureIndex,
+				progress: (featureIndex / flowlinesData.features.length),
 				name: feature,
-				distance_from_destination: flowlinesData.features.find(item => item.properties.feature_name === feature).properties.pathlength,
+				distance_from_destination: featureData.properties.pathlength,
 				index,
+				stream_level: featureData.properties.streamlvl,
 				active: false
 			})
 		})
+
+		// Because I'm not sampling every flowline, sometimes I get weird results at the end of the flowpath where, for example, there's a flowline
+		// that's part of the Mississippi Delta, but isn't technically isn't grouped under the Mississippi river, and it considers it the last step
+		// Here, I'm going to treat anyting with streamlevel 1 (which means it's a terminal feature) as the last feature in the sequence, but add an 
+		// exception case for paths that stop at inland lakes, just in case their last feature isn't encoded as stream level 1
+		const trueStopFeatureIndex = riverFeatures.findIndex(feature => feature.stream_level === 1) || riverFeatures.length-1;
+		riverFeatures = riverFeatures.slice(0, trueStopFeatureIndex+1);
 
 		riverFeatures.forEach( (feature, i) => {
 			if (i === riverFeatures.length - 1) {
@@ -359,13 +397,6 @@
 		})
 	}
 
-	const dispatchFeatureGroupUpdate = (riverFeatures, currentFeature) => {
-		// riverFeatures.forEach(feature => feature.active = false);
-		// riverFeatures[currentFeature.index].active = true;
-		// featureGroups.update(() => riverFeatures);
-		activeFeatureIndex.update(() => currentFeature.index);
-	}
-
 	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4000, cameraPitch=70, targetRoute, cameraRoute, coordinatePath, routeDistance, cameraRouteDistance, trueRouteDistance, elevations, riverFeatures }) => {
 		let start;
 		let currentFeature = riverFeatures[0];
@@ -439,12 +470,25 @@
 			zoom: 6
 		});
 
+		// const center = map.getCameraPosition().target;
+		// const pixel = map.getProjection().toScreenLocation(center);
+		// const features = map.queryRenderedFeatures(pixel, "water");
+		// console.log(center, pixel, features)
+
 		map.once('moveend', () => {
-			map.interactive = true;
-			map.scrollZoom.enable();
-			vizState.update(() => "uninitialized");
+			resetMapState({ map });
 		})
 	};
+
+	const resetMapState = ({ map }) => {
+		map.interactive = true;
+		map.scrollZoom.enable();
+		
+		currentLocation.update(() => undefined );
+		vizState.update(() => "uninitialized");
+
+		d3.select(".mapboxgl-ctrl-geocoder").style("display", "block");
+	}
 
 	const getElevations = async (coordinatePath, arrayStep=10) => {
 
