@@ -65,10 +65,8 @@
 				if (map.interactive === false) {
 					return;
 				}
+
 				map.interactive = false;
-
-				currentLocation.update(() => e.lngLat );
-
 				initRunner({ map, e });
 			});
         };
@@ -82,13 +80,25 @@
 	});
 
 	const initRunner = async ({ map, e }) => {
-		const closestFeatureURL = `https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/position?coords=POINT%28${e.lngLat.lng}%20${e.lngLat.lat}%29`;
+		currentLocation.update(() => e.lngLat );
+
+		const closestFeatureURL = `https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/position?coords=POINT%28${e.lngLat.lng.toFixed(4)}%20${e.lngLat.lat.toFixed(4)}%29`;
 		const coordinateResponse = await fetch(closestFeatureURL)
-		const closestFeature = (await coordinateResponse.json()).features[0];
-		// catch {
-		// 	map.interactive = true;
-		// 	vizState.update(() => "uninitialized");
-		// }
+		
+		let closestFeature;
+
+		try {
+			const data = await coordinateResponse.json()
+			closestFeature = data.features[0];
+		}
+		catch {
+			console.log('coordinate error');
+			
+			map.interactive = true;
+			currentLocation.update(() => undefined );
+			vizState.update(() => "uninitialized");
+			return;
+		}
 		
 		const flowlinesURL = closestFeature.properties.navigation + '/DM/flowlines?f=json&distance=5000';
 		const flowlinesResponse = await fetch(flowlinesURL);
@@ -106,10 +116,10 @@
 		vizState.update(() => "calculating" );
 		
 		// Draw river lines from flowline features
-		drawFlowPath({ map, featureData: [ { geometry: { coordinates: coordinatePath }}]});
-		// drawFlowPath({ map, featureData: flowlinesData.features })
+		// drawFlowPath({ map, featureData: [ { geometry: { coordinates: coordinatePath }}]});
+		drawFlowPath({ map, featureData: flowlinesData.features, lineWidth: 4 })
 
-		const smoothedPath = pathSmoother(coordinatePath, Math.min(10, Math.floor(coordinatePath.length / 2)));
+		const smoothedPath = pathSmoother(coordinatePath, Math.min(8, Math.floor(coordinatePath.length / 2)));
 		const cameraTargetIndexGap = Math.min(Math.floor(smoothedPath.length / 2), 8);
 		// const artificalCameraStartPoints = createArticialCameraPoints(smoothedPath, cameraTargetIndexGap);
 		const artificalCameraStartPoints = pathSmoother(createArticialCameraPoints(coordinatePath, cameraTargetIndexGap), 1);
@@ -137,6 +147,7 @@
 		// Fly to clicked point and pitch camera (initial "raindrop" animation)
 		flyToPoint({ map, center, zoom, bearing: initialBearing, pitch: cameraPitch });
 		vizState.update(() => "running" );
+		// const locationTracerPoint = addLocationMarker({ map, origin: coordinatePath[0] });
 
 		// Maintain a consistent speed using the route distance. The higher the speed coefficient, the slower the runner will move.
 		const speedCoefficient = smoothedPath.length < 50 ? 300 : 120;
@@ -144,8 +155,66 @@
 
 		map.once('moveend', () => {
 			// When "raindrop" animation is finished, pause for a moment then begin river run
-			setTimeout(runRiver({ map, animationDuration, cameraBaseAltitude, targetRoute, cameraRoute, routeDistance, cameraRouteDistance, elevations, cameraPitch }), 600);
+			setTimeout(runRiver({ map,
+								animationDuration,
+								cameraBaseAltitude,
+								cameraPitch,
+								targetRoute,
+								cameraRoute,
+								coordinatePath,
+								routeDistance,
+								cameraRouteDistance,
+								trueRouteDistance,
+								elevations }),
+							600);
 		});
+	}
+
+	const addLocationMarker = ({ map, origin, pointID='location-marker' }) => {
+		if (map.getLayer(pointID)) {
+			map.removeLayer(pointID);
+		}
+
+		if (map.getSource(pointID)) {
+			map.removeSource(pointID);
+		}
+
+		const point = {
+			'type': 'FeatureCollection',
+			'features': [
+				{
+					'type': 'Feature',
+					'properties': {},
+					'geometry': {
+						'type': 'Point',
+						'coordinates': origin
+					}
+				}
+			]
+		};
+
+		map.addSource(pointID, {
+			'type': 'geojson',
+			'data': point
+		});
+
+		map.addLayer({
+			'id': pointID,
+			'source': pointID,
+			'type': 'circle',
+			'paint': {
+				'circle-radius': {
+					'base': 2,
+					'stops': [
+						[7, 2],
+						[14, 10]
+					]
+				},
+				'circle-color': "#ff0000"
+			}
+		});
+
+		return point;
 	}
 
 	const createArticialCameraPoints = (smoothedPath, cameraTargetIndexGap) => {
@@ -225,7 +294,7 @@
 		})
 	}
 
-	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4000, cameraPitch=70, targetRoute, cameraRoute, routeDistance, cameraRouteDistance, elevations }) => {
+	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4000, cameraPitch=70, targetRoute, cameraRoute, coordinatePath, routeDistance, cameraRouteDistance, trueRouteDistance, elevations }) => {
 		let start;
 
 		const frame = (time) => {
@@ -236,11 +305,9 @@
 
 			// When finished, exit animation loop and zoom out to show ending point
 			if (phase > 1) {
-				console.log('done');
+				// console.log('done');
 				map.interactive = true;
-
 				showExitPoint({ map });
-
 				return;
 			}
 
@@ -261,6 +328,12 @@
 				lineString(cameraRoute),
 				cameraRouteDistance * phase
 			).geometry.coordinates;
+
+			// const alongMarker = along(
+			// 	lineString(coordinatePath),
+			// 	trueRouteDistance * phase
+			// );
+			// map.getSource('location-marker').setData(alongMarker);
 						
 			const bearing = bearingBetween( alongCamera, alongRoute );
 
@@ -308,7 +381,7 @@
 		return data;
 	}
 
-	const drawFlowPath = ({ map, featureData }) => {
+	const drawFlowPath = ({ map, featureData, lineWidth=2 }) => {
 		const sourceID = 'route'
 
 		if (map.getLayer(sourceID)) {
@@ -319,7 +392,7 @@
 			map.removeSource(sourceID);
 		}
 		
-		addRivers({ map, featureData, lineWidth: 2, sourceID });
+		addRivers({ map, featureData, lineWidth, sourceID });
 	}
 
 	const addRivers = ({ map, featureData, lineColor="steelblue", lineWidth=1, sourceID='route' }) => {

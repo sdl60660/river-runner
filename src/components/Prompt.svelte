@@ -6,24 +6,33 @@
     let loading = false;
     let message = "Click to drop a raindrop anywhere on the contiguous United States and watch where it ends up";
 
-    // let state = "uninitialized"; 
-
-
     onMount(() => {
-        const unsubscribeLocation = currentLocation.subscribe( async (coordinates )=> {
+        const unsubscribeLocation = currentLocation.subscribe( async ( coordinates )=> {
             if (coordinates?.lat) {
                 const response = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${coordinates.lng},${coordinates.lat}.json?access_token=pk.eyJ1Ijoic2FtbGVhcm5lciIsImEiOiJja2IzNTFsZXMwaG44MzRsbWplbGNtNHo0In0.BmjC6OX6egwKdm0fAmN_Nw`)
                 const addressData = await response.json();
+
+                const country = addressData.features.find(d => d.place_type.includes('country'))?.text;
+                if (country !== "United States") {
+                    displayCountryError();
+                    return;
+                }   
+
+                const placeName = addressData.features.find(d => d.place_type.includes('place'))?.text;
+                const countyName = addressData.features.find(d => d.place_type.includes('district'))?.text;
+                const stateName = addressData.features.find(d => d.place_type.includes('region'))?.text;
+
                 
-                const placeName = addressData.features.find(d => d.place_type.includes('place')).text;
-                const countyName = addressData.features.find(d => d.place_type.includes('district')).text;
-                const stateName = addressData.features.find(d => d.place_type.includes('region')).text;
 
                 const fullLocationString = placeName ? `${placeName}, ${stateName}` : `${countyName}, ${stateName}`;
 
                 message = `Finding downstream flow path from ${fullLocationString}`;
                 loading = true;
             }
+
+            // else if (coordinates === undefined) {
+            //     resetPrompt();
+            // }
         })
 
         const unsubscribeState = vizState.subscribe(state => {
@@ -32,11 +41,22 @@
                 loading = false;
             }
             else if (state === "uninitialized") {
-                message = "Click to drop a raindrop anywhere on the contiguous United States and watch where it ends up";
+                resetPrompt();
             }
         });
 
     })
+
+    const resetPrompt = () => {
+        message = "Click to drop a raindrop anywhere on the contiguous United States and watch where it ends up";
+        loading = false;
+    }
+
+    const displayCountryError = () => {
+        message = "Sorry! Can only trace from points in the contiguous United States.";
+        loading = false;
+        setTimeout(() => { resetPrompt() }, 2500);
+    }
 
 </script>
 
@@ -44,7 +64,7 @@
 <style>
 
     .message-box {
-        background-color: rgba(248, 248, 248, 0.85);
+        background-color: rgba(243, 243, 243, 0.856);
         padding: 1rem;
         border-radius: 3px;
 

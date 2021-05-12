@@ -43,9 +43,7 @@
 
 
             map.on('load', () => {
-
                 drawStateBoundaries({ map, stateBoundaries })
-
             });
 
 			map.on('click', async (e) => {
@@ -59,23 +57,18 @@
             });
 
             const unsubscribeLocation = currentLocation.subscribe(location => {
-                if (location) {
-                    // visibleIndex = 1;
+                if (location && location !== undefined) {
                     plotCurrentLocation({ map, location });
                 } 
                 else if (marker) {
                     marker.remove();
                 }
-
-                // if (location && !location.lat) {
-                //     visibleIndex = 1;
-                // }
             });
 
-            // marker = new mapbox.Marker()
             marker = new mapbox.Marker({element: markerEl})
                 .setLngLat([0,0])
                 .addTo(map);
+
         };
 
 		document.head.appendChild(link);
