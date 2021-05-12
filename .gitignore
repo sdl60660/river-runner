@@ -3,7 +3,14 @@
 
 .DS_Store
 
+# Data files too large for github storage
 /public/data/rivers_full_detail.json
 /public/data/detailed_rivers_streams.json
 
+# Data files too large for github storage
+# Original VAA .parquet file can be found here: https://www.hydroshare.org/resource/6092c8a62fac45be97a09bfd0b0bf726/
+# and can be converted using the parse_vaa_data.py script in the data_processing directory
 /data_processing/data/simplified_rivers.geojson
+/data_processing/data/comid_vaa_mapping.json
+/data_processing/data/comid_vaa_mapping.csv
+/data_processing/data/nhdplusVAA.parquet

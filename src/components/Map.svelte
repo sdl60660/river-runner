@@ -93,7 +93,7 @@
 		}
 		catch {
 			console.log('coordinate error');
-			
+
 			map.interactive = true;
 			currentLocation.update(() => undefined );
 			vizState.update(() => "uninitialized");
@@ -117,12 +117,12 @@
 		
 		// Draw river lines from flowline features
 		// drawFlowPath({ map, featureData: [ { geometry: { coordinates: coordinatePath }}]});
-		drawFlowPath({ map, featureData: flowlinesData.features, lineWidth: 4 })
+		drawFlowPath({ map, featureData: flowlinesData.features, lineWidth: 2 })
 
 		const smoothedPath = pathSmoother(coordinatePath, Math.min(8, Math.floor(coordinatePath.length / 2)));
 		const cameraTargetIndexGap = Math.min(Math.floor(smoothedPath.length / 2), 8);
-		// const artificalCameraStartPoints = createArticialCameraPoints(smoothedPath, cameraTargetIndexGap);
-		const artificalCameraStartPoints = pathSmoother(createArticialCameraPoints(coordinatePath, cameraTargetIndexGap), 1);
+		const artificalCameraStartPoints = createArticialCameraPoints(smoothedPath, cameraTargetIndexGap);
+		// const artificalCameraStartPoints = pathSmoother(createArticialCameraPoints(coordinatePath, cameraTargetIndexGap), 1);
 		
 		const targetRoute = smoothedPath;
 		const cameraRoute = artificalCameraStartPoints.concat(smoothedPath.slice(0, -cameraTargetIndexGap));
