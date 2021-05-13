@@ -186,13 +186,17 @@
 		const initialElevation = cameraBaseAltitude + 1.25*Math.round(elevations[0]);
 
 		// We'll calculate the pitch based on the altitude/distance from camera to target
-		// Pitches under ~66 get a little shaky in terms of jerkiness and tile loading, so I'll make that the minimum, but very few spots will even push against that
-		const cameraPitch = Math.max(66, calculatePitch(initialElevation, 1000*distance(cameraRoute[0], targetRoute[0])));
+		const cameraPitch = calculatePitch(initialElevation, 1000*distance(cameraRoute[0], targetRoute[0]));
 		// console.log('Calculated Pitch:', cameraPitch, 'Elevation:', initialElevation, 'Distance:', 1000*distance(cameraRoute[0], targetRoute[0]))
 		const { zoom, center } = precalculateInitialCamera({ map, cameraStart: cameraRoute[0], initialElevation, initialBearing, cameraPitch });
 
 		// Fly to clicked point and pitch camera (initial "raindrop" animation)
-		flyToPoint({ map, center, zoom, bearing: initialBearing, pitch: cameraPitch });
+		// flyToPoint({ map, center, zoom, bearing: initialBearing, pitch: cameraPitch });
+		map.flyTo({center, zoom, speed: 0.9, curve: 1, pitch: cameraPitch, bearing: initialBearing,
+			easing(t) {
+				return t;
+			}
+		});
 		vizState = "running";
 		// const locationTracerPoint = addLocationMarker({ map, origin: coordinatePath[0] });
 
@@ -378,7 +382,7 @@
 
 	const createArticialCameraPoints = (smoothedPath, coordinatePath, cameraTargetIndexGap, originPoint) => {
 		const firstPointsBearing = bearingBetween( coordinatePath[1], coordinatePath[0] );
-		const pointDistances = smoothedPath.slice(0, Math.min(80, smoothedPath.length-1)).map((coordinate, index) => {
+		const pointDistances = smoothedPath.slice(0, Math.min(50, smoothedPath.length-1)).map((coordinate, index) => {
 			return distance(coordinate, smoothedPath[index+1]);
 		});  
 		const averagePointDistance = pointDistances.reduce((a,b) => a + b, 0) / pointDistances.length; 
@@ -482,6 +486,8 @@
 
 				start += currentProgress - newProgress;
 				stopPoint = stopPoints[activeFeatureIndex];
+
+				console.log(start, stopPoint, phaseJump)
 
 				phaseJump = undefined;
 			}
@@ -661,30 +667,15 @@
 		mapBounds = map.getBounds();
 	};
 
-	const flyToPoint = ({ map, center, bearing=0, pitch=70 }) => {
-		map.flyTo({
-			center,
-			zoom: 13,
-			speed: 0.9,
-			curve: 1,
-			pitch,
-			bearing,
-			easing(t) {
-				return t;
-			}
-		})
-	}
-
 	const exitFunction = () => {
-		console.log("fired");
 		aborted = true;
 	}
 
 	const handleJump = (e) => {
-		console.log(e.detail);
+		// console.log(e.detail);
 
-		phaseJump = e.detail.pathProgress;
 		activeFeatureIndex = e.detail.featureIndex;
+		phaseJump = e.detail.pathProgress;
 	}
 
 	$: coordinates.update(() => {
