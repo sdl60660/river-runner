@@ -88,6 +88,7 @@
         margin: auto 8px;
     }
 
+    /* Mobile */
     @media only screen and (max-width: 600px) {
         .message-box {
             padding: 1rem 2rem;
@@ -108,6 +109,14 @@
             position: absolute;
             right: 10%;
             bottom: 15%;
+        }
+    }
+
+    /* Tablet */
+    @media only screen and (min-width: 601px) and (max-width: 1100px) {
+        .message-box {
+            top: 1.5rem;
+            transform: translateX(-85%);
         }
     }
 

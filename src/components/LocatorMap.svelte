@@ -193,6 +193,7 @@
         /* cursor: pointer; */
     }
 
+	/* Mobile */
 	@media only screen and (max-width: 600px) {
 		.map {
 			width: 100%;
@@ -203,6 +204,14 @@
 			opacity: 1.0;
 		}
 	}
+
+	/* Tablet */
+    @media only screen and (min-width: 601px) and (max-width: 1100px) {
+        .map {
+            width: 20.4rem;
+			height: 11rem;
+        }
+    }
 
 </style>
 

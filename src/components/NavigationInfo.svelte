@@ -128,6 +128,7 @@
         /* bottom: 0.5rem; */
     }
 
+    /* Mobile */
     @media only screen and (max-width: 600px) {
         .navbox-wrapper {
             right: 1.3rem;
@@ -151,6 +152,13 @@
             margin: auto;
             text-align: center;
             cursor: unset;
+        }
+    }
+
+    /* Tablet */
+    @media only screen and (min-width: 601px) and (max-width: 1100px) {
+        .navbox-wrapper {
+            right: 3rem;
         }
     }
 
