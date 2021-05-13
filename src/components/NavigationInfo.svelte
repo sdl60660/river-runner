@@ -133,7 +133,7 @@ import Loader from './Loader.svelte';
 
 <svelte:window bind:innerWidth={screenWidth} />
 
-<div style={`display: ${visible === true && (screenWidth > 600 || (activeIndex && features)) ? "block" : "none"};`} class="info-box">
+<div style={`display: ${visible === true && (screenWidth > 600 || (activeIndex >= 0 && features)) ? "block" : "none"};`} class="info-box">
 
     {#if screenWidth > 600}
         <div class="feature-listing bounding-location">{currentStartLocation}</div>
@@ -156,7 +156,11 @@ import Loader from './Loader.svelte';
         <div class="progress-bar"></div>
 
     {:else if activeIndex >= 0 && features}
-        <div class="feature-listing">{features[activeIndex].name} ({features[activeIndex].length_km} km)</div>
+        {#if activeIndex >= features.length}
+            <div class="feature-listing">{currentStoppingFeature}</div>
+        {:else}
+            <div class="feature-listing">{features[activeIndex].name} ({features[activeIndex].length_km} km)</div>
+        {/if}
     {/if}
 
 </div>

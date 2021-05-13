@@ -6,7 +6,7 @@ const riverPath = writable(null);
 const currentLocation = writable(null);
 
 const featureGroups = writable([]);
-const activeFeatureIndex = writable(null);
+const activeFeatureIndex = writable(-1);
 const stoppingFeature = writable(null);
 const startLocation = writable(null);
 
