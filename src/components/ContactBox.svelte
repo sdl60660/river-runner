@@ -51,7 +51,7 @@
             padding: 5px;
             background-color: white;
             width: 100%;
-
+            text-align: center;
         }
     }
 

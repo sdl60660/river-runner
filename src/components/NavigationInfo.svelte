@@ -130,10 +130,10 @@
 
     @media only screen and (max-width: 600px) {
         .navbox-wrapper {
-            right: unset;
-            left: 50%;
-            top: 20vh;
-            transform: translate(-50%, -50%);
+            right: 1.3rem;
+            left: 1.3rem;
+            top: 18vh;
+            /* transform: translate(-50%, -50%); */
         }
 
         .info-box {
@@ -141,8 +141,8 @@
             z-index: 20;
             border: 1px solid black;
             font-size: 1rem;
-            width: 70vw;
-            padding: 0.5rem;
+            /* width: 70vw; */
+            padding: 0.5rem 1rem;
             box-shadow: unset;
         }
 
