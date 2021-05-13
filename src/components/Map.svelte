@@ -156,7 +156,7 @@
 
 		const smoothedPath = pathSmoother(coordinatePath, Math.min(9, Math.floor(coordinatePath.length / 2)));
 		const cameraTargetIndexGap = Math.min(Math.floor(smoothedPath.length / 2), 8);
-		const artificalCameraStartPoints = createArticialCameraPoints(smoothedPath, cameraTargetIndexGap);
+		const artificalCameraStartPoints = createArticialCameraPoints(smoothedPath, coordinatePath, cameraTargetIndexGap, originPoint);
 		// const artificalCameraStartPoints = pathSmoother(createArticialCameraPoints(coordinatePath, cameraTargetIndexGap), 1);
 		
 		const targetRoute = smoothedPath;
@@ -364,15 +364,14 @@
 		)
 	}
 
-	const createArticialCameraPoints = (smoothedPath, cameraTargetIndexGap) => {
-		const firstPointsBearing = bearingBetween( smoothedPath[1], smoothedPath[0] );
+	const createArticialCameraPoints = (smoothedPath, coordinatePath, cameraTargetIndexGap, originPoint) => {
+		const firstPointsBearing = bearingBetween( coordinatePath[1], coordinatePath[0] );
+		const firstPointsDistance = 1.2*distance(smoothedPath[0], smoothedPath[1]);
 
-		// console.log(smoothedPath, cameraTargetIndexGap);
-
-		return smoothedPath.slice(0, cameraTargetIndexGap).map( (coordinate, index) => {
-			const offsetDistance = distance(coordinate, smoothedPath[index+cameraTargetIndexGap]);
-			return destination(coordinate, offsetDistance, firstPointsBearing).geometry.coordinates;
-		});
+		return [...Array(cameraTargetIndexGap).keys()].reverse().map(index => {
+			const offsetDistance = firstPointsDistance*(index+1);
+			return destination(originPoint, offsetDistance, firstPointsBearing).geometry.coordinates;
+		})
 	}
 	
 	const positionCamera = ({ map, cameraCoordinates, elevation, pitch, bearing }) => {
@@ -499,7 +498,7 @@
 			// map.getSource('location-marker').setData(alongMarker);
 						
 			const bearing = bearingBetween( alongCamera, alongRoute );
-
+			
 			// Generate/position a camera along route, pointed in direction of target point at set pitch
 			positionCamera({ map, cameraCoordinates: alongCamera, elevation: tickElevation, pitch: cameraPitch, bearing });
 
