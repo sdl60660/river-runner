@@ -20,6 +20,10 @@
     else if (vizState === "uninitialized") {
         resetPrompt();
     }
+    else if (vizState === "error" ) {
+        message = "Unable to find a flowpath for that location. Please try somewhere else.";
+        loading = false;
+    }
     // else if (vizState === "finished") {
     //     message = `You have arrived at ${stoppingFeature}!`;
     // }

@@ -120,20 +120,34 @@
 		d3.select(".mapboxgl-ctrl-geocoder").style("display", "none");
 
 		currentLocation = e.lngLat;
-
-		const closestFeatureURL = `https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/position?coords=POINT%28${e.lngLat.lng.toFixed(4)}%20${e.lngLat.lat.toFixed(4)}%29`;
-		const coordinateResponse = await fetch(closestFeatureURL)
 		
-		let closestFeature;
-		try {
-			const data = await coordinateResponse.json()
-			closestFeature = data.features[0];
-		}
-		catch {
-			console.log('coordinate error');
-			resetMapState({ map });
+		const closestFeature = await findClosestFeature(e);
+		console.log(closestFeature);
+
+		if (!closestFeature) {
+			vizState = "error";
+			setTimeout(() => resetMapState({ map }), 1500);
 			return;
 		}
+
+		// try {
+		// 	const closestFeatureURL = `https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/position?coords=POINT%28${e.lngLat.lng.toFixed(4)}%20${e.lngLat.lat.toFixed(4)}%29`;
+		// 	const coordinateResponse = await fetch(closestFeatureURL)
+		// 	const data = await coordinateResponse.json()
+		// 	closestFeature = data.features[0];
+		// }
+		// catch {
+		// 	console.log('coordinate error');
+
+		// 	const closestFeatureURL = `https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/position?coords=POINT%28${e.lngLat.lng.toFixed(0)}%20${e.lngLat.lat.toFixed(0)}%29`;
+		// 	const coordinateResponse = await fetch(closestFeatureURL);
+
+		// 	console.log(e.lngLat.lng.toFixed(0),e.lngLat.lat.toFixed(0) );
+
+		// 	console.log(await coordinateResponse.json());
+		// 	resetMapState({ map });
+		// 	return;
+		// }
 		
 		const flowlinesURL = closestFeature.properties.navigation + '/DM/flowlines?f=json&distance=6000';
 		const flowlinesResponse = await fetch(flowlinesURL);
@@ -221,6 +235,29 @@
 				riverFeatures
 			});
 		});
+	}
+
+	const findClosestFeature = async (e) => {
+		let closestFeature;
+		let resultFound = false;
+		let roundingDigits = 5;
+		while (resultFound === false && roundingDigits >= 0) {
+			roundingDigits -= 1;
+
+			try {
+				const closestFeatureURL = `https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/position?coords=POINT%28${e.lngLat.lng.toFixed(roundingDigits)}%20${e.lngLat.lat.toFixed(roundingDigits)}%29`;
+				const coordinateResponse = await fetch(closestFeatureURL)
+				const data = await coordinateResponse.json()
+				closestFeature = data.features[0];
+				
+				resultFound = true;
+			}
+			catch {
+				console.log(`Error while rounding coordinates to ${roundingDigits} digits. Trying again with less precise coordinates.`);
+			}
+		}
+
+		return closestFeature;
 	}
 
 	const determineStoppingFeature = ({ destinationPoint, stoppingFeatures }) => {
