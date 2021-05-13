@@ -28,13 +28,17 @@
 	let container;
 	let map;
 	let mapBounds = bounds;
+
 	let aborted = false;
 	let vizState = "uninitialized";
+
 	let riverPath;
 	let currentLocation;
 	let featureGroups = [];
 	let activeFeatureIndex = -1;
 	let totalLength;
+
+	let phaseJump;
 
 	onMount(async () => {
 		await tick();
@@ -465,13 +469,22 @@
 		activeFeatureIndex = 0;
 		let stopPoint = stopPoints[0];
 
-
 		// let featureIndex = 0;
 		// let currentFeature = riverFeatures[0];
 		// dispatchFeatureGroupUpdate(riverFeatures, currentFeature);
 
 		const frame = (time) => {
 			if (!start) start = time;
+
+			if (phaseJump !== undefined) {
+				const currentProgress = (time - start);
+				const newProgress = phaseJump * animationDuration;
+
+				start += currentProgress - newProgress;
+				stopPoint = stopPoints[activeFeatureIndex];
+
+				phaseJump = undefined;
+			}
 
 			// phase determines how far through the animation we are
 			const phase = (time - start) / animationDuration;
@@ -667,6 +680,13 @@
 		aborted = true;
 	}
 
+	const handleJump = (e) => {
+		console.log(e.detail);
+
+		phaseJump = e.detail.pathProgress;
+		activeFeatureIndex = e.detail.featureIndex;
+	}
+
 	$: coordinates.update(() => {
 		if (mapBounds._sw) {
 			return [
@@ -706,5 +726,5 @@
 </div>
 
 <Prompt {vizState} {currentLocation} />
-<NavigationInfo on:abort-run={exitFunction} {vizState} {activeFeatureIndex} {featureGroups} {totalLength} />
+<NavigationInfo on:abort-run={exitFunction} on:progress-set={(e) => handleJump(e) } {vizState} {activeFeatureIndex} {featureGroups} {totalLength} />
 <LocatorMap {bounds} {stateBoundaries} visibleIndex={null} {riverPath} {currentLocation} {vizState} {activeFeatureIndex} {featureGroups} />

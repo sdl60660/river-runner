@@ -1,5 +1,5 @@
 <script>
-    import { onMount } from 'svelte';
+    import { onMount, createEventDispatcher } from 'svelte';
     import { stoppingFeature, startLocation } from '../state';
 
     import CloseButton from './CloseButton.svelte';
@@ -12,24 +12,17 @@
     let visible = false;
     let screenWidth = 0;
 
-    // let features = [];
-    // let activeIndex = -1;
-
     let currentStoppingFeature = null;
     let currentStartLocation = null;
 
     $: visible = (vizState === "running") ? true : (vizState === "uninitialized") ? false : visible;
-    $: activeIndex = (vizState === "uninitialized") ? -1 : activeIndex;
 
-    // const unsubscribeFeatureGroups = featureGroups.subscribe(featureData => {
-    //     features = featureData;
-    // });
-
-    // const unsubscribeActiveFeatureIndex = activeFeatureIndex.subscribe(featureIndex => {
-    //     if (activeFeatureIndex !== null) {
-    //         activeIndex = featureIndex;
-    //     }	
-    // });
+    const dispatch = createEventDispatcher();
+    const setPhase = (pathProgress, featureIndex) => {
+        if ( activeFeatureIndex >= 0 ) {
+            dispatch('progress-set', { pathProgress, featureIndex })
+        }
+    }
 
     onMount(() => {
 
@@ -40,7 +33,6 @@
         const unsubscribeStartLocation = startLocation.subscribe(startLocation => {
             currentStartLocation = startLocation;
         });
-
     })
 
 </script>
@@ -75,6 +67,15 @@
         padding-top: 2px;
         padding-bottom: 2px;
         font-size: 0.95rem;
+    }
+
+    .river-feature {
+        cursor: pointer;
+    }
+
+    .river-feature:hover {
+        color: rgb(76, 79, 230);
+        font-weight: 600;
     }
 
     .progress-bar {
@@ -148,6 +149,7 @@
             font-weight: bold;
             margin: auto;
             text-align: center;
+            cursor: unset;
         }
     }
 
@@ -162,11 +164,13 @@
         <!-- Desktop/Tablet -->
         {#if screenWidth > 600}
             <div class="feature-listing bounding-location">{currentStartLocation}</div>
-            {#each featureGroups as { name, length_km, index }, i}
+            {#each featureGroups as { name, length_km, index, progress }, i}
                 <div
                     style="font-weight:{index === activeFeatureIndex ? "bold" : "normal"};"
                     key={i}
-                    class="feature-listing"
+                    class="feature-listing river-feature"
+                    class:river-feature="{activeFeatureIndex >= 0}"
+                    on:click={() => setPhase(progress, index)}
                 >
                     {i+1}. {name} ({length_km} km)
                 </div>

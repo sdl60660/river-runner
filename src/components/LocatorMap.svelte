@@ -38,8 +38,8 @@
 	};
 
 	$: if (activeFeatureIndex !== -1 && featureGroups) {		
-		// Hide any previous indices. Technically we should only need to hide the last one, but we'll do this as a catch-all unless it's too slow
-		[...Array(activeFeatureIndex).keys()].forEach(previousIndex => {
+		// Hide any other indices. Technically we should only need to hide the last one, but we'll do this as a catch-all unless it's too slow or if there's a jump
+		[...Array(featureGroups.length).keys()].forEach(previousIndex => {
 			map.setLayoutProperty(`active-path-${previousIndex}`, "visibility", "none");
 		});
 		
