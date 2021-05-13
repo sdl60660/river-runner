@@ -34,6 +34,7 @@
 	let currentLocation;
 	let featureGroups = [];
 	let activeFeatureIndex = -1;
+	let totalLength;
 
 	onMount(async () => {
 		await tick();
@@ -134,7 +135,8 @@
 		const flowlinesResponse = await fetch(flowlinesURL);
 		let flowlinesData = await flowlinesResponse.json();
 		flowlinesData.features = await addVAAData(flowlinesData.features);
-
+		
+		totalLength = flowlinesData.features[0].properties.pathlength > 0 ? flowlinesData.features[0].properties.pathlength : undefined;
 		const riverFeatures = getFeatureGroups(flowlinesData);
 		featureGroups = riverFeatures;
 
@@ -693,14 +695,6 @@
 	
 	}
 
-	.abort-navigation {
-		position: absolute;
-		z-index: 100;
-		top: 1rem;
-		right: 1rem;
-		cursor: pointer;
-	}
-
 </style>
 
 <svelte:window on:resize={handleResize} />
@@ -712,5 +706,5 @@
 </div>
 
 <Prompt {vizState} {currentLocation} />
-<NavigationInfo on:abort-run={exitFunction} {vizState} {activeFeatureIndex} {featureGroups} />
+<NavigationInfo on:abort-run={exitFunction} {vizState} {activeFeatureIndex} {featureGroups} {totalLength} />
 <LocatorMap {bounds} {stateBoundaries} visibleIndex={null} {riverPath} {currentLocation} {vizState} {activeFeatureIndex} {featureGroups} />

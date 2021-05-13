@@ -7,6 +7,7 @@
     export let vizState;
     export let featureGroups = [];
     export let activeFeatureIndex;
+    export let totalLength;
     
     let visible = false;
     let screenWidth = 0;
@@ -50,7 +51,8 @@
     .navbox-wrapper {
         position: absolute;
         z-index: 20;
-        left: calc(100% - 375px);
+        /* left: calc(100% - 375px); */
+        right: 3rem;
         /* transform: translateX(-50%); */
         top: 2rem;
     }
@@ -59,10 +61,11 @@
         background-color: rgba(243, 243, 243, 0.856);
         padding: 1rem;
         padding-left: 1.5rem;
+        /* padding-bottom: 3rem; */
         border-radius: 3px;
 
         display: block;
-        box-shadow: 4px 2px 2px rgba(56, 56, 56, 0.925);
+        box-shadow: 3px 2px 2px rgba(56, 56, 56, 0.925);
 
         font-family: "Roboto","Inter", Arial, Helvetica, sans-serif;
     }
@@ -71,6 +74,7 @@
         margin: auto 8px;
         padding-top: 2px;
         padding-bottom: 2px;
+        font-size: 0.95rem;
     }
 
     .progress-bar {
@@ -110,6 +114,18 @@
         height: 13px;
         width: 13px;
     }
+    
+    .total-length {
+        font-weight: bold;
+        position: absolute;
+        color: white;
+
+        /* width: 100%; */
+        text-align: center;
+        margin: 3px 0 0 3px;
+
+        /* bottom: 0.5rem; */
+    }
 
     @media only screen and (max-width: 600px) {
         .navbox-wrapper {
@@ -143,6 +159,7 @@
 
     <div class="info-box">
 
+        <!-- Desktop/Tablet -->
         {#if screenWidth > 600}
             <div class="feature-listing bounding-location">{currentStartLocation}</div>
             {#each featureGroups as { name, length_km, index }, i}
@@ -169,6 +186,7 @@
 
             <div class="progress-bar"></div>
 
+        <!-- Mobile (simpler, only displays name of current feature) -->
         {:else if activeFeatureIndex >= 0 && featureGroups}
             {#if activeFeatureIndex >= featureGroups.length}
                 <div class="feature-listing">{currentStoppingFeature}</div>
@@ -182,4 +200,6 @@
     <div style="display: {activeFeatureIndex >= 0 ? "block" : "none"};">
         <CloseButton on:abort-run />
     </div>
+
+    <div class="total-length" style="display: {screenWidth > 600 && totalLength ? "block" : "none"}">Total Length: {Math.round(totalLength)} km</div>
 </div>
