@@ -1,10 +1,11 @@
 <script>
     import { onMount } from 'svelte';
-    import { vizState, featureGroups, activeFeatureIndex, stoppingFeature, startLocation } from '../state';
+    import { featureGroups, activeFeatureIndex, stoppingFeature, startLocation } from '../state';
 
     import CloseButton from './CloseButton.svelte';
 
     export let exitFunction;
+    export let vizState;
     
     let visible = false;
     let screenWidth = 0;
@@ -15,17 +16,10 @@
     let currentStoppingFeature = null;
     let currentStartLocation = null;
 
-    onMount(() => {
+    $: visible = (vizState === "running") ? true : (vizState === "uninitialized") ? false : visible;
+    $: activeIndex = (vizState === "uninitialized") ? -1 : activeIndex;
 
-        const unsubscribeState = vizState.subscribe(state => {
-            if (state === "running") {
-                visible = true;
-            }
-            else if (state === "uninitialized") {
-                activeIndex = -1;
-                visible = false;
-            }
-        });
+    onMount(() => {
 
         const unsubscribeFeatureGroups = featureGroups.subscribe(featureData => {
             features = featureData;
@@ -90,10 +84,15 @@
     }
 
     .bounding-location {
-        background-color: rgba(56, 56, 56, 0.96);
+        /* background-color: rgba(56, 56, 56, 0.96); */
+        /* color: white; */
+
+        background-color: white;
+        border: 1px solid rgb(56, 56, 56);
+        border-radius: 2px;
+        
         padding-left: 6px;
         padding-right: 6px;
-        color: white;
         border-radius: 2px;
         display: inline-block;
     }

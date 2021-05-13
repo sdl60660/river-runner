@@ -1,48 +1,47 @@
 <script>
-    import { onMount } from 'svelte';
     import { Moon } from 'svelte-loading-spinners';
-    import { coordinates, riverPath, currentLocation, vizState, stoppingFeature, startLocation } from '../state';
+    import { stoppingFeature, startLocation } from '../state';
+
+    export let currentLocation;
+    export let vizState;
 
     let loading = false;
     let eventActionName = window.innerWidth > 600 ? "Click" : "Tap"
     let message = `${eventActionName} to drop a raindrop anywhere on the contiguous United States and watch where it ends up`;
 
-    onMount(() => {
-        const unsubscribeLocation = currentLocation.subscribe( async ( coordinates )=> {
-            if (coordinates?.lat) {
-                const response = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${coordinates.lng},${coordinates.lat}.json?access_token=pk.eyJ1Ijoic2FtbGVhcm5lciIsImEiOiJja2IzNTFsZXMwaG44MzRsbWplbGNtNHo0In0.BmjC6OX6egwKdm0fAmN_Nw`)
-                const addressData = await response.json();
+    $: if (currentLocation?.lat && message !== "") {
+        findLocation({ coordinates: currentLocation, })
+    }
 
-                const country = addressData.features.find(d => d.place_type.includes('country'))?.text;
-                if (country !== "United States") {
-                    displayCountryError();
-                    return;
-                }   
+    $: if (vizState === "running") {
+        message = "";
+        loading = false;
+    }
+    else if (vizState === "uninitialized") {
+        resetPrompt();
+    }
 
-                const placeName = addressData.features.find(d => d.place_type.includes('place'))?.text;
-                const countyName = addressData.features.find(d => d.place_type.includes('district'))?.text;
-                const stateName = addressData.features.find(d => d.place_type.includes('region'))?.text;
+    const findLocation = async ({ coordinates }) => {
+        const response = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${coordinates.lng},${coordinates.lat}.json?access_token=pk.eyJ1Ijoic2FtbGVhcm5lciIsImEiOiJja2IzNTFsZXMwaG44MzRsbWplbGNtNHo0In0.BmjC6OX6egwKdm0fAmN_Nw`)
+        const addressData = await response.json();
 
-                const fullLocationString = placeName ? `${placeName}, ${stateName}` : `${countyName}, ${stateName}`;
+        const country = addressData.features.find(d => d.place_type.includes('country'))?.text;
+        if (country !== "United States") {
+            displayCountryError();
+            return;
+        }   
 
-                startLocation.update(() => fullLocationString);
+        const placeName = addressData.features.find(d => d.place_type.includes('place'))?.text;
+        const countyName = addressData.features.find(d => d.place_type.includes('district'))?.text;
+        const stateName = addressData.features.find(d => d.place_type.includes('region'))?.text;
 
-                message = `Finding downstream path from ${fullLocationString}`;
-                loading = true;
-            }
-        })
+        const fullLocationString = placeName ? `${placeName}, ${stateName}` : `${countyName}, ${stateName}`;
 
-        const unsubscribeState = vizState.subscribe(state => {
-            if (state === "running") {
-                message = "";
-                loading = false;
-            }
-            else if (state === "uninitialized") {
-                resetPrompt();
-            }
-        });
+        startLocation.update(() => fullLocationString);
 
-    })
+        message = `Finding downstream path from ${fullLocationString}`;
+        loading = true;
+    };
 
     const resetPrompt = () => {
         message = `${eventActionName} to drop a raindrop anywhere on the contiguous United States and watch where it ends up`;

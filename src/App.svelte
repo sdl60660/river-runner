@@ -7,8 +7,8 @@
 
     import Map from './components/Map.svelte';
 	import Loader from './components/Loader.svelte';
-	import LocatorMap from './components/LocatorMap.svelte';
-	import NavigationInfo from './components/NavigationInfo.svelte';
+	// import LocatorMap from './components/LocatorMap.svelte';
+	// import NavigationInfo from './components/NavigationInfo.svelte';
 
 
 	const dataFilePromises = [
@@ -39,8 +39,7 @@
 {#await dataLoad}
     <Loader />
 {:then data }
-	<LocatorMap bounds={[[-125, 25], [-67, 50]]} visibleIndex={null} stateBoundaries={data[0]} />
-	<Map bounds={[[-125, 24], [-66, 51]]} stoppingFeatures={data[1]} visibleIndex={1} addTopo={true} mapStyle={"mapbox://styles/mapbox-map-design/ckhqrf2tz0dt119ny6azh975y"} />
+	<Map bounds={[[-125, 24], [-66, 51]]} stateBoundaries={data[0]} stoppingFeatures={data[1]} visibleIndex={1} addTopo={true} mapStyle={"mapbox://styles/mapbox-map-design/ckhqrf2tz0dt119ny6azh975y"} />
     <!-- <NavigationInfo /> -->
 	<!-- <Map bounds={getDataBounds(data[0])} coordinateQuadtree={data[1]} featureData={data[0]} visibleIndex={1} addTopo={true} mapStyle={"mapbox://styles/mapbox-map-design/ckhqrf2tz0dt119ny6azh975y"}/> -->
 {/await}

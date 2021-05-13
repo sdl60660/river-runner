@@ -3,22 +3,53 @@
 	import { mapbox } from '../mapbox.js';
 
 	import { tick } from 'svelte';
-	import { riverPath, currentLocation, vizState, featureGroups, activeFeatureIndex } from '../state';
+	import { featureGroups, activeFeatureIndex } from '../state';
+	// riverPath, currentLocation, vizState
 
 	export let bounds = [[-125, 24], [-66, 51]];
 	export let visibleIndex;
 	export let mapStyle;
     export let stateBoundaries;
 
+	export let riverPath;
+	export let currentLocation;
+	export let vizState;
+
 	let width = 0;
 
 	let container;
 	let map;
-	let mapBounds = bounds;
 	let featureGroupData;
     
     let marker = null;
     let markerEl;
+
+	// $: visibleIndex = vizState === "running" ? 1 : null;
+	// $: if (riverPath) { drawFlowPath({ map, featureData: riverPath, sourceID: 'locator-path' }); };
+	// $: if (currentLocation && currentLocation !== undefined) { plotCurrentLocation({ map, location }); } else if (marker) { marker.remove(); }
+
+	// const unsubscribeVizState = vizState.subscribe(state => {
+	// 	visibleIndex = state === "running" ? 1 : null;
+	// });
+
+	// const unsubscribeRiverPath = riverPath.subscribe(featureData => {
+	// 	if (featureData) {
+	// 		drawFlowPath({ map, featureData, sourceID: 'locator-path' });
+	// 	}
+	// });
+
+	// const unsubscribeLocation = currentLocation.subscribe(location => {
+	// 	if (location && location !== undefined) {
+	// 		plotCurrentLocation({ map, location });
+	// 	} 
+	// 	else if (marker) {
+	// 		marker.remove();
+	// 	}
+	// });
+
+	$: visibleIndex = vizState === "running" ? 1 : null;
+	$: if (riverPath && map) { drawFlowPath({ map, featureData: riverPath, sourceID: 'locator-path' }); };
+	$: if (map && currentLocation && currentLocation !== undefined) { plotCurrentLocation({ map, location: currentLocation }); } else if (marker) { marker.remove(); }
 
 	onMount(async () => {
 		await tick();
@@ -40,8 +71,6 @@
 
 			map.fitBounds(bounds, { animate: false, padding: 6 });
 			map.setMaxBounds(map.getBounds());
-			mapBounds = map.getBounds();
-
 
             map.on('load', () => {
                 drawStateBoundaries({ map, stateBoundaries })
@@ -51,20 +80,20 @@
 				
 			});
 
-            const unsubscribeRiverPath = riverPath.subscribe(featureData => {
-                if (featureData) {
-                    drawFlowPath({ map, featureData, sourceID: 'locator-path' });
-                }
-            });
+            // const unsubscribeRiverPath = riverPath.subscribe(featureData => {
+            //     if (featureData) {
+            //         drawFlowPath({ map, featureData, sourceID: 'locator-path' });
+            //     }
+            // });
 
-            const unsubscribeLocation = currentLocation.subscribe(location => {
-                if (location && location !== undefined) {
-                    plotCurrentLocation({ map, location });
-                } 
-                else if (marker) {
-                    marker.remove();
-                }
-            });
+            // const unsubscribeLocation = currentLocation.subscribe(location => {
+            //     if (location && location !== undefined) {
+            //         plotCurrentLocation({ map, location });
+            //     } 
+            //     else if (marker) {
+            //         marker.remove();
+            //     }
+            // });
 
 			const unsubscribeFeatureGroups = featureGroups.subscribe(featureGroups => {
 				if (featureGroups.length > 0) {
@@ -92,9 +121,9 @@
 
 		document.head.appendChild(link);
 
-		const unsubscribeVizState = vizState.subscribe(state => {
-			visibleIndex = state === "running" ? 1 : null;
-		});
+		// const unsubscribeVizState = vizState.subscribe(state => {
+		// 	visibleIndex = state === "running" ? 1 : null;
+		// });
 
 		return () => {
 			map.remove();

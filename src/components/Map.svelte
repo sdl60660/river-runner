@@ -5,20 +5,20 @@
 	import * as d3 from 'd3';
 
 	import { bearingBetween, distanceToPolygon } from '../utils';
-	import { coordinates, riverPath, currentLocation, vizState, featureGroups, activeFeatureIndex, stoppingFeature } from '../state';
+	import { coordinates, featureGroups, activeFeatureIndex, stoppingFeature } from '../state';
 	
 	import Prompt from './Prompt.svelte';
-	import CloseButton from './CloseButton.svelte';
 	import NavigationInfo from './NavigationInfo.svelte';
+	import LocatorMap from './LocatorMap.svelte';
 
 	import along from '@turf/along';
 	import { featureCollection, lineString } from '@turf/helpers';
 	import lineDistance from '@turf/line-distance';
 	import distance from '@turf/distance';
 	import destination from '@turf/destination';
-import { abort } from 'process';
 
-	export let bounds = [[-125, 24], [-66, 51]];
+	export let bounds;
+	export let stateBoundaries;
 	export let stoppingFeatures;
 	export let featureData = undefined;
 	export let visibleIndex;
@@ -29,8 +29,9 @@ import { abort } from 'process';
 	let map;
 	let mapBounds = bounds;
 	let aborted = false;
-	let currentVizState = "uninitialized";
-
+	let vizState = "uninitialized";
+	let riverPath;
+	let currentLocation;
 
 	onMount(async () => {
 		await tick();
@@ -44,17 +45,12 @@ import { abort } from 'process';
 				container,
 				style: mapStyle || 'mapbox://styles/mapbox/light-v10',
 				center: [0, 0],
-				zoom: 9,
-				// pitch: 85,
-				// bearing: 80,
+				zoom: 9
 			});
 
-			// map.scrollZoom.disable();
 			map.fitBounds(bounds, { animate: false, padding: 30 });
 			map.setMaxBounds(map.getBounds());
 			mapBounds = map.getBounds();
-
-			// console.log(mapBounds);
 
             map.on('load', () => {
 				if (featureData) {
@@ -116,7 +112,8 @@ import { abort } from 'process';
 		map.scrollZoom.disable();
 		d3.select(".mapboxgl-ctrl-geocoder").style("display", "none");
 
-		currentLocation.update(() => e.lngLat );
+		// currentLocation.update(() => e.lngLat );
+		currentLocation = e.lngLat;
 
 		const closestFeatureURL = `https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/position?coords=POINT%28${e.lngLat.lng.toFixed(4)}%20${e.lngLat.lat.toFixed(4)}%29`;
 		const coordinateResponse = await fetch(closestFeatureURL)
@@ -149,10 +146,13 @@ import { abort } from 'process';
 		const coordinatePath = flowlinesData.features.length > 3 ? flowlinesData.features.map( feature => feature.geometry.coordinates.slice(-1)[0] )
 															 : flowlinesData.features.map( feature => feature.geometry.coordinates).flat().filter((d,i) => i % 10 === 0);
 
-		riverPath.update(() => [ { geometry: { coordinates: coordinatePath }} ]);
-		currentLocation.update(() => originPoint );
-		vizState.update(() => "calculating" );
-		currentVizState = "calculating";
+		// riverPath.update(() => [ { geometry: { coordinates: coordinatePath }} ]);
+		// currentLocation.update(() => originPoint );
+		// vizState.update(() => "calculating" );
+
+		riverPath = [{ geometry: { coordinates: coordinatePath }}];
+		currentLocation = originPoint;
+		vizState = "calculating";
 
 		const pathStoppingFeature = determineStoppingFeature({ destinationPoint, stoppingFeatures });
 		stoppingFeature.update(() => pathStoppingFeature);
@@ -176,7 +176,6 @@ import { abort } from 'process';
 		console.log('Distances:', routeDistance, cameraRouteDistance, trueRouteDistance);
 
 		const initialBearing = bearingBetween( cameraRoute[0], targetRoute[0] );
-		// const cameraPitch = 70;
 
 		const cameraBaseAltitude = 4300;
 		const elevationArrayStep = 100;
@@ -184,13 +183,13 @@ import { abort } from 'process';
 		const initialElevation = cameraBaseAltitude + 1.4*Math.round(elevations[0]);
 
 		const cameraPitch = calculatePitch(initialElevation, 1000*distance(cameraRoute[0], targetRoute[0]));
-		console.log('Calculated Pitch:', cameraPitch, 'Elevation:', initialElevation, 'Distance:', 1000*distance(cameraRoute[0], targetRoute[0]))
+		// console.log('Calculated Pitch:', cameraPitch, 'Elevation:', initialElevation, 'Distance:', 1000*distance(cameraRoute[0], targetRoute[0]))
 		const { zoom, center } = precalculateInitialCamera({ map, cameraStart: cameraRoute[0], initialElevation, initialBearing, cameraPitch });
 
 		// Fly to clicked point and pitch camera (initial "raindrop" animation)
 		flyToPoint({ map, center, zoom, bearing: initialBearing, pitch: cameraPitch });
-		vizState.update(() => "running" );
-		currentVizState = "running";
+		// vizState.update(() => "running" );
+		vizState = "running";
 		// const locationTracerPoint = addLocationMarker({ map, origin: coordinatePath[0] });
 
 		// Maintain a consistent speed using the route distance. The higher the speed coefficient, the slower the runner will move.
@@ -198,21 +197,20 @@ import { abort } from 'process';
 		const animationDuration = Math.round(speedCoefficient*routeDistance);
 
 		map.once('moveend', () => {
-			// When "raindrop" animation is finished, pause for a moment then begin river run
-			setTimeout(runRiver({ map,
-								animationDuration,
-								cameraBaseAltitude,
-								cameraPitch,
-								targetRoute,
-								cameraRoute,
-								coordinatePath,
-								routeDistance,
-								cameraRouteDistance,
-								trueRouteDistance,
-								elevations,
-								riverFeatures
-							 }),
-							600);
+			// When "raindrop" animation is finished, begin river run
+			runRiver({ map,
+						animationDuration,
+						cameraBaseAltitude,
+						cameraPitch,
+						targetRoute,
+						cameraRoute,
+						coordinatePath,
+						routeDistance,
+						cameraRouteDistance,
+						trueRouteDistance,
+						elevations,
+						riverFeatures
+					});
 		});
 	}
 
@@ -513,7 +511,8 @@ import { abort } from 'process';
 
 			// This will update the location of the marker on the locator map
 			// (may need to add a condition to keep this from updating on every tick, which is probably expensive and not necessary)
-			currentLocation.update(() => alongRoute );
+			// currentLocation.update(() => alongRoute );
+			currentLocation = alongRoute;
 
 			window.requestAnimationFrame(frame);
 		}
@@ -522,7 +521,9 @@ import { abort } from 'process';
 	}
 
 	const exitNavigation = ({ map }) => {
-		activeFeatureIndex.update(index => index + 1);
+		if (!aborted) {
+			activeFeatureIndex.update(index => index + 1);
+		}
 
 		map.flyTo({
 			// bearing: (180+map.getBearing()) % 360,
@@ -542,9 +543,12 @@ import { abort } from 'process';
 		map.scrollZoom.enable();
 		aborted = false;
 		
-		currentLocation.update(() => undefined );
-		vizState.update(() => "uninitialized");
-		currentVizState = "uninitialized";
+		// currentLocation.update(() => undefined );
+		// vizState.update(() => "uninitialized");
+
+		currentLocation = undefined;
+		vizState = "uninitialized";
+		
 
 		d3.select(".mapboxgl-ctrl-geocoder").style("display", "block");
 	}
@@ -708,9 +712,6 @@ import { abort } from 'process';
 	{/if}
 </div>
 
-<Prompt />
-<NavigationInfo {exitFunction}/>
-
-<!-- <div class="abort-navigation" style="display: {currentVizState === "running" ? "block" : "none"}">
-	<CloseButton {exitFunction} />
-</div> -->
+<Prompt {vizState} {currentLocation} />
+<NavigationInfo {exitFunction} {vizState} />
+<LocatorMap {bounds} {stateBoundaries} visibleIndex={null} {riverPath} {currentLocation} {vizState} />
