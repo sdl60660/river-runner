@@ -10,6 +10,7 @@
 	import Prompt from './Prompt.svelte';
 	import NavigationInfo from './NavigationInfo.svelte';
 	import LocatorMap from './LocatorMap.svelte';
+	import ContactBox from './ContactBox.svelte';
 
 	import along from '@turf/along';
 	import { featureCollection, lineString } from '@turf/helpers';
@@ -742,3 +743,4 @@
 <Prompt {vizState} {currentLocation} />
 <NavigationInfo on:abort-run={exitFunction} on:progress-set={(e) => handleJump(e) } {vizState} {activeFeatureIndex} {featureGroups} {totalLength} />
 <LocatorMap {bounds} {stateBoundaries} visibleIndex={null} {riverPath} {currentLocation} {vizState} {activeFeatureIndex} {featureGroups} />
+<ContactBox {vizState} />

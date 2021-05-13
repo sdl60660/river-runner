@@ -30,6 +30,14 @@ const roundToDigits = (val, digits=0) => {
     return Math.round(val * divider) / divider;
 }
 
+const getDataBounds = (linestringData) => {
+  const allCoordinates = linestringData.map(river => river.geometry.coordinates).flat();
+
+  return [
+      [d3.min(allCoordinates, d => d[0]), d3.min(allCoordinates, d => d[1])],
+      [d3.max(allCoordinates, d => d[0]), d3.max(allCoordinates, d => d[1])]
+  ]
+}
 
 // Returns distance in meters (negative values for points inside) from a point to the edges of a polygon
 // This function comes from here: https://github.com/Turfjs/turf/issues/1743
@@ -86,4 +94,4 @@ const distanceToPolygon = ({ startPoint, targetPolygon }) => {
   }
 
 
-export { bearingBetween, contructCoordinateQuadtree, roundToDigits, distanceToPolygon };
+export { bearingBetween, contructCoordinateQuadtree, roundToDigits, getDataBounds, distanceToPolygon };

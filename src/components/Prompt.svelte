@@ -7,7 +7,7 @@
 
     let loading = false;
     let eventActionName = window.innerWidth > 600 ? "Click" : "Tap"
-    let message = `${eventActionName} to drop a raindrop anywhere on the contiguous United States and watch where it ends up`;
+    let message = `${eventActionName} to drop a raindrop anywhere in the contiguous United States and watch where it ends up`;
 
     $: if (currentLocation?.lat && message !== "") {
         findLocation({ coordinates: currentLocation, })
@@ -48,7 +48,7 @@
     };
 
     const resetPrompt = () => {
-        message = `${eventActionName} to drop a raindrop anywhere on the contiguous United States and watch where it ends up`;
+        message = `${eventActionName} to drop a raindrop anywhere in the contiguous United States and watch where it ends up`;
         loading = false;
     }
 
@@ -90,7 +90,8 @@
 
     @media only screen and (max-width: 600px) {
         .message-box {
-            width: calc(100% - 2rem);
+            padding: 1rem 2rem;
+            width: calc(100% - 4rem);
             height: calc(20vh - 2rem);
 
             top: 0;
