@@ -8,4 +8,4 @@ I've hosted a dataset with NHDPlus [Value Added Attributes](https://www.usgs.gov
 
 Here's a section of the path from Yellowstone National Park out to the Atlantic Oean:
 
-![Screenshot of the river runner in progress from Yellowstone National Park to the Atlantic Ocean. Mountain features and river are visible.](https://github.com/sdl60660/river-runner/public/images/preview_image.png?raw=true)
+![Screenshot of the river runner in progress from Yellowstone National Park to the Atlantic Ocean. Mountain features and river are visible.](https://github.com/sdl60660/river-runner/blob/main/public/images/preview_image.png?raw=true)
