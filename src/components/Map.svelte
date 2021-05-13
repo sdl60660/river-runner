@@ -686,7 +686,8 @@
 
 	@media only screen and (max-width: 600px) {
 		.map-wrapper {
-			height: calc(100% - 20vh);
+			/* this prevents some weird stuff on mobile screens when the geolocator search suggestons come up*/
+			height: max(400px, calc(100% - 20vh));
 			top: 20vh;
 		}
 	

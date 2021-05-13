@@ -78,9 +78,4 @@ button:focus {
 		font-size: 16px !important;
 		/* transform: translateX(-50%) !important; */
 	}
-
-	/* Move suggestions from geocoder search on top of the prompt box */
-	.suggestions-wrapper {
-		z-index: 101;
-	}
 }
