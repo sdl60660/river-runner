@@ -146,7 +146,7 @@ import { abort } from 'process';
 
 		console.log('Clicked on:', e.lngLat, 'Closest point:', originPoint);
 
-		const coordinatePath = flowlinesData.features.length > 2 ? flowlinesData.features.map( feature => feature.geometry.coordinates.slice(-1)[0] )
+		const coordinatePath = flowlinesData.features.length > 3 ? flowlinesData.features.map( feature => feature.geometry.coordinates.slice(-1)[0] )
 															 : flowlinesData.features.map( feature => feature.geometry.coordinates).flat().filter((d,i) => i % 10 === 0);
 
 		riverPath.update(() => [ { geometry: { coordinates: coordinatePath }} ]);
@@ -161,10 +161,9 @@ import { abort } from 'process';
 		// drawFlowPath({ map, featureData: [ { geometry: { coordinates: coordinatePath }}]});
 		drawFlowPath({ map, featureData: flowlinesData.features, lineWidth: 2 })
 
-		const smoothedPath = pathSmoother(coordinatePath, Math.min(9, Math.floor(coordinatePath.length / 2)));
-		const cameraTargetIndexGap = Math.min(Math.floor(smoothedPath.length / 2), 8);
+		const smoothedPath = pathSmoother(coordinatePath, Math.min(8, Math.floor(coordinatePath.length / 2)));
+		const cameraTargetIndexGap = Math.min(Math.floor(smoothedPath.length / 2), 10);
 		const artificalCameraStartPoints = createArticialCameraPoints(smoothedPath, coordinatePath, cameraTargetIndexGap, originPoint);
-		// const artificalCameraStartPoints = pathSmoother(createArticialCameraPoints(coordinatePath, cameraTargetIndexGap), 1);
 		
 		const targetRoute = smoothedPath;
 		const cameraRoute = artificalCameraStartPoints.concat(smoothedPath.slice(0, -cameraTargetIndexGap));
@@ -177,14 +176,16 @@ import { abort } from 'process';
 		console.log('Distances:', routeDistance, cameraRouteDistance, trueRouteDistance);
 
 		const initialBearing = bearingBetween( cameraRoute[0], targetRoute[0] );
-		const cameraPitch = 70;
+		// const cameraPitch = 70;
 
-		const cameraBaseAltitude = 4200;
+		const cameraBaseAltitude = 4300;
 		const elevationArrayStep = 100;
 		const elevations = await getElevations(coordinatePath, elevationArrayStep);
 		const initialElevation = cameraBaseAltitude + 1.4*Math.round(elevations[0]);
 
-		const { zoom, center } = getInitialCamera({ map, cameraStart: cameraRoute[0], initialElevation, initialBearing, cameraPitch });
+		const cameraPitch = calculatePitch(initialElevation, 1000*distance(cameraRoute[0], targetRoute[0]));
+		console.log('Calculated Pitch:', cameraPitch, 'Elevation:', initialElevation, 'Distance:', 1000*distance(cameraRoute[0], targetRoute[0]))
+		const { zoom, center } = precalculateInitialCamera({ map, cameraStart: cameraRoute[0], initialElevation, initialBearing, cameraPitch });
 
 		// Fly to clicked point and pitch camera (initial "raindrop" animation)
 		flyToPoint({ map, center, zoom, bearing: initialBearing, pitch: cameraPitch });
@@ -374,10 +375,13 @@ import { abort } from 'process';
 
 	const createArticialCameraPoints = (smoothedPath, coordinatePath, cameraTargetIndexGap, originPoint) => {
 		const firstPointsBearing = bearingBetween( coordinatePath[1], coordinatePath[0] );
-		const firstPointsDistance = 1.2*distance(smoothedPath[0], smoothedPath[1]);
+		const pointDistances = smoothedPath.slice(0, Math.min(80, smoothedPath.length-1)).map((coordinate, index) => {
+			return distance(coordinate, smoothedPath[index+1]);
+		});  
+		const averagePointDistance = pointDistances.reduce((a,b) => a + b, 0) / pointDistances.length; 
 
 		return [...Array(cameraTargetIndexGap).keys()].reverse().map(index => {
-			const offsetDistance = firstPointsDistance*(index+1);
+			const offsetDistance = averagePointDistance*(index+1);
 			return destination(originPoint, offsetDistance, firstPointsBearing).geometry.coordinates;
 		})
 	}
@@ -398,17 +402,21 @@ import { abort } from 'process';
 		map.setFreeCameraOptions(camera);
 	}
 
-	const getInitialCamera = ({ map, cameraStart, initialElevation, initialBearing, cameraPitch }) => {
+	const precalculateInitialCamera = ({ map, cameraStart, initialElevation, initialBearing, cameraPitch }) => {
+		// Store current camera info
 		const currentZoom = map.getZoom();
 		const currentCenter = map.getCenter();
 		const currentBearing = map.getBearing();
 		const currentPitch = map.getPitch();
 
-		positionCamera({ map, cameraCoordinates: cameraStart, elevation: initialElevation, pitch: cameraPitch, bearing: initialBearing });
+		// Position the camera how it will be positioned on the first tick of the run
+		positionCamera({ map, cameraCoordinates: cameraStart, elevation: initialElevation, bearing: initialBearing, pitch: cameraPitch });
 
+		// Log the zoom/center
 		const zoom = map.getZoom();
 		const center = map.getCenter();
 
+		// Send the camera back to where it came from, without user seeing anything
 		map.jumpTo({
 			zoom: currentZoom,
 			center: currentCenter,
@@ -416,6 +424,7 @@ import { abort } from 'process';
 			pitch: currentPitch
 		});
 
+		// Return zoom and center so that we can fly to the exact start point and it won't be jarring when the run starts
 		return { zoom, center }
 	}
 
@@ -439,6 +448,8 @@ import { abort } from 'process';
 		return destination(fromCoordinate, distance, bearing).geometry.coordinates;
 	}
 
+	const calculatePitch = (elevation, distance) => (90 - Math.atan(elevation / distance) * (180 / Math.PI));
+
 	const calculateCameraPath = (coordinatePath, cameraTargetDistance, routeDistance) => {
 		const cameraPathCoordinates = coordinatePath.slice(0, -cameraTargetDistance);
 		const distanceGap = routeDistance - pathDistance(cameraPathCoordinates);
@@ -448,7 +459,7 @@ import { abort } from 'process';
 		})
 	}
 
-	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4000, cameraPitch=70, targetRoute, cameraRoute, coordinatePath, routeDistance, cameraRouteDistance, trueRouteDistance, elevations, riverFeatures }) => {
+	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4300, cameraPitch=70, targetRoute, cameraRoute, coordinatePath, routeDistance, cameraRouteDistance, trueRouteDistance, elevations, riverFeatures }) => {
 		let start;
 
 		activeFeatureIndex.update(() => 0);
