@@ -122,32 +122,12 @@
 		currentLocation = e.lngLat;
 		
 		const closestFeature = await findClosestFeature(e);
-		console.log(closestFeature);
 
-		if (!closestFeature) {
+		if ( !closestFeature ) {
 			vizState = "error";
-			setTimeout(() => resetMapState({ map }), 1500);
+			resetMapState({ map, error: true });
 			return;
 		}
-
-		// try {
-		// 	const closestFeatureURL = `https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/position?coords=POINT%28${e.lngLat.lng.toFixed(4)}%20${e.lngLat.lat.toFixed(4)}%29`;
-		// 	const coordinateResponse = await fetch(closestFeatureURL)
-		// 	const data = await coordinateResponse.json()
-		// 	closestFeature = data.features[0];
-		// }
-		// catch {
-		// 	console.log('coordinate error');
-
-		// 	const closestFeatureURL = `https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/position?coords=POINT%28${e.lngLat.lng.toFixed(0)}%20${e.lngLat.lat.toFixed(0)}%29`;
-		// 	const coordinateResponse = await fetch(closestFeatureURL);
-
-		// 	console.log(e.lngLat.lng.toFixed(0),e.lngLat.lat.toFixed(0) );
-
-		// 	console.log(await coordinateResponse.json());
-		// 	resetMapState({ map });
-		// 	return;
-		// }
 		
 		const flowlinesURL = closestFeature.properties.navigation + '/DM/flowlines?f=json&distance=6000';
 		const flowlinesResponse = await fetch(flowlinesURL);
@@ -596,14 +576,20 @@
 		})
 	};
 
-	const resetMapState = ({ map }) => {
+	const resetMapState = ({ map, error=false }) => {
 		map.interactive = true;
 		map.scrollZoom.enable();
 		aborted = false;
 
 		currentLocation = undefined;
 		activeFeatureIndex = -1;
-		vizState = "uninitialized";
+
+		if (error) {
+			setTimeout(() => { vizState = "uninitialized"; }, 2000)
+		}
+		else {
+			vizState = "uninitialized";
+		}
 
 		d3.select(".mapboxgl-ctrl-geocoder").style("display", "block");
 	}

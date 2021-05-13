@@ -130,6 +130,7 @@
 
     @media only screen and (max-width: 600px) {
         .navbox-wrapper {
+            right: unset;
             left: 50%;
             top: 20vh;
             transform: translate(-50%, -50%);
