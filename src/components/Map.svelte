@@ -5,7 +5,7 @@
 	import * as d3 from 'd3';
 
 	import { bearingBetween, distanceToPolygon } from '../utils';
-	import { coordinates, featureGroups, activeFeatureIndex, stoppingFeature } from '../state';
+	import { coordinates, stoppingFeature } from '../state';
 	
 	import Prompt from './Prompt.svelte';
 	import NavigationInfo from './NavigationInfo.svelte';
@@ -32,6 +32,8 @@
 	let vizState = "uninitialized";
 	let riverPath;
 	let currentLocation;
+	let featureGroups = [];
+	let activeFeatureIndex = -1;
 
 	onMount(async () => {
 		await tick();
@@ -112,7 +114,6 @@
 		map.scrollZoom.disable();
 		d3.select(".mapboxgl-ctrl-geocoder").style("display", "none");
 
-		// currentLocation.update(() => e.lngLat );
 		currentLocation = e.lngLat;
 
 		const closestFeatureURL = `https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/position?coords=POINT%28${e.lngLat.lng.toFixed(4)}%20${e.lngLat.lat.toFixed(4)}%29`;
@@ -135,7 +136,7 @@
 		flowlinesData.features = await addVAAData(flowlinesData.features);
 
 		const riverFeatures = getFeatureGroups(flowlinesData);
-		featureGroups.update(() => riverFeatures);
+		featureGroups = riverFeatures;
 
 		const river = flowlinesData.features[0];
 		const originPoint = river.geometry.coordinates[0];
@@ -145,10 +146,6 @@
 
 		const coordinatePath = flowlinesData.features.length > 3 ? flowlinesData.features.map( feature => feature.geometry.coordinates.slice(-1)[0] )
 															 : flowlinesData.features.map( feature => feature.geometry.coordinates).flat().filter((d,i) => i % 10 === 0);
-
-		// riverPath.update(() => [ { geometry: { coordinates: coordinatePath }} ]);
-		// currentLocation.update(() => originPoint );
-		// vizState.update(() => "calculating" );
 
 		riverPath = [{ geometry: { coordinates: coordinatePath }}];
 		currentLocation = originPoint;
@@ -161,8 +158,8 @@
 		// drawFlowPath({ map, featureData: [ { geometry: { coordinates: coordinatePath }}]});
 		drawFlowPath({ map, featureData: flowlinesData.features, lineWidth: 2 })
 
-		const smoothedPath = pathSmoother(coordinatePath, Math.min(8, Math.floor(coordinatePath.length / 2)));
-		const cameraTargetIndexGap = Math.min(Math.floor(smoothedPath.length / 2), 10);
+		const smoothedPath = pathSmoother(coordinatePath, Math.min(9, Math.floor(coordinatePath.length / 2)));
+		const cameraTargetIndexGap = Math.min(Math.floor(smoothedPath.length / 2), 11);
 		const artificalCameraStartPoints = createArticialCameraPoints(smoothedPath, coordinatePath, cameraTargetIndexGap, originPoint);
 		
 		const targetRoute = smoothedPath;
@@ -180,37 +177,39 @@
 		const cameraBaseAltitude = 4300;
 		const elevationArrayStep = 100;
 		const elevations = await getElevations(coordinatePath, elevationArrayStep);
-		const initialElevation = cameraBaseAltitude + 1.4*Math.round(elevations[0]);
+		const initialElevation = cameraBaseAltitude + 1.25*Math.round(elevations[0]);
 
-		const cameraPitch = calculatePitch(initialElevation, 1000*distance(cameraRoute[0], targetRoute[0]));
+		// We'll calculate the pitch based on the altitude/distance from camera to target
+		// Pitches under ~66 get a little shaky in terms of jerkiness and tile loading, so I'll make that the minimum, but very few spots will even push against that
+		const cameraPitch = Math.max(66, calculatePitch(initialElevation, 1000*distance(cameraRoute[0], targetRoute[0])));
 		// console.log('Calculated Pitch:', cameraPitch, 'Elevation:', initialElevation, 'Distance:', 1000*distance(cameraRoute[0], targetRoute[0]))
 		const { zoom, center } = precalculateInitialCamera({ map, cameraStart: cameraRoute[0], initialElevation, initialBearing, cameraPitch });
 
 		// Fly to clicked point and pitch camera (initial "raindrop" animation)
 		flyToPoint({ map, center, zoom, bearing: initialBearing, pitch: cameraPitch });
-		// vizState.update(() => "running" );
 		vizState = "running";
 		// const locationTracerPoint = addLocationMarker({ map, origin: coordinatePath[0] });
 
 		// Maintain a consistent speed using the route distance. The higher the speed coefficient, the slower the runner will move.
-		const speedCoefficient = smoothedPath.length < 50 ? 300 : 120;
+		const speedCoefficient = smoothedPath.length < 50 ? 200 : 125 - (cameraPitch - 65);
 		const animationDuration = Math.round(speedCoefficient*routeDistance);
 
 		map.once('moveend', () => {
 			// When "raindrop" animation is finished, begin river run
-			runRiver({ map,
-						animationDuration,
-						cameraBaseAltitude,
-						cameraPitch,
-						targetRoute,
-						cameraRoute,
-						coordinatePath,
-						routeDistance,
-						cameraRouteDistance,
-						trueRouteDistance,
-						elevations,
-						riverFeatures
-					});
+			runRiver({
+				map,
+				animationDuration,
+				cameraBaseAltitude,
+				cameraPitch,
+				targetRoute,
+				cameraRoute,
+				coordinatePath,
+				routeDistance,
+				cameraRouteDistance,
+				trueRouteDistance,
+				elevations,
+				riverFeatures
+			});
 		});
 	}
 
@@ -460,11 +459,12 @@
 	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4300, cameraPitch=70, targetRoute, cameraRoute, coordinatePath, routeDistance, cameraRouteDistance, trueRouteDistance, elevations, riverFeatures }) => {
 		let start;
 
-		activeFeatureIndex.update(() => 0);
-
 		const stopPoints = riverFeatures.map(d => d.stop_point)
-		let featureIndex = 0;
+		activeFeatureIndex = 0;
 		let stopPoint = stopPoints[0];
+
+
+		// let featureIndex = 0;
 		// let currentFeature = riverFeatures[0];
 		// dispatchFeatureGroupUpdate(riverFeatures, currentFeature);
 
@@ -481,9 +481,8 @@
 			}
 
 			if (stopPoint && phase >= stopPoint) {
-				featureIndex += 1;
-				stopPoint = stopPoints[featureIndex]
-				activeFeatureIndex.update(() => featureIndex);
+				activeFeatureIndex += 1;
+				stopPoint = stopPoints[activeFeatureIndex]
 			}
 
 			// Calculate camera elevation using the base elevation and the elevation at the specific coordinate point
@@ -492,7 +491,7 @@
 			const elevationStepProgress = elevations.length*phase - Math.floor(elevations.length*phase);
 
 			const elevationEstimate = elevationLast + ((elevationNext - elevationLast)*elevationStepProgress);
-			const tickElevation = cameraBaseAltitude + 1.4*Math.round(elevationEstimate);
+			const tickElevation = cameraBaseAltitude + 1.25*Math.round(elevationEstimate);
 
 			const alongRoute = along(
 				lineString(targetRoute),
@@ -511,7 +510,6 @@
 
 			// This will update the location of the marker on the locator map
 			// (may need to add a condition to keep this from updating on every tick, which is probably expensive and not necessary)
-			// currentLocation.update(() => alongRoute );
 			currentLocation = alongRoute;
 
 			window.requestAnimationFrame(frame);
@@ -522,7 +520,7 @@
 
 	const exitNavigation = ({ map }) => {
 		if (!aborted) {
-			activeFeatureIndex.update(index => index + 1);
+			activeFeatureIndex += 1;
 		}
 
 		map.flyTo({
@@ -533,6 +531,8 @@
 			zoom: 6
 		});
 
+		// vizState = "finished";
+
 		map.once('moveend', () => {
 			resetMapState({ map });
 		})
@@ -542,13 +542,10 @@
 		map.interactive = true;
 		map.scrollZoom.enable();
 		aborted = false;
-		
-		// currentLocation.update(() => undefined );
-		// vizState.update(() => "uninitialized");
 
 		currentLocation = undefined;
+		activeFeatureIndex = -1;
 		vizState = "uninitialized";
-		
 
 		d3.select(".mapboxgl-ctrl-geocoder").style("display", "block");
 	}
@@ -664,6 +661,7 @@
 	}
 
 	const exitFunction = () => {
+		console.log("fired");
 		aborted = true;
 	}
 
@@ -713,5 +711,5 @@
 </div>
 
 <Prompt {vizState} {currentLocation} />
-<NavigationInfo {exitFunction} {vizState} />
-<LocatorMap {bounds} {stateBoundaries} visibleIndex={null} {riverPath} {currentLocation} {vizState} />
+<NavigationInfo on:abort-run={exitFunction} {vizState} {activeFeatureIndex} {featureGroups} />
+<LocatorMap {bounds} {stateBoundaries} visibleIndex={null} {riverPath} {currentLocation} {vizState} {activeFeatureIndex} {featureGroups} />

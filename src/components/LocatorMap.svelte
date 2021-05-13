@@ -1,10 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { mapbox } from '../mapbox.js';
-
 	import { tick } from 'svelte';
-	import { featureGroups, activeFeatureIndex } from '../state';
-	// riverPath, currentLocation, vizState
 
 	export let bounds = [[-125, 24], [-66, 51]];
 	export let visibleIndex;
@@ -15,41 +12,42 @@
 	export let currentLocation;
 	export let vizState;
 
+	export let featureGroups;
+	export let activeFeatureIndex;
+
 	let width = 0;
 
 	let container;
 	let map;
-	let featureGroupData;
     
     let marker = null;
     let markerEl;
 
-	// $: visibleIndex = vizState === "running" ? 1 : null;
-	// $: if (riverPath) { drawFlowPath({ map, featureData: riverPath, sourceID: 'locator-path' }); };
-	// $: if (currentLocation && currentLocation !== undefined) { plotCurrentLocation({ map, location }); } else if (marker) { marker.remove(); }
-
-	// const unsubscribeVizState = vizState.subscribe(state => {
-	// 	visibleIndex = state === "running" ? 1 : null;
-	// });
-
-	// const unsubscribeRiverPath = riverPath.subscribe(featureData => {
-	// 	if (featureData) {
-	// 		drawFlowPath({ map, featureData, sourceID: 'locator-path' });
-	// 	}
-	// });
-
-	// const unsubscribeLocation = currentLocation.subscribe(location => {
-	// 	if (location && location !== undefined) {
-	// 		plotCurrentLocation({ map, location });
-	// 	} 
-	// 	else if (marker) {
-	// 		marker.remove();
-	// 	}
-	// });
+	const mainPathLayerID = 'locator-path';
 
 	$: visibleIndex = vizState === "running" ? 1 : null;
-	$: if (riverPath && map) { drawFlowPath({ map, featureData: riverPath, sourceID: 'locator-path' }); };
+	$: if (riverPath && map) { drawFlowPath({ map, featureData: riverPath, sourceID: mainPathLayerID }); };
 	$: if (map && currentLocation && currentLocation !== undefined) { plotCurrentLocation({ map, location: currentLocation }); } else if (marker) { marker.remove(); }
+
+	$: if (featureGroups.length > 0) {
+		featureGroups.forEach(({ feature_data, index }) => {
+			drawFlowPath({ map, featureData: feature_data, sourceID: `active-path-${index}`, lineColor: "yellow", lineWidth: 2, visible: false });
+		});
+
+		map.moveLayer(mainPathLayerID);
+	};
+
+	$: if (activeFeatureIndex !== -1 && featureGroups) {		
+		// Hide any previous indices. Technically we should only need to hide the last one, but we'll do this as a catch-all unless it's too slow
+		[...Array(activeFeatureIndex).keys()].forEach(previousIndex => {
+			map.setLayoutProperty(`active-path-${previousIndex}`, "visibility", "none");
+		});
+		
+		// Make the current section visible, unless we're at the stopping feature
+		if (activeFeatureIndex < featureGroups.length) {
+			map.setLayoutProperty(`active-path-${activeFeatureIndex}`, "visibility", "visible");
+		}
+	}
 
 	onMount(async () => {
 		await tick();
@@ -80,39 +78,6 @@
 				
 			});
 
-            // const unsubscribeRiverPath = riverPath.subscribe(featureData => {
-            //     if (featureData) {
-            //         drawFlowPath({ map, featureData, sourceID: 'locator-path' });
-            //     }
-            // });
-
-            // const unsubscribeLocation = currentLocation.subscribe(location => {
-            //     if (location && location !== undefined) {
-            //         plotCurrentLocation({ map, location });
-            //     } 
-            //     else if (marker) {
-            //         marker.remove();
-            //     }
-            // });
-
-			const unsubscribeFeatureGroups = featureGroups.subscribe(featureGroups => {
-				if (featureGroups.length > 0) {
-					featureGroupData = featureGroups;
-
-					featureGroupData.forEach(({ feature_data, index }) => {
-						drawFlowPath({ map, featureData: feature_data, sourceID: `active-path-${index}`, lineColor: "yellow", lineWidth: 2, visible: false });
-					})
-				}
-			})
-
-			const unsubscribeActiveFeatureIndex = activeFeatureIndex.subscribe(featureIndex => {
-				if (featureIndex !== null) {
-					// const featureData = featureGroupData[featureIndex].feature_data;
-					// drawFlowPath({ map, featureData, sourceID: 'active-path', lineColor: "yellow", lineWidth: 2 });
-					// map.setLayoutProperty(`active-path-${featureIndex}`, "visibility", "visible");
-				}	
-			})
-
             marker = new mapbox.Marker({element: markerEl})
                 .setLngLat([0,0])
                 .addTo(map);
@@ -120,10 +85,6 @@
         };
 
 		document.head.appendChild(link);
-
-		// const unsubscribeVizState = vizState.subscribe(state => {
-		// 	visibleIndex = state === "running" ? 1 : null;
-		// });
 
 		return () => {
 			map.remove();

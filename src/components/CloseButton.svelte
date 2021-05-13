@@ -1,7 +1,10 @@
 <script>
-    import { onMount } from 'svelte';
+    import { createEventDispatcher } from 'svelte';
 
-    export let exitFunction;
+    const dispatch = createEventDispatcher();
+    const abortRun = () => {
+        dispatch('abort-run')
+    }
 </script>
 
 <!-- Styling mostly from here: https://svelte.dev/repl/fdbb69a2c3744cfe956a370c824eb4df?version=3.15.0 -->
@@ -88,4 +91,4 @@
 </style>
 
 <!-- style="display: {activeIndex >= 0 ? "block" : "none"};" -->
-<button on:click={exitFunction} class="close"></button>
+<button on:click={abortRun} class="close"></button>

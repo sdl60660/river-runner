@@ -20,6 +20,9 @@
     else if (vizState === "uninitialized") {
         resetPrompt();
     }
+    // else if (vizState === "finished") {
+    //     message = `You have arrived at ${stoppingFeature}!`;
+    // }
 
     const findLocation = async ({ coordinates }) => {
         const response = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${coordinates.lng},${coordinates.lat}.json?access_token=pk.eyJ1Ijoic2FtbGVhcm5lciIsImEiOiJja2IzNTFsZXMwaG44MzRsbWplbGNtNHo0In0.BmjC6OX6egwKdm0fAmN_Nw`)

@@ -1,17 +1,18 @@
 <script>
     import { onMount } from 'svelte';
-    import { featureGroups, activeFeatureIndex, stoppingFeature, startLocation } from '../state';
+    import { stoppingFeature, startLocation } from '../state';
 
     import CloseButton from './CloseButton.svelte';
 
-    export let exitFunction;
     export let vizState;
+    export let featureGroups = [];
+    export let activeFeatureIndex;
     
     let visible = false;
     let screenWidth = 0;
 
-    let features = [];
-    let activeIndex = -1;
+    // let features = [];
+    // let activeIndex = -1;
 
     let currentStoppingFeature = null;
     let currentStartLocation = null;
@@ -19,17 +20,17 @@
     $: visible = (vizState === "running") ? true : (vizState === "uninitialized") ? false : visible;
     $: activeIndex = (vizState === "uninitialized") ? -1 : activeIndex;
 
+    // const unsubscribeFeatureGroups = featureGroups.subscribe(featureData => {
+    //     features = featureData;
+    // });
+
+    // const unsubscribeActiveFeatureIndex = activeFeatureIndex.subscribe(featureIndex => {
+    //     if (activeFeatureIndex !== null) {
+    //         activeIndex = featureIndex;
+    //     }	
+    // });
+
     onMount(() => {
-
-        const unsubscribeFeatureGroups = featureGroups.subscribe(featureData => {
-            features = featureData;
-        });
-
-        const unsubscribeActiveFeatureIndex = activeFeatureIndex.subscribe(featureIndex => {
-            if (activeFeatureIndex !== null) {
-                activeIndex = featureIndex;
-            }	
-        });
 
         const unsubscribeStoppingFeature = stoppingFeature.subscribe(featureName => {
             currentStoppingFeature = featureName;
@@ -49,7 +50,7 @@
     .navbox-wrapper {
         position: absolute;
         z-index: 20;
-        left: calc(100% - 340px);
+        left: calc(100% - 375px);
         /* transform: translateX(-50%); */
         top: 2rem;
     }
@@ -90,7 +91,7 @@
         background-color: white;
         border: 1px solid rgb(56, 56, 56);
         border-radius: 2px;
-        
+
         padding-left: 6px;
         padding-right: 6px;
         border-radius: 2px;
@@ -138,22 +139,28 @@
 
 <svelte:window bind:innerWidth={screenWidth} />
 
-<div class="navbox-wrapper" style={`display: ${visible === true && (screenWidth > 600 || (activeIndex >= 0 && features)) ? "block" : "none"};`}>
+<div class="navbox-wrapper" style={`display: ${visible === true && (screenWidth > 600 || (activeFeatureIndex >= 0 && featureGroups)) ? "block" : "none"};`}>
 
     <div class="info-box">
 
         {#if screenWidth > 600}
             <div class="feature-listing bounding-location">{currentStartLocation}</div>
-            {#each features as { name, length_km, index }, i}
-                <div style="font-weight:{index === activeIndex ? "bold" : "normal"};" key={i} class="feature-listing">{i+1}. {name} ({length_km} km)</div>
+            {#each featureGroups as { name, length_km, index }, i}
+                <div
+                    style="font-weight:{index === activeFeatureIndex ? "bold" : "normal"};"
+                    key={i}
+                    class="feature-listing"
+                >
+                    {i+1}. {name} ({length_km} km)
+                </div>
             {/each}
             <div class="feature-listing bounding-location">{currentStoppingFeature}</div>
 
-            {#each [currentStartLocation, ...features, currentStoppingFeature] as progressPoint, i}
+            {#each [currentStartLocation, ...featureGroups, currentStoppingFeature] as progressPoint, i}
                 <div style=
                     "
-                    background-color: {activeIndex+1 === i ? "rgb(76, 79, 230)" : activeIndex+1 > i ? "rgb(117, 117, 117)" : "rgb(243, 243, 243)" };
-                    top: calc(1rem + 4px + ({(i / (features.length + 2))}*(100% - 2rem)));
+                    background-color: {activeFeatureIndex+1 === i ? "rgb(76, 79, 230)" : activeFeatureIndex+1 > i ? "rgb(117, 117, 117)" : "rgb(243, 243, 243)" };
+                    top: calc(1rem + 4px + ({(i / (featureGroups.length + 2))}*(100% - 2rem)));
                     "
                     class="progress-point"
                     key={i}>
@@ -162,17 +169,17 @@
 
             <div class="progress-bar"></div>
 
-        {:else if activeIndex >= 0 && features}
-            {#if activeIndex >= features.length}
+        {:else if activeFeatureIndex >= 0 && featureGroups}
+            {#if activeFeatureIndex >= featureGroups.length}
                 <div class="feature-listing">{currentStoppingFeature}</div>
             {:else}
-                <div class="feature-listing">{features[activeIndex].name} ({features[activeIndex].length_km} km)</div>
+                <div class="feature-listing">{featureGroups[activeFeatureIndex].name} ({featureGroups[activeFeatureIndex].length_km} km)</div>
             {/if}
         {/if}
 
     </div>
     
-    <div style="display: {activeIndex >= 0 ? "block" : "none"};">
-        <CloseButton {exitFunction} />
+    <div style="display: {activeFeatureIndex >= 0 ? "block" : "none"};">
+        <CloseButton on:abort-run />
     </div>
 </div>
