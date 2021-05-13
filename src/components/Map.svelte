@@ -4,8 +4,8 @@
 	import { tick } from 'svelte';
 	import * as d3 from 'd3';
 
-	import { bearingBetween } from '../utils';
-	import { coordinates, riverPath, currentLocation, vizState, featureGroups, activeFeatureIndex } from '../state';
+	import { bearingBetween, distanceToPolygon } from '../utils';
+	import { coordinates, riverPath, currentLocation, vizState, featureGroups, activeFeatureIndex, stoppingFeature } from '../state';
 	
 	import Prompt from './Prompt.svelte';
 
@@ -16,9 +16,8 @@
 	import destination from '@turf/destination';
 
 	export let bounds = [[-125, 24], [-66, 51]];
-	export let basins;
+	export let stoppingFeatures;
 	export let featureData = undefined;
-	export let coordinateQuadtree = undefined;
 	export let visibleIndex;
 	export let mapStyle;
 	export let addTopo;
@@ -131,23 +130,25 @@
 		const flowlinesResponse = await fetch(flowlinesURL);
 		let flowlinesData = await flowlinesResponse.json();
 		flowlinesData.features = await addVAAData(flowlinesData.features);
-		console.log('flowlines', flowlinesData);
 
 		const riverFeatures = getFeatureGroups(flowlinesData);
 		featureGroups.update(() => riverFeatures);
 
 		const river = flowlinesData.features[0];
 		const originPoint = river.geometry.coordinates[0];
+		const destinationPoint = flowlinesData.features.slice(-1)[0].geometry.coordinates.slice(-1)[0];
 
 		console.log('Clicked on:', e.lngLat, 'Closest point:', originPoint);
 
 		const coordinatePath = flowlinesData.features.length > 2 ? flowlinesData.features.map( feature => feature.geometry.coordinates.slice(-1)[0] )
 															 : flowlinesData.features.map( feature => feature.geometry.coordinates).flat().filter((d,i) => i % 10 === 0);
 
-		console.log('Coordinate path:', coordinatePath);
 		riverPath.update(() => [ { geometry: { coordinates: coordinatePath }} ]);
 		currentLocation.update(() => originPoint );
 		vizState.update(() => "calculating" );
+
+		const pathStoppingFeature = determineStoppingFeature({ destinationPoint, stoppingFeatures });
+		stoppingFeature.update(() => pathStoppingFeature);
 		
 		// Draw river lines from flowline features
 		// drawFlowPath({ map, featureData: [ { geometry: { coordinates: coordinatePath }}]});
@@ -155,7 +156,6 @@
 
 		const smoothedPath = pathSmoother(coordinatePath, Math.min(9, Math.floor(coordinatePath.length / 2)));
 		const cameraTargetIndexGap = Math.min(Math.floor(smoothedPath.length / 2), 8);
-		console.log(smoothedPath, coordinatePath);
 		const artificalCameraStartPoints = createArticialCameraPoints(smoothedPath, cameraTargetIndexGap);
 		// const artificalCameraStartPoints = pathSmoother(createArticialCameraPoints(coordinatePath, cameraTargetIndexGap), 1);
 		
@@ -207,15 +207,52 @@
 		});
 	}
 
+	const determineStoppingFeature = ({ destinationPoint, stoppingFeatures }) => {
+		let minDistance = 10000000;
+		let closestFeature = null;
+		let oceanDistance = null;
+
+		// Find the distance from each polygon in the stop feature dataset
+		stoppingFeatures.forEach(feature => {
+			const featureDistance = distanceToPolygon({ startPoint: destinationPoint, targetPolygon: feature });
+
+			if (featureDistance < minDistance) {
+				minDistance = featureDistance;
+				closestFeature = feature;
+			}
+
+			if (feature.properties.stop_feature_name === "Ocean") {
+				oceanDistance = featureDistance;
+			}
+		})
+
+		// If the closest feature in the stop feature set is more than 100 km away, this is landing on an unidentified inland water feature
+		if (minDistance > 100000) {
+			return "Inland Water Feature";
+		}
+		// Sometimes there's a large inlet/bay that creates artificial distance between the destination point and my imperfect ocean shapefile polygon
+		// It may then think that another feature, like a lake is the "stop feature", (this happens in the Alabama gulf, for example).
+		// We're going to say that if the ocean is within 50km of the stop point, it's very likely the true end point
+		else if (closestFeature.properties.stop_feature_name === "Ocean" || oceanDistance < 50000) {
+			return destinationPoint[0] > -100 ? "Atlantic Ocean" : "Pacific Ocean";
+		}
+		else {
+			return closestFeature.properties.stop_feature_name;
+		}
+	}
+
 	const getFeatureGroups = (flowlinesData) => {
 		const featureNames = flowlinesData.features.filter( feature => feature.properties.feature_name ).map( feature => feature.properties.feature_name );
+		const fullDistance = flowlinesData.features[0].properties.pathlength;
+
 		let riverFeatures = featureNames.filter((item, i, ar) => ar.indexOf(item) === i).map((feature, index) => {
+			
 			const featureData = flowlinesData.features.find(item => item.properties.feature_name === feature);
 			const featureIndex = flowlinesData.features.findIndex(item => item.properties.feature_name === feature);
 
 			return ({
 				feature_data_index: featureIndex,
-				progress: (featureIndex / flowlinesData.features.length),
+				progress: fullDistance === -999 ? (featureIndex / flowlinesData.features.length) : ((fullDistance - featureData.properties.pathlength) / fullDistance),
 				name: feature,
 				distance_from_destination: featureData.properties.pathlength === -9999 ? 0 : featureData.properties.pathlength,
 				index,
@@ -233,8 +270,6 @@
 			trueStopFeatureIndex = riverFeatures.length-1;
 		};
 		riverFeatures = riverFeatures.slice(0, trueStopFeatureIndex+1);
-
-		console.log('check 2', trueStopFeatureIndex, riverFeatures);
 
 		riverFeatures.forEach( (feature, i) => {
 			if (i === riverFeatures.length - 1) {
@@ -408,9 +443,13 @@
 
 	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4000, cameraPitch=70, targetRoute, cameraRoute, coordinatePath, routeDistance, cameraRouteDistance, trueRouteDistance, elevations, riverFeatures }) => {
 		let start;
-		let currentFeature = riverFeatures[0];
-		console.log(riverFeatures, currentFeature);
+
 		activeFeatureIndex.update(() => 0);
+
+		const stopPoints = riverFeatures.map(d => d.stop_point)
+		let featureIndex = 0;
+		let stopPoint = stopPoints[0];
+		// let currentFeature = riverFeatures[0];
 		// dispatchFeatureGroupUpdate(riverFeatures, currentFeature);
 
 		const frame = (time) => {
@@ -422,13 +461,16 @@
 			// When finished, exit animation loop and zoom out to show ending point
 			if (phase > 1) {
 				// console.log('done');
-				showExitPoint({ map });
+				exitNavigation({ map });
 				return;
 			}
 
-			if (currentFeature.stop_point && phase >= currentFeature.stop_point) {
-				currentFeature = riverFeatures[currentFeature.index + 1];
-				activeFeatureIndex.update(() => currentFeature.index);
+			if (stopPoint && phase >= stopPoint) {
+				featureIndex += 1;
+				stopPoint = stopPoints[featureIndex]
+				activeFeatureIndex.update(() => featureIndex);
+
+				// currentFeature = riverFeatures[currentFeature.index + 1];
 				// dispatchFeatureGroupUpdate(riverFeatures, currentFeature);
 			}
 
@@ -471,7 +513,9 @@
 		window.requestAnimationFrame(frame);
 	}
 
-	const showExitPoint = ({ map }) => {
+	const exitNavigation = ({ map }) => {
+		activeFeatureIndex.update(index => index + 1);
+
 		map.flyTo({
 			// bearing: (180+map.getBearing()) % 360,
 			// pitch: 30,
@@ -479,11 +523,6 @@
 			pitch: 0,
 			zoom: 6
 		});
-
-		// const center = map.getCameraPosition().target;
-		// const pixel = map.getProjection().toScreenLocation(center);
-		// const features = map.queryRenderedFeatures(pixel, "water");
-		// console.log(center, pixel, features)
 
 		map.once('moveend', () => {
 			resetMapState({ map });

@@ -1,7 +1,7 @@
 <script>
     import { onMount } from 'svelte';
     import { Moon } from 'svelte-loading-spinners';
-    import { coordinates, riverPath, currentLocation, vizState } from '../state';
+    import { coordinates, riverPath, currentLocation, vizState, stoppingFeature, startLocation } from '../state';
 
     let loading = false;
     let eventActionName = window.innerWidth > 600 ? "Click" : "Tap"
@@ -24,6 +24,8 @@
                 const stateName = addressData.features.find(d => d.place_type.includes('region'))?.text;
 
                 const fullLocationString = placeName ? `${placeName}, ${stateName}` : `${countyName}, ${stateName}`;
+
+                startLocation.update(() => fullLocationString);
 
                 message = `Finding downstream path from ${fullLocationString}`;
                 loading = true;

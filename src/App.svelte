@@ -8,19 +8,21 @@
     import Map from './components/Map.svelte';
 	import Loader from './components/Loader.svelte';
 	import LocatorMap from './components/LocatorMap.svelte';
-import NavigationInfo from './components/NavigationInfo.svelte';
+	import NavigationInfo from './components/NavigationInfo.svelte';
 
 
 	const dataFilePromises = [
-		d3.tsv("data/huc_names.tsv"),
-		d3.json("data/us_states.json")
+		// d3.tsv("data/huc_names.tsv"),
+		d3.json("data/us_states.json"),
+		d3.json("data/stopping_features.json")
 	]
 
 	const dataLoad = Promise.all(dataFilePromises).then( data => {
-		const basinMap = new Map(data[0].map(i => [i.huc, i.basin]));
-		const states = topojson.feature(data[1], data[1].objects.states).features;
+		// const basinMap = new Map(data[0].map(i => [i.huc, i.basin]));
+		const states = topojson.feature(data[0], data[0].objects.states).features;
+		const stoppingFeatures = topojson.feature(data[1], data[1].objects.stopping_features).features;
 		
-		return [basinMap, states];
+		return [states, stoppingFeatures];
 	})
 
     const getDataBounds = (linestringData) => {
@@ -37,8 +39,8 @@ import NavigationInfo from './components/NavigationInfo.svelte';
 {#await dataLoad}
     <Loader />
 {:then data }
-	<LocatorMap bounds={[[-125, 25], [-67, 50]]} visibleIndex={null} stateBoundaries={data[1]} />
-	<Map bounds={[[-125, 24], [-66, 51]]} basins={data[0]} visibleIndex={1} addTopo={true} mapStyle={"mapbox://styles/mapbox-map-design/ckhqrf2tz0dt119ny6azh975y"} />
+	<LocatorMap bounds={[[-125, 25], [-67, 50]]} visibleIndex={null} stateBoundaries={data[0]} />
+	<Map bounds={[[-125, 24], [-66, 51]]} stoppingFeatures={data[1]} visibleIndex={1} addTopo={true} mapStyle={"mapbox://styles/mapbox-map-design/ckhqrf2tz0dt119ny6azh975y"} />
     <NavigationInfo />
 	<!-- <Map bounds={getDataBounds(data[0])} coordinateQuadtree={data[1]} featureData={data[0]} visibleIndex={1} addTopo={true} mapStyle={"mapbox://styles/mapbox-map-design/ckhqrf2tz0dt119ny6azh975y"}/> -->
 {/await}
