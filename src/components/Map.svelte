@@ -8,12 +8,15 @@
 	import { coordinates, riverPath, currentLocation, vizState, featureGroups, activeFeatureIndex, stoppingFeature } from '../state';
 	
 	import Prompt from './Prompt.svelte';
+	import CloseButton from './CloseButton.svelte';
+	import NavigationInfo from './NavigationInfo.svelte';
 
 	import along from '@turf/along';
 	import { featureCollection, lineString } from '@turf/helpers';
 	import lineDistance from '@turf/line-distance';
 	import distance from '@turf/distance';
 	import destination from '@turf/destination';
+import { abort } from 'process';
 
 	export let bounds = [[-125, 24], [-66, 51]];
 	export let stoppingFeatures;
@@ -25,6 +28,9 @@
 	let container;
 	let map;
 	let mapBounds = bounds;
+	let aborted = false;
+	let currentVizState = "uninitialized";
+
 
 	onMount(async () => {
 		await tick();
@@ -146,6 +152,7 @@
 		riverPath.update(() => [ { geometry: { coordinates: coordinatePath }} ]);
 		currentLocation.update(() => originPoint );
 		vizState.update(() => "calculating" );
+		currentVizState = "calculating";
 
 		const pathStoppingFeature = determineStoppingFeature({ destinationPoint, stoppingFeatures });
 		stoppingFeature.update(() => pathStoppingFeature);
@@ -182,6 +189,7 @@
 		// Fly to clicked point and pitch camera (initial "raindrop" animation)
 		flyToPoint({ map, center, zoom, bearing: initialBearing, pitch: cameraPitch });
 		vizState.update(() => "running" );
+		currentVizState = "running";
 		// const locationTracerPoint = addLocationMarker({ map, origin: coordinatePath[0] });
 
 		// Maintain a consistent speed using the route distance. The higher the speed coefficient, the slower the runner will move.
@@ -458,8 +466,7 @@
 			const phase = (time - start) / animationDuration;
 
 			// When finished, exit animation loop and zoom out to show ending point
-			if (phase > 1) {
-				// console.log('done');
+			if (phase > 1 || aborted === true) {
 				exitNavigation({ map });
 				return;
 			}
@@ -468,9 +475,6 @@
 				featureIndex += 1;
 				stopPoint = stopPoints[featureIndex]
 				activeFeatureIndex.update(() => featureIndex);
-
-				// currentFeature = riverFeatures[currentFeature.index + 1];
-				// dispatchFeatureGroupUpdate(riverFeatures, currentFeature);
 			}
 
 			// Calculate camera elevation using the base elevation and the elevation at the specific coordinate point
@@ -490,15 +494,9 @@
 				lineString(cameraRoute),
 				cameraRouteDistance * phase
 			).geometry.coordinates;
-
-			// const alongMarker = along(
-			// 	lineString(coordinatePath),
-			// 	trueRouteDistance * phase
-			// );
-			// map.getSource('location-marker').setData(alongMarker);
 						
 			const bearing = bearingBetween( alongCamera, alongRoute );
-			
+		
 			// Generate/position a camera along route, pointed in direction of target point at set pitch
 			positionCamera({ map, cameraCoordinates: alongCamera, elevation: tickElevation, pitch: cameraPitch, bearing });
 
@@ -531,9 +529,11 @@
 	const resetMapState = ({ map }) => {
 		map.interactive = true;
 		map.scrollZoom.enable();
+		aborted = false;
 		
 		currentLocation.update(() => undefined );
 		vizState.update(() => "uninitialized");
+		currentVizState = "uninitialized";
 
 		d3.select(".mapboxgl-ctrl-geocoder").style("display", "block");
 	}
@@ -648,6 +648,10 @@
 		})
 	}
 
+	const exitFunction = () => {
+		aborted = true;
+	}
+
 	$: coordinates.update(() => {
 		if (mapBounds._sw) {
 			return [
@@ -660,7 +664,7 @@
 </script>
 
 <style>
-	div {
+	.map-wrapper {
 		position: absolute;
 		width: 100vw;
 		height: 100vh;
@@ -668,20 +672,34 @@
 	}
 
 	@media only screen and (max-width: 600px) {
-		div {
+		.map-wrapper {
 			height: calc(100% - 20vh);
 			top: 20vh;
 		}
 	
 	}
+
+	.abort-navigation {
+		position: absolute;
+		z-index: 100;
+		top: 1rem;
+		right: 1rem;
+		cursor: pointer;
+	}
+
 </style>
 
 <svelte:window on:resize={handleResize} />
 
-<div style="opacity: {visibleIndex ? 1 : 0}" bind:this={container}>
+<div class="map-wrapper" style="opacity: {visibleIndex ? 1 : 0}" bind:this={container}>
 	{#if map}
 		<slot />
 	{/if}
 </div>
 
 <Prompt />
+<NavigationInfo {exitFunction}/>
+
+<!-- <div class="abort-navigation" style="display: {currentVizState === "running" ? "block" : "none"}">
+	<CloseButton {exitFunction} />
+</div> -->

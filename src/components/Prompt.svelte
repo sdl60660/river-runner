@@ -97,7 +97,7 @@
             transform: unset;
             box-shadow: unset;
 
-            font-size: 16px;
+            font-size: 1rem;
         }
 
         .spinner {

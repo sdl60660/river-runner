@@ -41,6 +41,6 @@
 {:then data }
 	<LocatorMap bounds={[[-125, 25], [-67, 50]]} visibleIndex={null} stateBoundaries={data[0]} />
 	<Map bounds={[[-125, 24], [-66, 51]]} stoppingFeatures={data[1]} visibleIndex={1} addTopo={true} mapStyle={"mapbox://styles/mapbox-map-design/ckhqrf2tz0dt119ny6azh975y"} />
-    <NavigationInfo />
+    <!-- <NavigationInfo /> -->
 	<!-- <Map bounds={getDataBounds(data[0])} coordinateQuadtree={data[1]} featureData={data[0]} visibleIndex={1} addTopo={true} mapStyle={"mapbox://styles/mapbox-map-design/ckhqrf2tz0dt119ny6azh975y"}/> -->
 {/await}
