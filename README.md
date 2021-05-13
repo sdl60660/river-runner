@@ -6,6 +6,13 @@ I've used mapbox to animate the downstream path, but needed to make all sorts of
 
 I've hosted a dataset with NHDPlus [Value Added Attributes](https://www.usgs.gov/core-science-systems/ngp/national-hydrography/value-added-attributes-vaas) on Firebase, which allows me to group flowlines into their parent features and determine distances quickly.
 
-Here's a section of the path from Yellowstone National Park out to the Atlantic Oean:
+## Examples
+
+Here are some examples of what it looks like in action.
+
+This is a section of the path from Yellowstone National Park out to the Atlantic Ocean:
 
 ![Screenshot of the river runner in progress from Yellowstone National Park to the Atlantic Ocean. Mountain features and river are visible.](https://github.com/sdl60660/river-runner/blob/main/public/images/preview_image.png?raw=true)
+
+Here's part of the path from Southwest Arizona down to the Mexican border:
+![Screenshot of the river runner in progress from Southwest Arizona to Mexican border. Mountain features, desert, and river are visible.](https://github.com/sdl60660/river-runner/blob/main/public/images/example-2-az.png?raw=true)
