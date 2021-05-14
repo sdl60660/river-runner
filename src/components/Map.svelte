@@ -152,7 +152,7 @@
 
 		// Construct full coordinate path by taking the first coordinate in each flowline (each coordinate in the flowline is an unnecessary level of detail)
 		const coordinatePath = flowlinesData.features.length > 3 ? flowlinesData.features.map( feature => feature.geometry.coordinates.slice(-1)[0] )
-															 : flowlinesData.features.map( feature => feature.geometry.coordinates).flat().filter((d,i) => i % 10 === 0);
+															 : flowlinesData.features.map( feature => feature.geometry.coordinates).flat().filter((d,i) => i % 3 === 0);
 
 		// Update props used by child components
 		riverPath = [{ geometry: { coordinates: coordinatePath }}];
