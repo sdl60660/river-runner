@@ -13,7 +13,7 @@
 
         position: absolute;
         z-index: 30;
-        font-size: .81rem;
+        font-size: .9rem;
         bottom: 1rem;
         right: 1rem;
         max-width: 30rem;
@@ -29,6 +29,11 @@
 
     .contact-box a {
         text-decoration: none;
+    }
+
+    .contact-box p {
+        margin-block-start: 0.7em;
+        margin-block-end: 0.7em;
     }
 
     .icon-img {
