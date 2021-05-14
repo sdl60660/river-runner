@@ -17,3 +17,12 @@ This is a section of the path from Yellowstone National Park out to the Atlantic
 Here's part of the path from Southwest Arizona down to the Mexican border:
 
 ![Screenshot of the river runner in progress from Southwest Arizona to Mexican border. Mountain features, desert, and river are visible.](https://github.com/sdl60660/river-runner/blob/main/public/images/example-2-az.png?raw=true)
+
+## Running this on your own
+
+If you'd like to run this locally and play around with it, just run the following commands in your terminal:
+
+1. `git clone https://github.com/sdl60660/river-runner.git`
+2. `cd river-runner`
+3. `npm install`
+4. `npm run dev` (then follow the link to the local server, probably `http://localhost:5000`)
