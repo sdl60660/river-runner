@@ -283,6 +283,7 @@
 		// It may then think that another feature, like a lake is the "stop feature", (this happens in the Alabama gulf, for example).
 		// We're going to say that if the ocean is within 50km of the stop point, it's very likely the true end point
 		else if (closestFeature.properties.stop_feature_name === "Ocean" || oceanDistance < 50000) {
+			// Gulf of Mexico: lng < -82 && lat < 31
 			return destinationPoint[0] > -100 ? "Atlantic Ocean" : "Pacific Ocean";
 		}
 		else {
@@ -731,11 +732,19 @@
 	@media only screen and (max-width: 600px) {
 		.map-wrapper {
 			/* this prevents some weird stuff on mobile screens when the geolocator search suggestons come up*/
-			height: max(400px, calc(100% - 20vh));
+			/* height: max(400px, calc(100% - 20vh)); */
+			height: calc(100% - 20vh);
 			top: 20vh;
 		}
-	
 	}
+
+	/* Keyboard open */
+	@media only screen and (max-width: 600px) and (max-height: 400px) {
+        .map-wrapper {
+            height: 100vh;
+			top: 0;
+        }
+    }
 
 </style>
 

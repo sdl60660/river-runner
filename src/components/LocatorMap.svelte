@@ -205,6 +205,13 @@
 		}
 	}
 
+	 /* Keyboard open */
+	 @media only screen and (max-width: 600px) and (max-height: 400px) {
+        .map {
+            display: none !important;
+        }
+    }
+
 	/* Tablet */
     @media only screen and (min-width: 601px) and (max-width: 1100px) {
         .map {
