@@ -1,6 +1,5 @@
 <script>
-
-    export let contactBoxVisible;
+    export let vizState;
 
 </script>
 
@@ -68,7 +67,7 @@
 
 </style>
 
-<div style="display: {contactBoxVisible === false ? "none" : "block"};" class={"contact-box"}>
+<div style="display: {vizState === "running" ? "none" : "block"};" class={"contact-box"}>
     {#if window.innerWidth > 600}
         <p><strong>Visualization by <a target="_blank" href="https://bit.ly/main-project-site">Sam Learner</a></strong> |
             <a target="_blank" href="https://twitter.com/sam_learner"><img class="icon-img" src="/images/twitter.svg" alt="twitter link"/></a> |

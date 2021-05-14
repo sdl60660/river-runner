@@ -1,5 +1,5 @@
 <script>
-	import { tick, createEventDispatcher, onMount } from 'svelte';
+	import { tick, onMount } from 'svelte';
 	import { mapbox } from '../mapbox.js';
 	import * as d3 from 'd3';
 
@@ -9,7 +9,7 @@
 	import Prompt from './Prompt.svelte';
 	import NavigationInfo from './NavigationInfo.svelte';
 	import LocatorMap from './LocatorMap.svelte';
-	// import ContactBox from './ContactBox.svelte';
+	import ContactBox from './ContactBox.svelte';
 
 	import along from '@turf/along';
 	import { featureCollection, lineString } from '@turf/helpers';
@@ -715,8 +715,8 @@
 		}
 	});
 
-	const dispatch = createEventDispatcher();
-	$: (vizState === "running") ? dispatch('source-toggle', { visible: false }) : dispatch('source-toggle', { visible: true });
+	// const dispatch = createEventDispatcher();
+	// $: (vizState === "running") ? dispatch('source-toggle', { visible: false }) : dispatch('source-toggle', { visible: true });
 
 </script>
 
@@ -750,4 +750,4 @@
 <Prompt {vizState} {currentLocation} />
 <NavigationInfo on:abort-run={exitFunction} on:progress-set={(e) => handleJump(e) } {vizState} {activeFeatureIndex} {featureGroups} {totalLength} />
 <LocatorMap {bounds} {stateBoundaries} visibleIndex={null} {riverPath} {currentLocation} {vizState} {activeFeatureIndex} {featureGroups} />
-<!-- <ContactBox {vizState} /> -->
+<ContactBox {vizState} />

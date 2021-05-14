@@ -4,9 +4,6 @@
 
     import Map from './components/Map.svelte';
 	import Loader from './components/Loader.svelte';
-	import ContactBox from './components/ContactBox.svelte';
-
-	let contactBoxVisible = true;
 
 	const dataFilePromises = [
 		d3.json("data/us_states.json"),
@@ -26,6 +23,5 @@
 {#await dataLoad}
     <Loader />
 {:then data }
-	<Map on:source-toggle={(e) => { contactBoxVisible = e.detail.visible }} bounds={[[-125, 24], [-66, 51]]} stateBoundaries={data[0]} stoppingFeatures={data[1]} visibleIndex={1} addTopo={true} mapStyle={"mapbox://styles/mapbox-map-design/ckhqrf2tz0dt119ny6azh975y"} />
-	<ContactBox {contactBoxVisible} />
+	<Map bounds={[[-125, 24], [-66, 51]]} stateBoundaries={data[0]} stoppingFeatures={data[1]} visibleIndex={1} addTopo={true} mapStyle={"mapbox://styles/mapbox-map-design/ckhqrf2tz0dt119ny6azh975y"} />
 {/await}
