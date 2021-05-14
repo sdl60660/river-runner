@@ -18,6 +18,7 @@
     $: visible = (vizState === "running") ? true : (vizState === "uninitialized") ? false : visible;
 
     const dispatch = createEventDispatcher();
+    
     const setPhase = (pathProgress, featureIndex) => {
         if ( activeFeatureIndex >= 0 ) {
             dispatch('progress-set', { pathProgress, featureIndex })

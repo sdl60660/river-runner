@@ -27,8 +27,8 @@
         border-radius: 1.5rem;
         background: white;
         box-shadow: 0 0 0 1px black;
-        transition: transform 0.2s cubic-bezier(0.25, 0.1, 0.25, 1),
-                    background 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+        /* transition: transform 0.2s cubic-bezier(0.25, 0.1, 0.25, 1),
+                    background 0.2s cubic-bezier(0.25, 0.1, 0.25, 1); */
         -webkit-appearance: none;
     }
 
@@ -42,8 +42,8 @@
         height: 1px;
         background: black;
         transform-origin: center;
-        transition: height 0.2s cubic-bezier(0.25, 0.1, 0.25, 1),
-                    background 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+        /* transition: height 0.2s cubic-bezier(0.25, 0.1, 0.25, 1),
+                    background 0.2s cubic-bezier(0.25, 0.1, 0.25, 1); */
     }
 
     .close:before {
@@ -74,9 +74,9 @@
         box-shadow: 0 0 0 2px #3399ff;
     }
 
-    .close:active {
+    /* .close:active {
         transform: scale(0.9);
-    }
+    } */
 
     .close:hover, .close:focus, .close:active {
         outline: none;

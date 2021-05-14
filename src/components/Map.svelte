@@ -1,7 +1,6 @@
 <script>
-	import { onMount } from 'svelte';
+	import { tick, createEventDispatcher, onMount } from 'svelte';
 	import { mapbox } from '../mapbox.js';
-	import { tick } from 'svelte';
 	import * as d3 from 'd3';
 
 	import { bearingBetween, distanceToPolygon } from '../utils';
@@ -10,7 +9,7 @@
 	import Prompt from './Prompt.svelte';
 	import NavigationInfo from './NavigationInfo.svelte';
 	import LocatorMap from './LocatorMap.svelte';
-	import ContactBox from './ContactBox.svelte';
+	// import ContactBox from './ContactBox.svelte';
 
 	import along from '@turf/along';
 	import { featureCollection, lineString } from '@turf/helpers';
@@ -40,6 +39,7 @@
 	let totalLength;
 
 	let phaseJump;
+
 
 	onMount(async () => {
 		await tick();
@@ -112,59 +112,69 @@
 	}
 
 	const initRunner = async ({ map, e }) => {
+		// If a click is in the middle of processing, just return
 		if (map.interactive === false) {
 			return;
 		}
 
+		// Turn off map interactivity
 		map.interactive = false;
 		map.scrollZoom.disable();
 		d3.select(".mapboxgl-ctrl-geocoder").style("display", "none");
 
 		currentLocation = e.lngLat;
 		
+		// Use the NLDI API to find the closest flowline coordinate to the click
 		const closestFeature = await findClosestFeature(e);
 
+		// If no feature can be found, even after rounding coordinates off, send error message and reset
 		if ( !closestFeature ) {
 			vizState = "error";
 			resetMapState({ map, error: true });
 			return;
 		}
 		
-		const flowlinesURL = closestFeature.properties.navigation + '/DM/flowlines?f=json&distance=6000';
-		const flowlinesResponse = await fetch(flowlinesURL);
-		let flowlinesData = await flowlinesResponse.json();
+		// Get downstream flowline path from origin point
+		let flowlinesData = await getDownStreamFlowlines(closestFeature);
 		flowlinesData.features = await addVAAData(flowlinesData.features);
 		
+		// Find the parent features of flowlines along the path
 		totalLength = flowlinesData.features[0].properties.pathlength > 0 ? flowlinesData.features[0].properties.pathlength : undefined;
 		const riverFeatures = getFeatureGroups(flowlinesData);
 		featureGroups = riverFeatures;
 
-		const river = flowlinesData.features[0];
-		const originPoint = river.geometry.coordinates[0];
+		// Find start and end points
+		const startRiver = flowlinesData.features[0];
+		const originPoint = startRiver.geometry.coordinates[0];
 		const destinationPoint = flowlinesData.features.slice(-1)[0].geometry.coordinates.slice(-1)[0];
 
-		console.log('Clicked on:', e.lngLat, 'Closest point:', originPoint);
+		// console.log('Clicked on:', e.lngLat, 'Closest point:', originPoint);
 
+		// Construct full coordinate path by taking the first coordinate in each flowline (each coordinate in the flowline is an unnecessary level of detail)
 		const coordinatePath = flowlinesData.features.length > 3 ? flowlinesData.features.map( feature => feature.geometry.coordinates.slice(-1)[0] )
 															 : flowlinesData.features.map( feature => feature.geometry.coordinates).flat().filter((d,i) => i % 10 === 0);
 
+		// Update props used by child components
 		riverPath = [{ geometry: { coordinates: coordinatePath }}];
 		currentLocation = originPoint;
 		vizState = "calculating";
 
+		// Determine stopping feature by finding closest feature in stopping feature dataset
 		const pathStoppingFeature = determineStoppingFeature({ destinationPoint, stoppingFeatures });
 		stoppingFeature.update(() => pathStoppingFeature);
 		
 		// Draw river lines from flowline features
-		// drawFlowPath({ map, featureData: [ { geometry: { coordinates: coordinatePath }}]});
 		drawFlowPath({ map, featureData: flowlinesData.features, lineWidth: 2 })
 
+		// Create smoothed path by averaging coordinates with their neighbors. This helps reduce horizontal movement with bendy rivers.
 		const smoothedPath = pathSmoother(coordinatePath, Math.min(9, Math.floor(coordinatePath.length / 2)));
+		
+		// Create a set of artificial coordinate points before the first point for the camera track, which will be offset from the true coordinate path by (cameraTargetIndexGap) points
 		const cameraTargetIndexGap = Math.min(Math.floor(smoothedPath.length / 2), 11);
 		const artificalCameraStartPoints = createArticialCameraPoints(smoothedPath, coordinatePath, cameraTargetIndexGap, originPoint);
-		
-		const targetRoute = smoothedPath;
 		const cameraRoute = artificalCameraStartPoints.concat(smoothedPath.slice(0, -cameraTargetIndexGap));
+
+		const targetRoute = smoothedPath;
 		
 		// get the overall distance of each route so we can interpolate along them
 		const routeDistance = pathDistance(targetRoute);
@@ -182,11 +192,9 @@
 
 		// We'll calculate the pitch based on the altitude/distance from camera to target
 		const cameraPitch = calculatePitch(initialElevation, 1000*distance(cameraRoute[0], targetRoute[0]));
-		// console.log('Calculated Pitch:', cameraPitch, 'Elevation:', initialElevation, 'Distance:', 1000*distance(cameraRoute[0], targetRoute[0]))
 		const { zoom, center } = precalculateInitialCamera({ map, cameraStart: cameraRoute[0], initialElevation, initialBearing, cameraPitch });
 
 		// Fly to clicked point and pitch camera (initial "raindrop" animation)
-		// flyToPoint({ map, center, zoom, bearing: initialBearing, pitch: cameraPitch });
 		map.flyTo({center, zoom, speed: 0.9, curve: 1, pitch: cameraPitch, bearing: initialBearing,
 			easing(t) {
 				return t;
@@ -200,7 +208,7 @@
 		const animationDuration = Math.round(speedCoefficient*routeDistance);
 
 		map.once('moveend', () => {
-			// When "raindrop" animation is finished, begin river run
+			// When "raindrop" animation (flyto) is finished, begin the river run
 			runRiver({
 				map,
 				animationDuration,
@@ -239,6 +247,13 @@
 		}
 
 		return closestFeature;
+	}
+
+	const getDownStreamFlowlines = async (closestFeature) => {
+		const flowlinesURL = closestFeature.properties.navigation + '/DM/flowlines?f=json&distance=6000';
+		const flowlinesResponse = await fetch(flowlinesURL);
+		const flowlinesData = await flowlinesResponse.json();
+		return flowlinesData;
 	}
 
 	const determineStoppingFeature = ({ destinationPoint, stoppingFeatures }) => {
@@ -491,21 +506,16 @@
 		activeFeatureIndex = 0;
 		let stopPoint = stopPoints[0];
 
-		// let featureIndex = 0;
-		// let currentFeature = riverFeatures[0];
-		// dispatchFeatureGroupUpdate(riverFeatures, currentFeature);
-
 		const frame = (time) => {
 			if (!start) start = time;
 
+			// If a user has clicked one of the features in the navigation box, we'll need to adjust the "phase" to jump to that feature
 			if (phaseJump !== undefined) {
 				const currentProgress = (time - start);
 				const newProgress = phaseJump * animationDuration;
 
 				start += currentProgress - newProgress;
 				stopPoint = stopPoints[activeFeatureIndex];
-
-				console.log(start, stopPoint, phaseJump)
 
 				phaseJump = undefined;
 			}
@@ -563,14 +573,10 @@
 		}
 
 		map.flyTo({
-			// bearing: (180+map.getBearing()) % 360,
-			// pitch: 30,
 			bearing: 0,
 			pitch: 0,
 			zoom: 6
 		});
-
-		// vizState = "finished";
 
 		map.once('moveend', () => {
 			resetMapState({ map });
@@ -696,8 +702,6 @@
 	}
 
 	const handleJump = (e) => {
-		// console.log(e.detail);
-
 		activeFeatureIndex = e.detail.featureIndex;
 		phaseJump = e.detail.pathProgress;
 	}
@@ -710,6 +714,9 @@
 			];
 		}
 	});
+
+	const dispatch = createEventDispatcher();
+	$: (vizState === "running") ? dispatch('source-toggle', { visible: false }) : dispatch('source-toggle', { visible: true });
 
 </script>
 
@@ -743,4 +750,4 @@
 <Prompt {vizState} {currentLocation} />
 <NavigationInfo on:abort-run={exitFunction} on:progress-set={(e) => handleJump(e) } {vizState} {activeFeatureIndex} {featureGroups} {totalLength} />
 <LocatorMap {bounds} {stateBoundaries} visibleIndex={null} {riverPath} {currentLocation} {vizState} {activeFeatureIndex} {featureGroups} />
-<ContactBox {vizState} />
+<!-- <ContactBox {vizState} /> -->
