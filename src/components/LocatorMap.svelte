@@ -208,7 +208,7 @@
 	 /* Keyboard open */
 	 @media only screen and (max-width: 600px) and (max-height: 400px) {
         .map {
-            display: none !important;
+            opacity: 0 !important;
         }
     }
 
