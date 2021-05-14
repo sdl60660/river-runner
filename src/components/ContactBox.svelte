@@ -16,7 +16,7 @@
         font-size: .9rem;
         bottom: 1rem;
         right: 1rem;
-        max-width: 30rem;
+        max-width: 32rem;
         /* left: 50%;
         transform: translateX(-50%);
         top: 1rem; */
