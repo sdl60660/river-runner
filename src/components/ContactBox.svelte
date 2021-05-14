@@ -55,7 +55,7 @@
             bottom: 0;
             padding: 5px;
             background-color: white;
-            width: 100%;
+            width: calc(100% - 10px);
             text-align: center;
         }
     }
