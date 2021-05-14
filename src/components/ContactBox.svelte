@@ -60,6 +60,12 @@
         }
     }
 
+    @media only screen and (max-width: 380px) {
+        .contact-box {
+            font-size: 0.85rem;
+        }
+    }
+
 </style>
 
 <div style="display: {vizState === "running" ? "none" : "block"};" class={"contact-box"}>
