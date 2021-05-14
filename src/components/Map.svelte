@@ -137,7 +137,6 @@
 		// Get downstream flowline path from origin point
 		let flowlinesData = await getDownStreamFlowlines(closestFeature);
 		flowlinesData.features = await addVAAData(flowlinesData.features);
-		console.log(flowlinesData.features.length)
 		
 		// Find the parent features of flowlines along the path
 		totalLength = flowlinesData.features[0].properties.pathlength > 0 ? flowlinesData.features[0].properties.pathlength : undefined;
