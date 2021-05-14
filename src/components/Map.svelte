@@ -229,7 +229,7 @@
 	const findClosestFeature = async (e) => {
 		let closestFeature;
 		let resultFound = false;
-		let roundingDigits = 5;
+		let roundingDigits = 6;
 		while (resultFound === false && roundingDigits >= 0) {
 			roundingDigits -= 1;
 
