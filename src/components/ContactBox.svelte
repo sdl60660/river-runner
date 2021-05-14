@@ -64,7 +64,7 @@
 
 <div style="display: {vizState === "running" ? "none" : "block"};" class={"contact-box"}>
     {#if window.innerWidth > 600}
-        <p><strong>Visualization by <a target="_blank" href="https://www.samlearner.com">Sam Learner</a></strong> |
+        <p><strong>Visualization by <a target="_blank" href="https://bit.ly/main-project-site">Sam Learner</a></strong> |
             <a target="_blank" href="https://twitter.com/sam_learner"><img class="icon-img" src="/images/twitter.svg" alt="twitter link"/></a> |
             <a target="_blank" href="mailto:learnersd@gmail.com"><img class="icon-img" src="/images/email.svg" alt="email link"/></a> |
             <a target="_blank" href="https://github.com/sdl60660"><img class="icon-img" src="/images/github.svg" alt="github link"/></a>
@@ -74,7 +74,7 @@
             Code and data for this project lives <a target="_blank" href={"https://github.com/sdl60660/river-runner/"}>here</a>.
         </p>
     {:else}
-        <strong>Visualization by <a target="_blank" href="https://www.samlearner.com">Sam Learner</a></strong> |
+        <strong>Visualization by <a target="_blank" href="https://bit.ly/main-project-site">Sam Learner</a></strong> |
         <a target="_blank" href="https://twitter.com/sam_learner"><img class="icon-img" src="/images/twitter.svg" alt="twitter link"/></a> |
         <a target="_blank" href="mailto:learnersd@gmail.com"><img class="icon-img" src="/images/email.svg" alt="email link"/></a> |
         <a target="_blank" href="https://github.com/sdl60660"><img class="icon-img" src="/images/github.svg" alt="github link"/></a> | 
