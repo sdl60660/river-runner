@@ -284,7 +284,8 @@
 		// We're going to say that if the ocean is within 50km of the stop point, it's very likely the true end point
 		else if (closestFeature.properties.stop_feature_name === "Ocean" || oceanDistance < 50000) {
 			// Gulf of Mexico: lng < -82 && lat < 31
-			return destinationPoint[0] > -100 ? "Atlantic Ocean" : "Pacific Ocean";
+			// Otherwise split by Texas, basically, between Atlantic/Pacific
+			return (destinationPoint[0] < -82 && destinationPoint[1] < 31) ? "Gulf of Mexico" : destinationPoint[0] > -100 ? "Atlantic Ocean" : "Pacific Ocean";
 		}
 		else {
 			return closestFeature.properties.stop_feature_name;
@@ -715,9 +716,6 @@
 			];
 		}
 	});
-
-	// const dispatch = createEventDispatcher();
-	// $: (vizState === "running") ? dispatch('source-toggle', { visible: false }) : dispatch('source-toggle', { visible: true });
 
 </script>
 
