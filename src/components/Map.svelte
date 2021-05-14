@@ -137,6 +137,7 @@
 		// Get downstream flowline path from origin point
 		let flowlinesData = await getDownStreamFlowlines(closestFeature);
 		flowlinesData.features = await addVAAData(flowlinesData.features);
+		console.log(flowlinesData.features.length)
 		
 		// Find the parent features of flowlines along the path
 		totalLength = flowlinesData.features[0].properties.pathlength > 0 ? flowlinesData.features[0].properties.pathlength : undefined;
@@ -152,7 +153,7 @@
 
 		// Construct full coordinate path by taking the first coordinate in each flowline (each coordinate in the flowline is an unnecessary level of detail)
 		const coordinatePath = flowlinesData.features.length > 3 ? flowlinesData.features.map( feature => feature.geometry.coordinates.slice(-1)[0] )
-															 : flowlinesData.features.map( feature => feature.geometry.coordinates).flat().filter((d,i) => i % 3 === 0);
+															 : flowlinesData.features.map( feature => feature.geometry.coordinates).flat().filter((d,i) => i % 2 === 0);
 
 		// Update props used by child components
 		riverPath = [{ geometry: { coordinates: coordinatePath }}];
@@ -204,7 +205,7 @@
 		// const locationTracerPoint = addLocationMarker({ map, origin: coordinatePath[0] });
 
 		// Maintain a consistent speed using the route distance. The higher the speed coefficient, the slower the runner will move.
-		const speedCoefficient = smoothedPath.length < 50 ? 200 : 125 - (cameraPitch - 75);
+		const speedCoefficient = smoothedPath.length < 50 ? 200 : 130 - (cameraPitch - 75);
 		const animationDuration = Math.round(speedCoefficient*routeDistance);
 
 		map.once('moveend', () => {
@@ -293,10 +294,36 @@
 	}
 
 	const getFeatureGroups = (flowlinesData) => {
-		const featureNames = flowlinesData.features.filter( feature => feature.properties.feature_name ).map( feature => feature.properties.feature_name );
+		const featurePoints = flowlinesData.features.filter( feature => feature.properties.feature_name );
+		const featureNames = featurePoints.map( feature => feature.properties.feature_name );
+		let uniqueFeatureNames = featureNames.filter((item, i, ar) => ar.indexOf(item) === i);
 		const fullDistance = flowlinesData.features[0].properties.pathlength;
 
-		let riverFeatures = featureNames.filter((item, i, ar) => ar.indexOf(item) === i).map((feature, index) => {
+		// This fixes a rare, but frustrating bug, where because I don't sample each flowline for VAA data, and because...
+		// I assume once a feature starts that it continues until the next unique feature, this function gets confused by...
+		// Long rivers sandwiching small unnames features, like the snake river in Idaho, and thinks that the small feature interruption
+		// Is the new main feature until it hits the next unique feature name. This is sort of difficult to explain, but just trust that it's necessary.
+		uniqueFeatureNames = uniqueFeatureNames.filter((name, i) => {
+			if (i === 0) {
+				return true;
+			}
+			else {
+				const firstOccurence = featurePoints.findIndex(point => point.properties.feature_name === name);
+				const featureData = featurePoints.find(point => point.properties.feature_name === name);
+
+				const sandwichOccurence = featurePoints.slice(firstOccurence).findIndex(point => point.properties.feature_name === featureNames[i-1]);
+				const surroundingFeatureData = featurePoints.slice(firstOccurence).find(point => point.properties.feature_name === featureNames[i-1]);
+
+				if ( sandwichOccurence > 0 && surroundingFeatureData.properties.streamlvl === featureData.properties.streamlvl) {
+					return false;
+				}
+				else {
+					return true;
+				}
+			}
+		});
+
+		let riverFeatures = uniqueFeatureNames.map((feature, index) => {
 			
 			const featureData = flowlinesData.features.find(item => item.properties.feature_name === feature);
 			const featureIndex = flowlinesData.features.findIndex(item => item.properties.feature_name === feature);
@@ -389,7 +416,7 @@
 	}
 
 	const getFeatureVAA = async (feature, index) => {
-		if (index > 40 && index % 10 !== 0) {
+		if (index > 50 && index % 10 !== 0) {
 			return feature;
 		}
 		else {

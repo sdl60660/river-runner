@@ -8,10 +8,22 @@ with open('data/water_bodies.geojson', 'r') as f:
 # It's possible this will miss some weird, small inland lakes that are stopping features, but that's worth the tradeoff for the file size
 all_lake_features = lakes['features']
 sorted_features = sorted(all_lake_features, key=lambda x: x['properties']['SQKM'], reverse=True)
-sorted_features = [x for x in sorted_features if x['properties']['NAME'] != '' and x['properties']['FTYPE'] == "Lake/Pond" and x['geometry']]
+filtered_feature_types = ['Canal/Ditch', 'Lake/Pond', 'Reservoir']
+sorted_features = [x for x in sorted_features if x['properties']['NAME'] != '' and x['properties']['FTYPE'] in filtered_feature_types and x['geometry']]
 sorted_features = sorted_features[:4000]
 
+# I took out and simplified another ~7000 named smaller lake/pond/reservoir/canal/ditch, which we can tack back on in their simplified state
+# I honestly don't think there are many here that will survive simplification and I don't know how much this will do, but it won't add too much to the file size
+with open('data/smaller_water_bodies.geojson', 'r') as f:
+    small_features = [x for x in json.load(f)['features'] if x['geometry']]
+    sorted_features += small_features
+
+
 for feature in sorted_features:
+    del feature['properties']['FCODE_DESC']
+    del feature['properties']['FCODE']
+    del feature['properties']['SQMI']
+
     feature['properties']['stop_feature_type'] = 'inland lake'
     feature['properties']['stop_feature_name'] = feature['properties']['NAME']
 
@@ -35,7 +47,7 @@ with open('data/ocean_area.geojson', 'r') as f:
 
 all_features = canada['features'] + mexico['features'] + [ocean_feature] + sorted_features
 
-# Output as a GeoJSON file for now (~6MB), but then use mapshaper.org to compress to a TopoJSON (~2MB)
+# Output as a GeoJSON file for now (~7MB), but then use mapshaper.org to compress to a TopoJSON (~2MB)
 output_data = {"type":"FeatureCollection", "features": all_features }
 with open('data/stopping_features.geojson', 'w') as f:
     json.dump(output_data, f)
