@@ -741,7 +741,7 @@
 	/* Keyboard open */
 	@media only screen and (max-width: 600px) and (max-height: 400px) {
         .map-wrapper {
-            height: 100vh;
+            height: 100%;
 			top: 0;
         }
     }

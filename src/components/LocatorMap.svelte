@@ -209,6 +209,7 @@
 	 @media only screen and (max-width: 600px) and (max-height: 400px) {
         .map {
             opacity: 0 !important;
+			z-index: -100;
         }
     }
 
