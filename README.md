@@ -1,6 +1,6 @@
 # River Runner
 
-This uses USGS [NHDPlus data](https://www.usgs.gov/core-science-systems/ngp/national-hydrography/nhdplus-high-resolution) and their [NLDI API](https://waterdata.usgs.gov/blog/nldi-intro/) to visualize the path of a rain droplet from any point in the contiguous United States to its end point (usually the ocean, sometimes the Great Lakes, Canada/Mexico, or another inland water feature). It'll find the closest river/stream flowline point and then animate along that flowline's downstream path.
+This uses USGS [NHDPlus data](https://www.usgs.gov/core-science-systems/ngp/national-hydrography/nhdplus-high-resolution) and their [NLDI API](https://waterdata.usgs.gov/blog/nldi-intro/) to visualize the path of a rain droplet from any point in the contiguous United States to its end point (usually the ocean, sometimes the Great Lakes, Canada/Mexico, or another inland water feature). It'll find the closest river/stream flowline coordinate to a click/search and then animate along that flowline's downstream path.
 
 I've used mapbox to animate the downstream path, but needed to make all sorts of adjustments for elevation and bearing changes to prevent jerkiness/nausea (just moving from point to point feels a little like flying through turbulence while shaking your head side-to-side).
 
