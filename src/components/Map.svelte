@@ -204,7 +204,8 @@
 		// const locationTracerPoint = addLocationMarker({ map, origin: coordinatePath[0] });
 
 		// Maintain a consistent speed using the route distance. The higher the speed coefficient, the slower the runner will move.
-		const speedCoefficient = smoothedPath.length < 50 ? 200 : 130 - (cameraPitch - 75);
+		const speedCoefficient = smoothedPath.length < 50 ? 200 : 130 - 5*(cameraPitch - 70);
+		console.log(speedCoefficient, cameraPitch)
 		const animationDuration = Math.round(speedCoefficient*routeDistance);
 
 		map.once('moveend', () => {
