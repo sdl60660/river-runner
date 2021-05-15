@@ -171,7 +171,7 @@
 		drawFlowPath({ map, featureData: flowlinesData.features, lineWidth: 2 })
 
 		// Create smoothed path by averaging coordinates with their neighbors. This helps reduce horizontal movement with bendy rivers.
-		const smoothedPath = pathSmoother(coordinatePath, Math.min(9, Math.floor(coordinatePath.length / 2)));
+		const smoothedPath = pathSmoother(coordinatePath, Math.min(10, Math.floor(coordinatePath.length / 2)));
 		
 		// Create a set of artificial coordinate points before the first point for the camera track, which will be offset from the true coordinate path by (cameraTargetIndexGap) points
 		const cameraTargetIndexGap = Math.min(Math.floor(smoothedPath.length / 2), 11);
