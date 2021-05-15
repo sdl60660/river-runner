@@ -1,8 +1,8 @@
 <script>
-    import * as d3 from 'd3';
-    import * as topojson from "topojson-client";
+	import * as d3 from 'd3';
+	import * as topojson from "topojson-client";
 
-    import Map from './components/Map.svelte';
+	import Map from './components/Map.svelte';
 	import Loader from './components/Loader.svelte';
 
 	const dataFilePromises = [
@@ -16,9 +16,7 @@
 		
 		return [states, stoppingFeatures];
 	})
-
 </script>
-
 
 {#await dataLoad}
     <Loader />

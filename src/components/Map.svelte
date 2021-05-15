@@ -3,7 +3,7 @@
 	import { mapbox } from '../mapbox.js';
 	import * as d3 from 'd3';
 
-	import { bearingBetween, distanceToPolygon } from '../utils';
+	import { bearingBetween, distanceToPolygon, getDataBounds } from '../utils';
 	import { coordinates, stoppingFeature } from '../state';
 	
 	import Prompt from './Prompt.svelte';
@@ -96,6 +96,10 @@
 			flyTo: false
 		});
 
+		if (window.innerWidth < 600 ) {
+			geocoder.setLimit(4);
+		}
+
 		geocoder.on('result', (e) => { 
 			const result = e.result;
 			result.lngLat = {
@@ -181,7 +185,7 @@
 		const cameraRouteDistance = pathDistance(cameraRoute);
 		const trueRouteDistance = pathDistance(coordinatePath);
 
-		console.log('Distances:', routeDistance, cameraRouteDistance, trueRouteDistance);
+		// console.log('Distances:', routeDistance, cameraRouteDistance, trueRouteDistance);
 
 		const initialBearing = bearingBetween( cameraRoute[0], targetRoute[0] );
 
@@ -205,7 +209,6 @@
 
 		// Maintain a consistent speed using the route distance. The higher the speed coefficient, the slower the runner will move.
 		const speedCoefficient = smoothedPath.length < 50 ? 200 : 130 - 5*(cameraPitch - 70);
-		console.log(speedCoefficient, cameraPitch)
 		const animationDuration = Math.round(speedCoefficient*routeDistance);
 
 		map.once('moveend', () => {
@@ -444,7 +447,7 @@
 
 	const createArticialCameraPoints = (smoothedPath, coordinatePath, cameraTargetIndexGap, originPoint) => {
 		const firstPointsBearing = bearingBetween( coordinatePath[1], coordinatePath[0] );
-		const pointDistances = smoothedPath.slice(0, Math.min(50, smoothedPath.length-1)).map((coordinate, index) => {
+		const pointDistances = smoothedPath.slice(0, Math.min(80, smoothedPath.length-1)).map((coordinate, index) => {
 			return distance(coordinate, smoothedPath[index+1]);
 		});  
 		const averagePointDistance = pointDistances.reduce((a,b) => a + b, 0) / pointDistances.length; 
@@ -554,7 +557,7 @@
 
 			// When finished, exit animation loop and zoom out to show ending point
 			if (phase > 1 || aborted === true) {
-				exitNavigation({ map });
+				exitNavigation({ map, coordinatePath });
 				return;
 			}
 
@@ -596,16 +599,26 @@
 		window.requestAnimationFrame(frame);
 	}
 
-	const exitNavigation = ({ map }) => {
+	const exitNavigation = ({ map, coordinatePath }) => {
 		if (!aborted) {
 			activeFeatureIndex += 1;
 		}
 
-		map.flyTo({
+		const bounds = getDataBounds(coordinatePath, true);
+
+		// map.flyTo({
+		// 	bearing: 0,
+		// 	pitch: 0,
+		// 	zoom: 6
+		// });
+
+		map.fitBounds(bounds, {
 			bearing: 0,
 			pitch: 0,
-			zoom: 6
-		});
+			padding: 70,
+			maxZoom: 12,
+			offset: window.innerWidth < 600 ? [0,-20] : [0,0] // On mobile, the search bar will get in the way so we actually want it a little off center
+		})
 
 		map.once('moveend', () => {
 			resetMapState({ map });

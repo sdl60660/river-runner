@@ -6,8 +6,7 @@ import polygonToLine from '@turf/polygon-to-line';
 import { point, polygon } from '@turf/helpers';
 import * as d3 from 'd3';
 
-const bearingBetween = (coordinate1, coordinate2) => {
-    
+const bearingBetween = (coordinate1, coordinate2) => { 
     const point1 = point(coordinate1);
     const point2 = point(coordinate2);
 
@@ -30,8 +29,8 @@ const roundToDigits = (val, digits=0) => {
     return Math.round(val * divider) / divider;
 }
 
-const getDataBounds = (linestringData) => {
-  const allCoordinates = linestringData.map(river => river.geometry.coordinates).flat();
+const getDataBounds = (linestringData, coordinatesExtracted=false) => {
+  const allCoordinates = coordinatesExtracted ? linestringData : linestringData.map(river => river.geometry.coordinates).flat();
 
   return [
       [d3.min(allCoordinates, d => d[0]), d3.min(allCoordinates, d => d[1])],
