@@ -10,6 +10,7 @@
 	import NavigationInfo from './NavigationInfo.svelte';
 	import LocatorMap from './LocatorMap.svelte';
 	import ContactBox from './ContactBox.svelte';
+	import Controls from './Controls.svelte';
 
 	import along from '@turf/along';
 	import { featureCollection, lineString } from '@turf/helpers';
@@ -39,6 +40,9 @@
 	let totalLength;
 
 	let phaseJump;
+	let speedMultiplier = 1;
+	let altitudeMultiplier = 1;
+	let pitchMutiplier = 1; // this one might be a bad idea
 
 
 	onMount(async () => {
@@ -192,6 +196,8 @@
 		const cameraBaseAltitude = 4300;
 		const elevationArrayStep = 100;
 		const elevations = await getElevations(coordinatePath, elevationArrayStep);
+		// Take base altitude and then adjust up based on the elevation of the first coordinate
+		// The multiplier is necessary for higher elevations since they tend to be mountainous areas, as well, requiring additional height for the camera
 		const initialElevation = cameraBaseAltitude + 1.25*Math.round(elevations[0]);
 
 		// We'll calculate the pitch based on the altitude/distance from camera to target
@@ -572,7 +578,7 @@
 			const elevationStepProgress = elevations.length*phase - Math.floor(elevations.length*phase);
 
 			const elevationEstimate = elevationLast + ((elevationNext - elevationLast)*elevationStepProgress);
-			const tickElevation = cameraBaseAltitude + 1.25*Math.round(elevationEstimate);
+			const tickElevation = altitudeMultiplier*cameraBaseAltitude + 1.25*Math.round(elevationEstimate);
 
 			const alongRoute = along(
 				lineString(targetRoute),
@@ -585,9 +591,14 @@
 			).geometry.coordinates;
 						
 			const bearing = bearingBetween( alongCamera, alongRoute );
+			const adjustedPosition = altitudeMultiplier === 1.0 ? alongCamera :
+									 destination(alongRoute, altitudeMultiplier*distance(alongRoute, alongCamera), (180 + bearing % 360)).geometry.coordinates;
+			// console.log(adjustedPosition, altitudeMultiplier*distance(alongRoute, alongCamera),  (180 + bearing % 360));
 		
 			// Generate/position a camera along route, pointed in direction of target point at set pitch
-			positionCamera({ map, cameraCoordinates: alongCamera, elevation: tickElevation, pitch: cameraPitch, bearing });
+			positionCamera({ map, cameraCoordinates: adjustedPosition, elevation: tickElevation, pitch: cameraPitch, bearing });
+			// const adjustedZoom = altitudeMultiplier*map.getZoom();
+			// map.setZoom(adjustedZoom);
 
 			// This will update the location of the marker on the locator map
 			// (may need to add a condition to keep this from updating on every tick, which is probably expensive and not necessary)
@@ -748,6 +759,11 @@
 		phaseJump = e.detail.pathProgress;
 	}
 
+	const setAltitudeMultipier = (e) => {
+		console.log(e.target.value);
+		altitudeMultiplier = e.target.value;
+	}
+
 	$: coordinates.update(() => {
 		if (mapBounds._sw) {
 			return [
@@ -798,3 +814,4 @@
 <NavigationInfo on:abort-run={exitFunction} on:progress-set={(e) => handleJump(e) } {vizState} {activeFeatureIndex} {featureGroups} {totalLength} />
 <LocatorMap {bounds} {stateBoundaries} visibleIndex={null} {riverPath} {currentLocation} {vizState} {activeFeatureIndex} {featureGroups} />
 <ContactBox {vizState} />
+<Controls {setAltitudeMultipier} {altitudeMultiplier} />
