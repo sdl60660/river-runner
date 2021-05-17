@@ -17,9 +17,13 @@
         z-index: 20;
     }
 
+    input {
+        padding: 0;
+    }
+
 </style>
 
 <div class="wrapper">
     <label for="altitude">Camera Altitude</label>
-    <input type="range" id="altitude" name="altitude" min="0.7" max="2" step="0.01" value={altitudeMultiplier} on:input={(e) => setAltitudeMultipier(e)}>
+    <input type="range" id="altitude" name="altitude" min="0.7" max="5" step="0.02" value={altitudeMultiplier} on:input={(e) => setAltitudeMultipier(e)}>
 </div>
