@@ -207,6 +207,7 @@
 		const { zoom, center } = precalculateInitialCamera({ map, cameraStart, initialElevation, initialBearing, cameraPitch });
 		altitudeMultiplier = 1;
 		paused = false;
+		playbackSpeed = 1;
 
 		// Fly to clicked point and pitch camera (initial "raindrop" animation)
 		map.flyTo({center, zoom, speed: 0.9, curve: 1, pitch: cameraPitch, bearing: initialBearing,
@@ -304,8 +305,9 @@
 	}
 
 	const getFeatureGroups = (flowlinesData) => {
-		const featurePoints = flowlinesData.features.filter( feature => feature.properties.feature_name );
-		const featureNames = featurePoints.map( feature => feature.properties.feature_name );
+		const featurePoints = flowlinesData.features.filter( feature => feature.properties.feature_id );
+		console.log(featurePoints);
+		const featureNames = featurePoints.map( feature => feature.properties.feature_id );
 		let uniqueFeatureNames = featureNames.filter((item, i, ar) => ar.indexOf(item) === i);
 		const fullDistance = flowlinesData.features[0].properties.pathlength;
 
@@ -318,11 +320,11 @@
 				return true;
 			}
 			else {
-				const firstOccurence = featurePoints.findIndex(point => point.properties.feature_name === name);
+				const firstOccurence = featurePoints.findIndex(point => point.properties.feature_id === name);
 				const featureData = featurePoints.find(point => point.properties.feature_name === name);
 
-				const sandwichOccurence = featurePoints.slice(firstOccurence).findIndex(point => point.properties.feature_name === uniqueFeatureNames[i-1]);
-				const surroundingFeatureData = featurePoints.slice(firstOccurence).find(point => point.properties.feature_name === uniqueFeatureNames[i-1]);
+				const sandwichOccurence = featurePoints.slice(firstOccurence).findIndex(point => point.properties.feature_id === uniqueFeatureNames[i-1]);
+				const surroundingFeatureData = featurePoints.slice(firstOccurence).find(point => point.properties.feature_id === uniqueFeatureNames[i-1]);
 
 				if ( sandwichOccurence > 0 && surroundingFeatureData.properties.streamlvl === featureData.properties.streamlvl) {
 					return false;
@@ -335,13 +337,13 @@
 
 		let riverFeatures = uniqueFeatureNames.map((feature, index) => {
 			
-			const featureData = flowlinesData.features.find(item => item.properties.feature_name === feature);
-			const featureIndex = flowlinesData.features.findIndex(item => item.properties.feature_name === feature);
+			const featureData = flowlinesData.features.find(item => item.properties.feature_id === feature);
+			const featureIndex = flowlinesData.features.findIndex(item => item.properties.feature_id === feature);
 
 			return ({
 				feature_data_index: featureIndex,
 				progress: fullDistance === -999 ? (featureIndex / flowlinesData.features.length) : ((fullDistance - featureData.properties.pathlength) / fullDistance),
-				name: feature,
+				name: featureData.properties.feature_name,
 				distance_from_destination: featureData.properties.pathlength === -9999 ? 0 : featureData.properties.pathlength,
 				index,
 				stream_level: featureData.properties.streamlvl,
@@ -438,8 +440,8 @@
 				...feature.properties,
 				...featureData,
 				// feature_name: featureData.gnis_name || `Unnamed River/Stream (${featureData.levelpathid})`
-				feature_name: featureData.gnis_name || `Unnamed River/Stream`
-
+				feature_name: featureData.gnis_name || `Unnamed River/Stream`,
+				feature_id: featureData.gnis_name || featureData.levelpathid
 			};
 
 			return feature;
@@ -541,6 +543,11 @@
 	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4300, cameraPitch=70, distanceGap, coordinatePath, elevations, riverFeatures }) => {
 		let start;
 
+		const startPoints = riverFeatures.map(d => d.progress);
+		let startPoint = startPoints[0];
+
+		console.log(startPoints, startPoint);
+
 		const stopPoints = riverFeatures.map(d => d.stop_point)
 		let stopPoint = stopPoints[0];
 		activeFeatureIndex = 0;
@@ -564,6 +571,8 @@
 			// If a user has clicked one of the features in the navigation box, we'll need to adjust the "phase" to jump to that feature
 			if (phaseJump !== undefined) {
 				phase = phaseJump;
+
+				startPoint = startPoints[activeFeatureIndex];
 				stopPoint = stopPoints[activeFeatureIndex];
 
 				phaseJump = undefined;
@@ -585,6 +594,14 @@
 			if (!paused) {
 				phase += playbackSpeed*((time - lastTime) / (animationDuration*speedCoefficient));
 			}
+
+			// If rewinding and user rewinds past the start, this will puase it and keep it from bugging out
+			if (phase < 0) {
+				phase = 0;
+				playbackSpeed = 1;
+				paused = true;
+			}
+
 			lastTime = time;
 
 			const adjustedTargetPhase = altitudeMultiplier*phaseGap + phase;
@@ -595,9 +612,18 @@
 				return;
 			}
 
+			// When you hit next feature group, adjust index
 			if (stopPoint && phase >= stopPoint) {
 				activeFeatureIndex += 1;
+				startPoint = stopPoint;
 				stopPoint = stopPoints[activeFeatureIndex]
+			}
+
+			// If winding in reverse, and encountering a feature group change, do the reverse
+			if (startPoint && phase <= startPoint) {
+				activeFeatureIndex -= 1;
+				stopPoint = startPoint
+				startPoint = startPoints[activeFeatureIndex];
 			}
 
 			// Calculate camera elevation using the base elevation and the elevation at the specific coordinate point

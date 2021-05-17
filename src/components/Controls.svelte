@@ -47,9 +47,7 @@
         font-weight: bold;
         cursor: pointer;
         margin: auto;
-    }
-
-    .fastforward-button {
+        border: unset;
     }
 
     #altitude {
@@ -73,6 +71,11 @@
         gap: 4px;
     }
 
+    .button-active {
+        background-color: rgb(205 179 143);
+        border: 1px solid black;
+    }
+
     .svg-icon-img {
         height: 100%;
         width: auto;
@@ -84,9 +87,9 @@
 <div class="wrapper" style="display: {activeFeatureIndex >= 0 ? "grid" : "none"};">
 
     <div class="button-wrapper">
-        <button class="control-button rewind-button" style="background-color: {playbackSpeed === -1 ? "rgb(159, 159, 184)" : "white"};" on:click={() => setPlaybackSpeed(-1)}><img class="svg-icon-img" src="/images/rewind.svg" alt="rewind button"/></button>
+        <button class="control-button rewind-button" class:button-active={playbackSpeed === -1} on:click={() => setPlaybackSpeed(-1)}><img class="svg-icon-img" src="/images/rewind.svg" alt="rewind button"/></button>
         <button class="control-button pause-button" on:click={togglePause}>{(paused || playbackSpeed !== 1) ? "▶" : "| |"}</button>
-        <button class="control-button fastforward-button" style="background-color: {playbackSpeed === 2 ? "rgb(159, 159, 184)" : "white"};" on:click={() => setPlaybackSpeed(2)}><img class="svg-icon-img" src="/images/fast-forward.svg" alt="fast-forward button"/></button>
+        <button class="control-button fastforward-button" class:button-active={playbackSpeed === 2} on:click={() => setPlaybackSpeed(2)}><img class="svg-icon-img" src="/images/fast-forward.svg" alt="fast-forward button"/></button>
     </div>
 
     <div class="detail-speed-slider">

@@ -30,6 +30,11 @@
 	$: if (map && currentLocation && currentLocation !== undefined) { plotCurrentLocation({ map, location: currentLocation }); } else if (marker) { marker.remove(); }
 
 	$: if (featureGroups.length > 0) {
+		// Remove any possible lingering layers from a previous path
+		[...Array(15).keys()].forEach(index => {
+			removeLayer(`active-path-${index}`);
+		})
+
 		featureGroups.forEach(({ feature_data, index }) => {
 			drawFlowPath({ map, featureData: feature_data, sourceID: `active-path-${index}`, lineColor: "yellow", lineWidth: 2, visible: false });
 		});
@@ -97,7 +102,7 @@
         marker.addTo(map);
     }
 
-	const drawFlowPath = ({ map, featureData, sourceID='route', lineColor="steelblue", lineWidth=1, visible=true }) => {
+	const removeLayer = (sourceID) => {
 		if (map.getLayer(sourceID)) {
 			map.removeLayer(sourceID);
 		}
@@ -105,7 +110,10 @@
 		if (map.getSource(sourceID)) {
 			map.removeSource(sourceID);
 		}
-		
+	}
+
+	const drawFlowPath = ({ map, featureData, sourceID='route', lineColor="steelblue", lineWidth=1, visible=true }) => {
+		removeLayer(sourceID);
 		addRivers({ map, featureData, lineWidth, sourceID, lineColor, visible });
 	}
 
