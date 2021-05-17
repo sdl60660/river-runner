@@ -82,6 +82,23 @@
         margin: auto;
     }
 
+    @media only screen and (max-width: 600px) {
+        .detail-speed-slider {
+            display: none;
+        }
+
+        .wrapper {
+            background-color: none;
+        }
+    }
+
+    /* Tablet */
+    @media only screen and (min-width: 601px) and (max-width: 1100px) {
+        .wrapper {
+            margin-top: auto;
+        }
+    }
+
 </style>
 
 <div class="wrapper" style="display: {activeFeatureIndex >= 0 ? "grid" : "none"};">

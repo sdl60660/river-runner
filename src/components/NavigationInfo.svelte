@@ -162,7 +162,7 @@
     /* Tablet */
     @media only screen and (min-width: 601px) and (max-width: 1100px) {
         .navbox-wrapper {
-            right: 3rem;
+            /* right: 3rem; */
         }
     }
 

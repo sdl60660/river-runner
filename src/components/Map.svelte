@@ -888,6 +888,13 @@
         }
     }
 
+	/* Tablet */
+    @media only screen and (min-width: 601px) and (max-width: 1100px) {
+        .right-column {
+            bottom: 3rem;
+        }
+    }
+
 </style>
 
 <svelte:window on:resize={handleResize} />
