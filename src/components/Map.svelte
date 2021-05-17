@@ -17,7 +17,6 @@
 	import lineDistance from '@turf/line-distance';
 	import distance from '@turf/distance';
 	import destination from '@turf/destination';
-import bearing from '@turf/bearing';
 
 	export let bounds;
 	export let stateBoundaries;
@@ -41,11 +40,10 @@ import bearing from '@turf/bearing';
 	let totalLength;
 
 	let phaseJump;
-	let speedMultiplier = 1;
 	let altitudeMultiplier = 1;
 	let altitudeChange = false;
-	let pitchMutiplier = 1; // this one might be a bad idea
-
+	let paused = false;
+	// let pitchMutiplier = 1; // this one might be a bad idea
 
 	onMount(async () => {
 		await tick();
@@ -173,8 +171,10 @@ import bearing from '@turf/bearing';
 		const pathStoppingFeature = determineStoppingFeature({ destinationPoint, stoppingFeatures });
 		stoppingFeature.update(() => pathStoppingFeature);
 		
-		// Draw river lines from flowline features
-		drawFlowPath({ map, featureData: flowlinesData.features, lineWidth: 2 });
+		// Draw river lines from flowline features. Combining them aboids mapbox simplification on low zoom levels that creates a choppy looking flow path.
+		const combinedFlowlines = flowlinesData.features[0];
+		combinedFlowlines.geometry.coordinates = flowlinesData.features.map(a => a.geometry.coordinates).flat();
+		drawFlowPath({ map, featureData: [combinedFlowlines], lineWidth: 3 });
 
 		const cameraBaseAltitude = 4300;
 		const elevationArrayStep = 100;
@@ -182,31 +182,11 @@ import bearing from '@turf/bearing';
 		// Take base altitude and then adjust up based on the elevation of the first coordinate
 		// The multiplier is necessary for higher elevations since they tend to be mountainous areas, as well, requiring additional height for the camera
 		const initialElevation = cameraBaseAltitude + 1.25*Math.round(elevations[0]);
-
-		// const cameraToGround = initialElevation - elevations[0];
-		const targetPitch = 68;
+		const targetPitch = 67;
 		const distanceGap = initialElevation*Math.tan(targetPitch * Math.PI/180) / 1000;
-		// const firstPointsBearing = bearingBetween( coordinatePath[(Math.min(coordinatePath.length-1, 10))], coordinatePath[0] );
-		// const cameraStart = destination(coordinatePath[0], cameraOffsetDistance, firstPointsBearing).geometry.coordinates;
 
 		// Create smoothed path by averaging coordinates with their neighbors. This helps reduce horizontal movement with bendy rivers.
-		const smoothedPath = pathSmoother(coordinatePath, Math.min(10, Math.floor(coordinatePath.length / 2)));
-		// const fullRoute = [cameraStart, ...smoothedPath];
-		
-		// Create a set of artificial coordinate points before the first point for the camera track, which will be offset from the true coordinate path by (cameraTargetIndexGap) points
-		// const cameraTargetIndexGap = Math.min(Math.floor(smoothedPath.length / 2), 11);
-		// const artificalCameraStartPoints = createArticialCameraPoints(smoothedPath, coordinatePath, cameraTargetIndexGap, originPoint);
-		
-		// const cameraRoute = artificalCameraStartPoints.concat(smoothedPath.slice(0, -cameraTargetIndexGap));
-		// const targetRoute = smoothedPath;
-		// const fullRoute = artificalCameraStartPoints.concat(smoothedPath);
-		// const cameraTargetDistanceGap = distance(artificalCameraStartPoints[0], artificalCameraStartPoints[(cameraTargetIndexGap.length-1)]);
-		
-
-
-		// get the overall distance of each route so we can interpolate along them
-		// const routeDistance = pathDistance(targetRoute);
-		// const cameraRouteDistance = pathDistance(cameraRoute);
+		const smoothedPath = pathSmoother(coordinatePath, Math.min(9, Math.floor(coordinatePath.length / 2)));
 		const routeDistance = pathDistance(smoothedPath);
 		const trueRouteDistance = pathDistance(coordinatePath);
 
@@ -215,15 +195,11 @@ import bearing from '@turf/bearing';
 			routeDistance * 0.0001
 		).geometry.coordinates;
 
-		console.log('first bearing point', firstBearingPoint, smoothedPath[0], distanceGap);
-
 		const cameraStart = findArtificialCameraPoint({ distanceGap, originPoint: smoothedPath[0], targetPoint: firstBearingPoint}) 
 
 
 		// console.log('Distances:', routeDistance, cameraRouteDistance, trueRouteDistance);
 		const initialBearing = bearingBetween( cameraStart, smoothedPath[0] );
-		// const initialBearing = bearingBetween( cameraStart, smoothedPath[0] );
-		// const distanceGap = distance(cameraStart, smoothedPath[0] );
 
 		// We'll calculate the pitch based on the altitude/distance from camera to target
 		const cameraPitch = calculatePitch(initialElevation, 1000*distance(cameraStart, smoothedPath[0]));
@@ -240,7 +216,7 @@ import bearing from '@turf/bearing';
 		// const locationTracerPoint = addLocationMarker({ map, origin: coordinatePath[0] });
 
 		// Maintain a consistent speed using the route distance. The higher the speed coefficient, the slower the runner will move.
-		const speedCoefficient = smoothedPath.length < 50 ? 200 : 140 - 4*(cameraPitch - 70);
+		const speedCoefficient = smoothedPath.length < 50 ? 200 : 160 - 5*(cameraPitch - 70);
 		const animationDuration = Math.round(speedCoefficient*routeDistance);
 
 		map.once('moveend', () => {
@@ -250,13 +226,10 @@ import bearing from '@turf/bearing';
 				animationDuration,
 				cameraBaseAltitude,
 				cameraPitch,
-				// targetRoute,
-				// cameraRoute,
 				cameraStart,
 				coordinatePath,
 				routeDistance,
 				distanceGap,
-				// cameraRouteDistance,
 				trueRouteDistance,
 				elevations,
 				riverFeatures
@@ -565,19 +538,22 @@ import bearing from '@turf/bearing';
 		})
 	}
 
-	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4300, cameraPitch=70, distanceGap, fullRoute, cameraStart, coordinatePath, trueRouteDistance, elevations, riverFeatures }) => {
+	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4300, cameraPitch=70, distanceGap, cameraStart, coordinatePath, trueRouteDistance, elevations, riverFeatures }) => {
 		let start;
 
 		const stopPoints = riverFeatures.map(d => d.stop_point)
 		let stopPoint = stopPoints[0];
 		activeFeatureIndex = 0;
 		
-		let route = pathSmoother(coordinatePath, Math.min(Math.round(10*altitudeMultiplier), Math.floor(coordinatePath.length / 2)));
+		let route = pathSmoother(coordinatePath, Math.min(Math.floor(9*altitudeMultiplier), Math.floor(coordinatePath.length / 2)));
 		let routeDistance = pathDistance(route);
 
 		let phase = 0;
 		let lastTime;
-		const phaseGap = distanceGap / routeDistance;
+		let phaseGap = distanceGap / routeDistance;
+
+		// This adjusts the run speed based on the altitude. It seems *very* complicated, but it's the closest I've come to keeping perceptual speed consistent.
+		let speedCoefficient = (1 / Math.pow((1 + 1.1*Math.log(altitudeMultiplier)), 1.25) );
 
 		const frame = (time) => {
 			if (!start) {
@@ -586,20 +562,28 @@ import bearing from '@turf/bearing';
 
 			// If a user has clicked one of the features in the navigation box, we'll need to adjust the "phase" to jump to that feature
 			if (phaseJump !== undefined) {
-				// const currentProgress = (time - start);
-				// const newProgress = phaseJump * animationDuration;
-
-				// start += currentProgress - newProgress;
 				phase = phaseJump;
 				stopPoint = stopPoints[activeFeatureIndex];
 
 				phaseJump = undefined;
 			}
 
+			if (altitudeChange) {
+				route = pathSmoother(coordinatePath, Math.min(Math.floor(9*altitudeMultiplier), Math.floor(coordinatePath.length / 2)));
+				routeDistance = pathDistance(route);
+
+				phaseGap = distanceGap / routeDistance;
+
+				// This adjusts the run speed based on the altitude. It seems *very* complicated, but it's the closest I've come to keeping perceptual speed consistent.
+				speedCoefficient = (1 / Math.pow((1 + 1.1*Math.log(altitudeMultiplier)), 1.25) );
+
+				altitudeChange = false;
+			}
+
 			// phase determines how far through the animation we are
-			// phase = (time - start) / animationDuration;
-			// console.log(time, start, animationDuration, phase);
-			phase += (time - lastTime) / (animationDuration*(1 / altitudeMultiplier));
+			if (!paused) {
+				phase += (time - lastTime) / (animationDuration*speedCoefficient);
+			}
 			lastTime = time;
 
 			const adjustedTargetPhase = altitudeMultiplier*phaseGap + phase;
@@ -623,31 +607,6 @@ import bearing from '@turf/bearing';
 			const elevationEstimate = elevationLast + ((elevationNext - elevationLast)*elevationStepProgress);
 			const tickElevation = altitudeMultiplier*cameraBaseAltitude + 1.25*Math.round(elevationEstimate);
 
-			// const alongRoute = along(
-			// 	lineString(fullRoute),
-			// 	routeDistance * (phase + initialPhaseGap)
-			// ).geometry.coordinates;
-			
-			// const alongCamera = along(
-			// 	lineString(fullRoute),
-			// 	routeDistance * phase
-			// ).geometry.coordinates;
-						
-			// const bearing = bearingBetween( alongCamera, alongRoute );
-			// const adjustedPosition = altitudeMultiplier === 1.0 ? alongCamera :
-			// 						 destination(alongRoute, altitudeMultiplier*distance(alongRoute, alongCamera), (180 + bearing % 360)).geometry.coordinates;
-			
-			// const unadjustedDistance = distance(alongRoute, alongCamera);
-			// const phaseGap = unadjustedDistance / routeDistance;
-			// const adjustedTargetPhase = altitudeMultiplier*initialPhaseGap + phase;
-			// const smoothedRoute = pathSmoother([cameraStart, ...coordinatePath], Math.min(Math.round(10*altitudeMultiplier), Math.floor(coordinatePath.length / 2)));
-			if (altitudeChange) {
-				// route = pathSmoother([cameraStart, ...coordinatePath], Math.min(Math.round(10*altitudeMultiplier), Math.floor(coordinatePath.length / 2)));
-				route = pathSmoother(coordinatePath, Math.min(Math.round(10*altitudeMultiplier), Math.floor(coordinatePath.length / 2)));
-				routeDistance = pathDistance(route);
-				altitudeChange = false;
-			}
-
 			const alongTarget = along(
 				lineString(route),
 				routeDistance * (phase === 0 ? 0.0001 : phase)
@@ -662,11 +621,10 @@ import bearing from '@turf/bearing';
 				).geometry.coordinates;
 
 			const bearing = bearingBetween( alongCamera, alongTarget);
-		
+			// console.log( (phase - altitudeMultiplier*phaseGap), alongCamera, bearing)
+
 			// Generate/position a camera along route, pointed in direction of target point at set pitch
 			positionCamera({ map, cameraCoordinates: alongCamera, elevation: tickElevation, pitch: cameraPitch, bearing });
-			// const adjustedZoom = altitudeMultiplier*map.getZoom();
-			// map.setZoom(adjustedZoom);
 
 			// This will update the location of the marker on the locator map
 			// (may need to add a condition to keep this from updating on every tick, which is probably expensive and not necessary)
@@ -838,6 +796,10 @@ import bearing from '@turf/bearing';
 		altitudeMultiplier = e.target.value;
 	}
 
+	const togglePause = () => {
+		paused = !paused;
+	}
+
 	$: coordinates.update(() => {
 		if (mapBounds._sw) {
 			return [
@@ -855,6 +817,18 @@ import bearing from '@turf/bearing';
 		width: 100vw;
 		height: 100vh;
 		z-index: 1;
+	}
+
+	@media only screen and (min-width: 601px) {
+		.right-column {
+			display: flex;
+			position: absolute;
+			right: 3rem;
+			top: 2rem;
+			z-index: 20;
+			flex-direction: column;
+			gap: 2rem;
+		}
 	}
 
 	@media only screen and (max-width: 600px) {
@@ -885,7 +859,10 @@ import bearing from '@turf/bearing';
 </div>
 
 <Prompt {vizState} {currentLocation} />
-<NavigationInfo on:abort-run={exitFunction} on:progress-set={(e) => handleJump(e) } {vizState} {activeFeatureIndex} {featureGroups} {totalLength} />
 <LocatorMap {bounds} {stateBoundaries} visibleIndex={null} {riverPath} {currentLocation} {vizState} {activeFeatureIndex} {featureGroups} />
 <ContactBox {vizState} />
-<Controls {setAltitudeMultipier} {altitudeMultiplier} />
+
+<div class="right-column">
+	<NavigationInfo on:abort-run={exitFunction} on:progress-set={(e) => handleJump(e) } {vizState} {activeFeatureIndex} {featureGroups} {totalLength} />
+	<Controls {setAltitudeMultipier} {altitudeMultiplier} {paused} {togglePause} {vizState} />
+</div>

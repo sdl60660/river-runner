@@ -1,5 +1,11 @@
 <script>
-    // import Slider from './Slider.svelte';
+
+
+    export let vizState;
+
+    export let paused;
+    export let togglePause;
+
     export let altitudeMultiplier;
     export let setAltitudeMultipier;
 
@@ -8,22 +14,66 @@
 <style>
     .wrapper {
         background-color: rgba(221, 221, 221, 0.89);
-        padding: 0.5rem 1rem;
+        padding: 0.5rem 0.8rem;
         border-radius: 4px;
 
-        position: absolute;
-        right: 2rem;
-        top: 40%;
-        z-index: 20;
+        /* position: absolute; */
+        /* right: 3rem; */
+        /* top: 40%; */
+        /* z-index: 20; */
+        /* display: grid; */
+        grid-gap: 0.8rem;
+        grid-template-columns: 2rem 1fr;
+        justify-items: center;
+        align-items: center;
+
     }
 
-    input {
-        padding: 0;
+    .detail-speed-slider {
+        display: grid;
+        grid-template-columns: 2fr 1fr 2fr;
+        font-size: 0.8rem;
+        width: 100%;
     }
+
+    .pause-button {
+        padding: 0.5rem;
+        border-radius: 8rem;
+        /* border: 1px solid black; */
+        width: 2.5rem;
+        height: 2.5rem;
+        font-weight: bold;
+    }
+
+    #altitude {
+        padding: 0;
+        width: 100%;
+        grid-column: 1 / 4;
+    }
+
+    .slider-label-left {
+        grid-column: 1 / 2;
+        justify-self: left;
+    }
+
+    .slider-label-right {
+        grid-column: 3 / 4;
+        justify-self: right;
+    }
+
 
 </style>
 
-<div class="wrapper">
-    <label for="altitude">Camera Altitude</label>
-    <input type="range" id="altitude" name="altitude" min="0.7" max="5" step="0.02" value={altitudeMultiplier} on:input={(e) => setAltitudeMultipier(e)}>
+<div class="wrapper" style="display: {vizState === "running" ? "grid" : "none"};">
+
+    <div class="pause-button-wrapper">
+        <button class="pause-button" on:click={togglePause}>{paused ? "▶" : "| |"}</button>
+    </div>
+
+    <div class="detail-speed-slider">
+        <!-- <label for="altitude">Camera Altitude</label> -->
+        <input type="range" id="altitude" name="altitude" min="0.6" max="5" step="0.01" value={altitudeMultiplier} on:input={(e) => setAltitudeMultipier(e)}>
+        <div class="slider-label slider-label-left">More Detail</div>
+        <div class="slider-label slider-label-right">Faster</div>
+    </div>
 </div>
