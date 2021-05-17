@@ -43,6 +43,7 @@
 	let altitudeMultiplier = 1;
 	let altitudeChange = false;
 	let paused = false;
+	let playbackSpeed = 1;
 	// let pitchMutiplier = 1; // this one might be a bad idea
 
 	onMount(async () => {
@@ -582,7 +583,7 @@
 
 			// phase determines how far through the animation we are
 			if (!paused) {
-				phase += (time - lastTime) / (animationDuration*speedCoefficient);
+				phase += playbackSpeed*((time - lastTime) / (animationDuration*speedCoefficient));
 			}
 			lastTime = time;
 
@@ -799,7 +800,18 @@
 	}
 
 	const togglePause = () => {
-		paused = !paused;
+		if (playbackSpeed !== 1) {
+			playbackSpeed = 1;
+			paused = false;
+		}
+		else {
+			paused = !paused;
+		}
+	}
+
+	const setPlaybackSpeed = (newVal) => {
+		paused = false;
+		playbackSpeed = newVal;
 	}
 
 	$: coordinates.update(() => {
@@ -866,5 +878,5 @@
 
 <div class="right-column">
 	<NavigationInfo on:abort-run={exitFunction} on:progress-set={(e) => handleJump(e) } {vizState} {activeFeatureIndex} {featureGroups} {totalLength} />
-	<Controls {setAltitudeMultipier} {altitudeMultiplier} {paused} {togglePause} {activeFeatureIndex} {vizState} />
+	<Controls {setAltitudeMultipier} {altitudeMultiplier} {playbackSpeed} {setPlaybackSpeed} {paused} {togglePause} {activeFeatureIndex} {vizState} />
 </div>

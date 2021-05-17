@@ -5,6 +5,9 @@
     export let paused;
     export let togglePause;
 
+    export let playbackSpeed;
+    export let setPlaybackSpeed;
+
     export let altitudeMultiplier;
     export let setAltitudeMultipier;
 
@@ -21,8 +24,8 @@
         /* top: 40%; */
         /* z-index: 20; */
         /* display: grid; */
-        grid-gap: 0.8rem;
-        grid-template-columns: 2rem 1fr;
+        grid-gap: 0.4rem;
+        grid-template-columns: 1fr;
         justify-items: center;
         align-items: center;
 
@@ -35,7 +38,7 @@
         width: 100%;
     }
 
-    .pause-button {
+    .control-button {
         padding: 0.5rem;
         border-radius: 8rem;
         /* border: 1px solid black; */
@@ -43,6 +46,10 @@
         height: 2.5rem;
         font-weight: bold;
         cursor: pointer;
+        margin: auto;
+    }
+
+    .fastforward-button {
     }
 
     #altitude {
@@ -61,13 +68,25 @@
         justify-self: right;
     }
 
+    .button-wrapper {
+        display: flex;
+        gap: 4px;
+    }
+
+    .svg-icon-img {
+        height: 100%;
+        width: auto;
+        margin: auto;
+    }
 
 </style>
 
 <div class="wrapper" style="display: {activeFeatureIndex >= 0 ? "grid" : "none"};">
 
-    <div class="pause-button-wrapper">
-        <button class="pause-button" on:click={togglePause}>{paused ? "▶" : "| |"}</button>
+    <div class="button-wrapper">
+        <button class="control-button rewind-button" style="background-color: {playbackSpeed === -1 ? "rgb(159, 159, 184)" : "white"};" on:click={() => setPlaybackSpeed(-1)}><img class="svg-icon-img" src="/images/rewind.svg" alt="rewind button"/></button>
+        <button class="control-button pause-button" on:click={togglePause}>{(paused || playbackSpeed !== 1) ? "▶" : "| |"}</button>
+        <button class="control-button fastforward-button" style="background-color: {playbackSpeed === 2 ? "rgb(159, 159, 184)" : "white"};" on:click={() => setPlaybackSpeed(2)}><img class="svg-icon-img" src="/images/fast-forward.svg" alt="fast-forward button"/></button>
     </div>
 
     <div class="detail-speed-slider">
