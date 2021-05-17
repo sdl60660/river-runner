@@ -89,8 +89,8 @@ const distanceToPolygon = ({ startPoint, targetPolygon }) => {
         }
       }
     }
-    return distance
-  }
+  return distance
+}
 
 
 export { bearingBetween, contructCoordinateQuadtree, roundToDigits, getDataBounds, distanceToPolygon };

@@ -42,12 +42,13 @@
 <style>
 
     .navbox-wrapper {
-        position: absolute;
-        z-index: 20;
+        position: relative;
+        /* position: absolute; */
+        /* z-index: 20; */
         /* left: calc(100% - 375px); */
-        right: 3rem;
+        /* right: 3rem; */
         /* transform: translateX(-50%); */
-        top: 2rem;
+        /* top: 2rem; */
     }
 
     .info-box {
@@ -132,6 +133,8 @@
     /* Mobile */
     @media only screen and (max-width: 600px) {
         .navbox-wrapper {
+            position: absolute;
+            z-index: 20;
             right: 1.3rem;
             left: 1.3rem;
             top: 18vh;

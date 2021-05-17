@@ -10,6 +10,7 @@
 	import NavigationInfo from './NavigationInfo.svelte';
 	import LocatorMap from './LocatorMap.svelte';
 	import ContactBox from './ContactBox.svelte';
+	import Controls from './Controls.svelte';
 
 	import along from '@turf/along';
 	import { featureCollection, lineString } from '@turf/helpers';
@@ -39,7 +40,10 @@
 	let totalLength;
 
 	let phaseJump;
-
+	let altitudeMultiplier = 1;
+	let altitudeChange = false;
+	let paused = false;
+	// let pitchMutiplier = 1; // this one might be a bad idea
 
 	onMount(async () => {
 		await tick();
@@ -167,36 +171,41 @@
 		const pathStoppingFeature = determineStoppingFeature({ destinationPoint, stoppingFeatures });
 		stoppingFeature.update(() => pathStoppingFeature);
 		
-		// Draw river lines from flowline features
-		drawFlowPath({ map, featureData: flowlinesData.features, lineWidth: 2 })
-
-		// Create smoothed path by averaging coordinates with their neighbors. This helps reduce horizontal movement with bendy rivers.
-		const smoothedPath = pathSmoother(coordinatePath, Math.min(10, Math.floor(coordinatePath.length / 2)));
-		
-		// Create a set of artificial coordinate points before the first point for the camera track, which will be offset from the true coordinate path by (cameraTargetIndexGap) points
-		const cameraTargetIndexGap = Math.min(Math.floor(smoothedPath.length / 2), 11);
-		const artificalCameraStartPoints = createArticialCameraPoints(smoothedPath, coordinatePath, cameraTargetIndexGap, originPoint);
-		const cameraRoute = artificalCameraStartPoints.concat(smoothedPath.slice(0, -cameraTargetIndexGap));
-
-		const targetRoute = smoothedPath;
-		
-		// get the overall distance of each route so we can interpolate along them
-		const routeDistance = pathDistance(targetRoute);
-		const cameraRouteDistance = pathDistance(cameraRoute);
-		const trueRouteDistance = pathDistance(coordinatePath);
-
-		// console.log('Distances:', routeDistance, cameraRouteDistance, trueRouteDistance);
-
-		const initialBearing = bearingBetween( cameraRoute[0], targetRoute[0] );
+		// Draw river lines from flowline features. Combining them aboids mapbox simplification on low zoom levels that creates a choppy looking flow path.
+		const combinedFlowlines = flowlinesData.features[0];
+		combinedFlowlines.geometry.coordinates = flowlinesData.features.map(a => a.geometry.coordinates).flat();
+		drawFlowPath({ map, featureData: [combinedFlowlines], lineWidth: 3 });
 
 		const cameraBaseAltitude = 4300;
 		const elevationArrayStep = 100;
 		const elevations = await getElevations(coordinatePath, elevationArrayStep);
+		// Take base altitude and then adjust up based on the elevation of the first coordinate
+		// The multiplier is necessary for higher elevations since they tend to be mountainous areas, as well, requiring additional height for the camera
 		const initialElevation = cameraBaseAltitude + 1.25*Math.round(elevations[0]);
+		const targetPitch = 67;
+		const distanceGap = initialElevation*Math.tan(targetPitch * Math.PI/180) / 1000;
+
+		// Create smoothed path by averaging coordinates with their neighbors. This helps reduce horizontal movement with bendy rivers.
+		const smoothedPath = pathSmoother(coordinatePath, Math.min(9, Math.floor(coordinatePath.length / 2)));
+		const routeDistance = pathDistance(smoothedPath);
+		const trueRouteDistance = pathDistance(coordinatePath);
+
+		const firstBearingPoint = along(
+			lineString(smoothedPath),
+			routeDistance * 0.00005
+		).geometry.coordinates;
+
+		const cameraStart = findArtificialCameraPoint({ distanceGap, originPoint: smoothedPath[0], targetPoint: firstBearingPoint}) 
+
+
+		// console.log('Distances:', routeDistance, cameraRouteDistance, trueRouteDistance);
+		const initialBearing = bearingBetween( cameraStart, smoothedPath[0] );
 
 		// We'll calculate the pitch based on the altitude/distance from camera to target
-		const cameraPitch = calculatePitch(initialElevation, 1000*distance(cameraRoute[0], targetRoute[0]));
-		const { zoom, center } = precalculateInitialCamera({ map, cameraStart: cameraRoute[0], initialElevation, initialBearing, cameraPitch });
+		const cameraPitch = calculatePitch(initialElevation, 1000*distance(cameraStart, smoothedPath[0]));
+		const { zoom, center } = precalculateInitialCamera({ map, cameraStart, initialElevation, initialBearing, cameraPitch });
+		altitudeMultiplier = 1;
+		paused = false;
 
 		// Fly to clicked point and pitch camera (initial "raindrop" animation)
 		map.flyTo({center, zoom, speed: 0.9, curve: 1, pitch: cameraPitch, bearing: initialBearing,
@@ -208,7 +217,7 @@
 		// const locationTracerPoint = addLocationMarker({ map, origin: coordinatePath[0] });
 
 		// Maintain a consistent speed using the route distance. The higher the speed coefficient, the slower the runner will move.
-		const speedCoefficient = smoothedPath.length < 50 ? 200 : 135 - 4*(cameraPitch - 70);
+		const speedCoefficient = smoothedPath.length < 50 ? 200 : 158 - 5*(cameraPitch - 70);
 		const animationDuration = Math.round(speedCoefficient*routeDistance);
 
 		map.once('moveend', () => {
@@ -218,12 +227,9 @@
 				animationDuration,
 				cameraBaseAltitude,
 				cameraPitch,
-				targetRoute,
-				cameraRoute,
 				coordinatePath,
 				routeDistance,
-				cameraRouteDistance,
-				trueRouteDistance,
+				distanceGap,
 				elevations,
 				riverFeatures
 			});
@@ -314,8 +320,8 @@
 				const firstOccurence = featurePoints.findIndex(point => point.properties.feature_name === name);
 				const featureData = featurePoints.find(point => point.properties.feature_name === name);
 
-				const sandwichOccurence = featurePoints.slice(firstOccurence).findIndex(point => point.properties.feature_name === featureNames[i-1]);
-				const surroundingFeatureData = featurePoints.slice(firstOccurence).find(point => point.properties.feature_name === featureNames[i-1]);
+				const sandwichOccurence = featurePoints.slice(firstOccurence).findIndex(point => point.properties.feature_name === uniqueFeatureNames[i-1]);
+				const surroundingFeatureData = featurePoints.slice(firstOccurence).find(point => point.properties.feature_name === uniqueFeatureNames[i-1]);
 
 				if ( sandwichOccurence > 0 && surroundingFeatureData.properties.streamlvl === featureData.properties.streamlvl) {
 					return false;
@@ -446,7 +452,7 @@
 	}
 
 	const createArticialCameraPoints = (smoothedPath, coordinatePath, cameraTargetIndexGap, originPoint) => {
-		const firstPointsBearing = bearingBetween( coordinatePath[1], coordinatePath[0] );
+		const firstPointsBearing = bearingBetween( coordinatePath[(Math.min(coordinatePath.length-1, 10))], coordinatePath[0] );
 		const pointDistances = smoothedPath.slice(0, Math.min(80, smoothedPath.length-1)).map((coordinate, index) => {
 			return distance(coordinate, smoothedPath[index+1]);
 		});  
@@ -531,29 +537,56 @@
 		})
 	}
 
-	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4300, cameraPitch=70, targetRoute, cameraRoute, coordinatePath, routeDistance, cameraRouteDistance, trueRouteDistance, elevations, riverFeatures }) => {
+	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4300, cameraPitch=70, distanceGap, coordinatePath, elevations, riverFeatures }) => {
 		let start;
 
 		const stopPoints = riverFeatures.map(d => d.stop_point)
-		activeFeatureIndex = 0;
 		let stopPoint = stopPoints[0];
+		activeFeatureIndex = 0;
+		
+		let route = pathSmoother(coordinatePath, Math.min(Math.floor(9*altitudeMultiplier), Math.floor(coordinatePath.length / 2)));
+		let routeDistance = pathDistance(route);
+
+		let phase = 0;
+		let tick = 0;
+		let lastTime;
+		let phaseGap = distanceGap / routeDistance;
+
+		// This adjusts the run speed based on the altitude. It seems *very* complicated, but it's the closest I've come to keeping perceptual speed consistent.
+		let speedCoefficient = (1 / Math.pow((1 + 1.1*Math.log(altitudeMultiplier)), 1.25) );
 
 		const frame = (time) => {
-			if (!start) start = time;
+			if (!start) {
+				start = lastTime = time;
+			}
 
 			// If a user has clicked one of the features in the navigation box, we'll need to adjust the "phase" to jump to that feature
 			if (phaseJump !== undefined) {
-				const currentProgress = (time - start);
-				const newProgress = phaseJump * animationDuration;
-
-				start += currentProgress - newProgress;
+				phase = phaseJump;
 				stopPoint = stopPoints[activeFeatureIndex];
 
 				phaseJump = undefined;
 			}
 
+			if (altitudeChange) {
+				route = pathSmoother(coordinatePath, Math.min(Math.floor(9*altitudeMultiplier), Math.floor(coordinatePath.length / 2)));
+				routeDistance = pathDistance(route);
+
+				phaseGap = distanceGap / routeDistance;
+
+				// This adjusts the run speed based on the altitude. It seems *very* complicated, but it's the closest I've come to keeping perceptual speed consistent.
+				speedCoefficient = (1 / Math.pow((1 + 1.1*Math.log(altitudeMultiplier)), 1.25) );
+
+				altitudeChange = false;
+			}
+
 			// phase determines how far through the animation we are
-			const phase = (time - start) / animationDuration;
+			if (!paused) {
+				phase += (time - lastTime) / (animationDuration*speedCoefficient);
+			}
+			lastTime = time;
+
+			const adjustedTargetPhase = altitudeMultiplier*phaseGap + phase;
 
 			// When finished, exit animation loop and zoom out to show ending point
 			if (phase > 1 || aborted === true) {
@@ -572,26 +605,32 @@
 			const elevationStepProgress = elevations.length*phase - Math.floor(elevations.length*phase);
 
 			const elevationEstimate = elevationLast + ((elevationNext - elevationLast)*elevationStepProgress);
-			const tickElevation = cameraBaseAltitude + 1.25*Math.round(elevationEstimate);
+			const tickElevation = altitudeMultiplier*cameraBaseAltitude + 1.25*Math.round(elevationEstimate);
 
-			const alongRoute = along(
-				lineString(targetRoute),
-				routeDistance * phase
+			const alongTarget = along(
+				lineString(route),
+				routeDistance * (phase === 0 ? 0.00005 : phase)
 			).geometry.coordinates;
-			
-			const alongCamera = along(
-				lineString(cameraRoute),
-				cameraRouteDistance * phase
-			).geometry.coordinates;
-						
-			const bearing = bearingBetween( alongCamera, alongRoute );
-		
+
+			const alongCamera = (phase - altitudeMultiplier*phaseGap) < 0 ?
+				findArtificialCameraPoint({ distanceGap: altitudeMultiplier*distanceGap, originPoint: route[0], targetPoint: alongTarget}) 
+				:
+				along(
+					lineString(route),
+					routeDistance * (phase - altitudeMultiplier*phaseGap)
+				).geometry.coordinates;
+
+			const bearing = bearingBetween( alongCamera, alongTarget);
+			// console.log( (phase - altitudeMultiplier*phaseGap), alongCamera, bearing)
+
 			// Generate/position a camera along route, pointed in direction of target point at set pitch
 			positionCamera({ map, cameraCoordinates: alongCamera, elevation: tickElevation, pitch: cameraPitch, bearing });
 
 			// This will update the location of the marker on the locator map
-			// (may need to add a condition to keep this from updating on every tick, which is probably expensive and not necessary)
-			currentLocation = alongRoute;
+			if (tick % 5 === 0) {
+				currentLocation = alongTarget;
+			}
+			tick += 1;
 
 			window.requestAnimationFrame(frame);
 		}
@@ -624,6 +663,11 @@
 			resetMapState({ map });
 		})
 	};
+
+	const findArtificialCameraPoint = ({ distanceGap, originPoint, targetPoint}) => {
+		const bearing = bearingBetween(targetPoint, originPoint);
+		return destination(targetPoint, distanceGap, bearing).geometry.coordinates;
+	} 
 
 	const resetMapState = ({ map, error=false }) => {
 		map.interactive = true;
@@ -748,6 +792,16 @@
 		phaseJump = e.detail.pathProgress;
 	}
 
+	const setAltitudeMultipier = (e) => {
+		// console.log(e.target.value);
+		altitudeChange = true;
+		altitudeMultiplier = e.target.value;
+	}
+
+	const togglePause = () => {
+		paused = !paused;
+	}
+
 	$: coordinates.update(() => {
 		if (mapBounds._sw) {
 			return [
@@ -765,6 +819,18 @@
 		width: 100vw;
 		height: 100vh;
 		z-index: 1;
+	}
+
+	@media only screen and (min-width: 601px) {
+		.right-column {
+			display: flex;
+			position: absolute;
+			right: 3rem;
+			top: 2rem;
+			z-index: 20;
+			flex-direction: column;
+			gap: 2rem;
+		}
 	}
 
 	@media only screen and (max-width: 600px) {
@@ -795,6 +861,10 @@
 </div>
 
 <Prompt {vizState} {currentLocation} />
-<NavigationInfo on:abort-run={exitFunction} on:progress-set={(e) => handleJump(e) } {vizState} {activeFeatureIndex} {featureGroups} {totalLength} />
 <LocatorMap {bounds} {stateBoundaries} visibleIndex={null} {riverPath} {currentLocation} {vizState} {activeFeatureIndex} {featureGroups} />
 <ContactBox {vizState} />
+
+<div class="right-column">
+	<NavigationInfo on:abort-run={exitFunction} on:progress-set={(e) => handleJump(e) } {vizState} {activeFeatureIndex} {featureGroups} {totalLength} />
+	<Controls {setAltitudeMultipier} {altitudeMultiplier} {paused} {togglePause} {activeFeatureIndex} {vizState} />
+</div>
