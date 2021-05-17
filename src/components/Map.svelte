@@ -159,7 +159,7 @@
 		// console.log('Clicked on:', e.lngLat, 'Closest point:', originPoint);
 
 		// Construct full coordinate path by taking the first coordinate in each flowline (each coordinate in the flowline is an unnecessary level of detail)
-		const coordinatePath = flowlinesData.features.length > 3 ? flowlinesData.features.map( feature => feature.geometry.coordinates.slice(-1)[0] )
+		const coordinatePath = flowlinesData.features.length > 3 ? [flowlinesData.features[0].geometry.coordinates[0], ...flowlinesData.features.map( feature => feature.geometry.coordinates.slice(-1)[0] ) ]
 															 : flowlinesData.features.map( feature => feature.geometry.coordinates).flat().filter((d,i) => i % 2 === 0);
 
 		// Update props used by child components
