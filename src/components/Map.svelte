@@ -149,7 +149,6 @@
 		// Find the parent features of flowlines along the path
 		totalLength = flowlinesData.features[0].properties.pathlength > 0 ? flowlinesData.features[0].properties.pathlength : undefined;
 		const riverFeatures = getFeatureGroups(flowlinesData);
-		console.log(riverFeatures);
 		featureGroups = riverFeatures;
 
 		// Find start and end points
@@ -218,7 +217,7 @@
 		// const locationTracerPoint = addLocationMarker({ map, origin: coordinatePath[0] });
 
 		// Maintain a consistent speed using the route distance. The higher the speed coefficient, the slower the runner will move.
-		const speedCoefficient = smoothedPath.length < 50 ? 200 : 160 - 5*(cameraPitch - 70);
+		const speedCoefficient = smoothedPath.length < 50 ? 200 : 158 - 5*(cameraPitch - 70);
 		const animationDuration = Math.round(speedCoefficient*routeDistance);
 
 		map.once('moveend', () => {
@@ -309,8 +308,6 @@
 		let uniqueFeatureNames = featureNames.filter((item, i, ar) => ar.indexOf(item) === i);
 		const fullDistance = flowlinesData.features[0].properties.pathlength;
 
-		console.log(uniqueFeatureNames, fullDistance)
-
 		// This fixes a rare, but frustrating bug, where because I don't sample each flowline for VAA data, and because...
 		// I assume once a feature starts that it continues until the next unique feature, this function gets confused by...
 		// Long rivers sandwiching small unnames features, like the snake river in Idaho, and thinks that the small feature interruption
@@ -335,8 +332,6 @@
 				}
 			}
 		});
-
-		console.log(uniqueFeatureNames);
 
 		let riverFeatures = uniqueFeatureNames.map((feature, index) => {
 			
