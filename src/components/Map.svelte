@@ -323,7 +323,6 @@
 				const sandwichOccurence = featurePoints.slice(firstOccurence).findIndex(point => point.properties.feature_name === uniqueFeatureNames[i-1]);
 				const surroundingFeatureData = featurePoints.slice(firstOccurence).find(point => point.properties.feature_name === uniqueFeatureNames[i-1]);
 
-				console.log(featureData.properties, surroundingFeatureData?.properties)
 				if ( sandwichOccurence > 0 && surroundingFeatureData.properties.streamlvl === featureData.properties.streamlvl) {
 					return false;
 				}
