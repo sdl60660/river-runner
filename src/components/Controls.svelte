@@ -1,7 +1,6 @@
 <script>
-
-
     export let vizState;
+    export let activeFeatureIndex;
 
     export let paused;
     export let togglePause;
@@ -43,6 +42,7 @@
         width: 2.5rem;
         height: 2.5rem;
         font-weight: bold;
+        cursor: pointer;
     }
 
     #altitude {
@@ -64,7 +64,7 @@
 
 </style>
 
-<div class="wrapper" style="display: {vizState === "running" ? "grid" : "none"};">
+<div class="wrapper" style="display: {activeFeatureIndex >= 0 ? "grid" : "none"};">
 
     <div class="pause-button-wrapper">
         <button class="pause-button" on:click={togglePause}>{paused ? "▶" : "| |"}</button>
@@ -76,4 +76,5 @@
         <div class="slider-label slider-label-left">More Detail</div>
         <div class="slider-label slider-label-right">Faster</div>
     </div>
+
 </div>

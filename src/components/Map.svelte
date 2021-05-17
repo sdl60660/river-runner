@@ -149,6 +149,7 @@
 		// Find the parent features of flowlines along the path
 		totalLength = flowlinesData.features[0].properties.pathlength > 0 ? flowlinesData.features[0].properties.pathlength : undefined;
 		const riverFeatures = getFeatureGroups(flowlinesData);
+		console.log(riverFeatures);
 		featureGroups = riverFeatures;
 
 		// Find start and end points
@@ -192,7 +193,7 @@
 
 		const firstBearingPoint = along(
 			lineString(smoothedPath),
-			routeDistance * 0.0001
+			routeDistance * 0.00005
 		).geometry.coordinates;
 
 		const cameraStart = findArtificialCameraPoint({ distanceGap, originPoint: smoothedPath[0], targetPoint: firstBearingPoint}) 
@@ -205,6 +206,7 @@
 		const cameraPitch = calculatePitch(initialElevation, 1000*distance(cameraStart, smoothedPath[0]));
 		const { zoom, center } = precalculateInitialCamera({ map, cameraStart, initialElevation, initialBearing, cameraPitch });
 		altitudeMultiplier = 1;
+		paused = false;
 
 		// Fly to clicked point and pitch camera (initial "raindrop" animation)
 		map.flyTo({center, zoom, speed: 0.9, curve: 1, pitch: cameraPitch, bearing: initialBearing,
@@ -226,11 +228,9 @@
 				animationDuration,
 				cameraBaseAltitude,
 				cameraPitch,
-				cameraStart,
 				coordinatePath,
 				routeDistance,
 				distanceGap,
-				trueRouteDistance,
 				elevations,
 				riverFeatures
 			});
@@ -309,6 +309,8 @@
 		let uniqueFeatureNames = featureNames.filter((item, i, ar) => ar.indexOf(item) === i);
 		const fullDistance = flowlinesData.features[0].properties.pathlength;
 
+		console.log(uniqueFeatureNames, fullDistance)
+
 		// This fixes a rare, but frustrating bug, where because I don't sample each flowline for VAA data, and because...
 		// I assume once a feature starts that it continues until the next unique feature, this function gets confused by...
 		// Long rivers sandwiching small unnames features, like the snake river in Idaho, and thinks that the small feature interruption
@@ -321,9 +323,10 @@
 				const firstOccurence = featurePoints.findIndex(point => point.properties.feature_name === name);
 				const featureData = featurePoints.find(point => point.properties.feature_name === name);
 
-				const sandwichOccurence = featurePoints.slice(firstOccurence).findIndex(point => point.properties.feature_name === featureNames[i-1]);
-				const surroundingFeatureData = featurePoints.slice(firstOccurence).find(point => point.properties.feature_name === featureNames[i-1]);
+				const sandwichOccurence = featurePoints.slice(firstOccurence).findIndex(point => point.properties.feature_name === uniqueFeatureNames[i-1]);
+				const surroundingFeatureData = featurePoints.slice(firstOccurence).find(point => point.properties.feature_name === uniqueFeatureNames[i-1]);
 
+				console.log(featureData.properties, surroundingFeatureData?.properties)
 				if ( sandwichOccurence > 0 && surroundingFeatureData.properties.streamlvl === featureData.properties.streamlvl) {
 					return false;
 				}
@@ -332,6 +335,8 @@
 				}
 			}
 		});
+
+		console.log(uniqueFeatureNames);
 
 		let riverFeatures = uniqueFeatureNames.map((feature, index) => {
 			
@@ -538,7 +543,7 @@
 		})
 	}
 
-	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4300, cameraPitch=70, distanceGap, cameraStart, coordinatePath, trueRouteDistance, elevations, riverFeatures }) => {
+	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4300, cameraPitch=70, distanceGap, coordinatePath, elevations, riverFeatures }) => {
 		let start;
 
 		const stopPoints = riverFeatures.map(d => d.stop_point)
@@ -549,6 +554,7 @@
 		let routeDistance = pathDistance(route);
 
 		let phase = 0;
+		let tick = 0;
 		let lastTime;
 		let phaseGap = distanceGap / routeDistance;
 
@@ -609,7 +615,7 @@
 
 			const alongTarget = along(
 				lineString(route),
-				routeDistance * (phase === 0 ? 0.0001 : phase)
+				routeDistance * (phase === 0 ? 0.00005 : phase)
 			).geometry.coordinates;
 
 			const alongCamera = (phase - altitudeMultiplier*phaseGap) < 0 ?
@@ -627,8 +633,10 @@
 			positionCamera({ map, cameraCoordinates: alongCamera, elevation: tickElevation, pitch: cameraPitch, bearing });
 
 			// This will update the location of the marker on the locator map
-			// (may need to add a condition to keep this from updating on every tick, which is probably expensive and not necessary)
-			currentLocation = alongTarget;
+			if (tick % 5 === 0) {
+				currentLocation = alongTarget;
+			}
+			tick += 1;
 
 			window.requestAnimationFrame(frame);
 		}
@@ -864,5 +872,5 @@
 
 <div class="right-column">
 	<NavigationInfo on:abort-run={exitFunction} on:progress-set={(e) => handleJump(e) } {vizState} {activeFeatureIndex} {featureGroups} {totalLength} />
-	<Controls {setAltitudeMultipier} {altitudeMultiplier} {paused} {togglePause} {vizState} />
+	<Controls {setAltitudeMultipier} {altitudeMultiplier} {paused} {togglePause} {activeFeatureIndex} {vizState} />
 </div>
