@@ -13,7 +13,7 @@
         findLocation({ coordinates: currentLocation, })
     }
 
-    $: if (vizState === "running") {
+    $: if (vizState === "running" || vizState === "overview") {
         message = "";
         loading = false;
     }

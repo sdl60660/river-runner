@@ -1,6 +1,7 @@
 <script>
     import { onMount, createEventDispatcher } from 'svelte';
     import { stoppingFeature, startLocation } from '../state';
+    import { copyTextToClipboard } from '../utils';
 
     import CloseButton from './CloseButton.svelte';
 
@@ -8,6 +9,8 @@
     export let featureGroups = [];
     export let activeFeatureIndex;
     export let totalLength;
+
+    export let startCoordinates;
     
     let visible = false;
     let screenWidth = 0;
@@ -15,14 +18,30 @@
     let currentStoppingFeature = null;
     let currentStartLocation = null;
 
-    $: visible = (vizState === "running") ? true : (vizState === "uninitialized") ? false : visible;
+    let copyPopupVisible = false;
+
+    $: visible = (vizState === "running" || vizState === "overview") ? true : (vizState === "uninitialized") ? false : visible;
 
     const dispatch = createEventDispatcher();
     
+    const runNavigationPath = () => {
+        dispatch('run-path');
+    } 
+
+    const exitNavigationPath = () => {
+        dispatch('exit-path');
+    };
+
     const setPhase = (pathProgress, featureIndex) => {
         if ( activeFeatureIndex >= 0 ) {
             dispatch('progress-set', { pathProgress, featureIndex })
         }
+    }
+
+    const copyPathLink = () => {
+        copyTextToClipboard(`https://river-runner.samlearner.com/?lng=${startCoordinates.lng}&lat=${startCoordinates.lat}`);
+        copyPopupVisible = true;
+        setTimeout(() => { copyPopupVisible = false; }, 1200);
     }
 
     onMount(() => {
@@ -65,7 +84,7 @@
     }
 
     .feature-listing {
-        margin: auto 8px;
+        margin: 2px 10px;
         padding-top: 2px;
         padding-bottom: 2px;
         font-size: 0.95rem;
@@ -119,7 +138,7 @@
     }
     
     .total-length {
-        font-weight: bold;
+        font-weight: 600;
         position: absolute;
         color: white;
 
@@ -127,11 +146,72 @@
         text-align: center;
         margin: 3px 0 0 3px;
 
+        top: -5px;
+        transform: translate(0, -100%);
+
+
         /* bottom: 0.5rem; */
+    }
+
+    .pre-run-controls {
+        position: absolute;
+        display: flex;
+        width: calc(100% - 2rem);
+        margin-left: 1rem;
+    }
+
+    .control-button {
+        /* position: absolute; */
+        /* bottom: 0; */
+        /* padding: 0.2rem; */
+        border-radius: 8rem;
+        /* border: 1px solid black; */
+        width: 2.5rem;
+        height: 2.5rem;
+        font-weight: bold;
+        /* font-size: 0.8rem; this is just until I replace the pause icon with an svg */
+        cursor: pointer;
+        margin: auto;
+        border: 1px solid black;
+
+        transform: translate(0, -30%);
+    }
+
+    .svg-icon-img {
+        height: 100%;
+        width: auto;
+    }
+
+    .left-shift {
+        margin-left: 2px;
+    }
+
+    .copy-popup {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        font-size: 0.8rem;
+        font-family: 'Courier New';
+        background-color: white;
+        border: 1px solid black;
+        padding: 2px;
+        width: 8rem;
+        transform: translate(-50%, 110%);
+        border-radius: 2px;
+        opacity: 0.95;
+
+        /* -webkit-transition: opacity 3s ease-in-out;
+        -moz-transition: opacity 3s ease-in-out;
+        -ms-transition: opacity 3s ease-in-out;
+        -o-transition: opacity 3s ease-in-out; */
     }
 
     /* Mobile */
     @media only screen and (max-width: 600px) {
+        .pre-run-controls {
+            display: none;
+        }
+
         .navbox-wrapper {
             position: absolute;
             z-index: 20;
@@ -142,7 +222,7 @@
         }
 
         .info-box {
-            background-color: rgba(243, 243, 243, 0.9);
+            background-color: rgba(243, 243x, 243, 0.9);
             z-index: 20;
             border: 1px solid black;
             font-size: 1rem;
@@ -180,6 +260,8 @@
 
 <div class="navbox-wrapper" style={`display: ${visible === true && (screenWidth > 600 || (activeFeatureIndex >= 0 && featureGroups)) ? "block" : "none"};`}>
 
+    <div class="total-length" style="display: {screenWidth > 600 && totalLength ? "block" : "none"}">Total Length: {Math.round(totalLength)} km</div>
+
     <div class="info-box">
 
         <!-- Desktop/Tablet -->
@@ -190,7 +272,7 @@
                     style="font-weight:{index === activeFeatureIndex ? "bold" : "normal"};"
                     key={i}
                     class="feature-listing river-feature"
-                    class:river-feature="{activeFeatureIndex >= 0}"
+                    class:river-feature="{activeFeatureIndex >= 0 && vizState === "running"}"
                     on:click={() => setPhase(progress, index)}
                 >
                     {i+1}. {name} ({length_km} km)
@@ -202,7 +284,7 @@
                 <div style=
                     "
                     background-color: {activeFeatureIndex+1 === i ? "rgb(76, 79, 230)" : activeFeatureIndex+1 > i ? "rgb(117, 117, 117)" : "rgb(243, 243, 243)" };
-                    top: calc(1rem + 4px + ({(i / (featureGroups.length + 2))}*(100% - 2rem)));
+                    top: calc(1rem + 8px + ({(i / (featureGroups.length + 2))}*(100% - 2rem - 6px)));
                     "
                     class="progress-point"
                     key={i}>
@@ -233,9 +315,16 @@
 
     </div>
     
-    <div style="display: {activeFeatureIndex >= 0 ? "block" : "none"};">
+    <div style="display: {(activeFeatureIndex >= 0 && vizState === "running") ? "block" : "none"};">
         <CloseButton on:abort-run />
     </div>
 
-    <div class="total-length" style="display: {screenWidth > 600 && totalLength ? "block" : "none"}">Total Length: {Math.round(totalLength)} km</div>
+    <div class="pre-run-controls" style="display: {(screenWidth > 600 && vizState === "overview") ? "flex" : "none"}">
+        <button class="control-button start-button" on:click={runNavigationPath}><img class="svg-icon-img left-shift" src="/images/play.svg" alt={"start river run"} title={"Start river run"} /></button>
+        <button class="control-button exit-button" on:click={exitNavigationPath}><img class="svg-icon-img" src="/images/x.svg" alt={"exit this path"} title={"Exit this path"} /></button>
+        <button class="control-button share-button" on:click={copyPathLink}>
+            <div class="copy-popup" style="display: {copyPopupVisible ? "block" : "none"};">Link copied!</div>
+            <img class="svg-icon-img" src="/images/copy.svg" alt={"share this path"} title={"Share this path"} />
+        </button>
+    </div>
 </div>

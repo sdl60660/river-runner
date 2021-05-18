@@ -26,15 +26,20 @@
 	export let mapStyle;
 	export let addTopo;
 
+	const urlParams = new URLSearchParams(window.location.search);
+	let startingSearch = urlParams.has('lat') ? { lngLat: { lat: +urlParams.get('lat'), lng: +urlParams.get('lng') }}: null;
+
 	let container;
 	let map;
 	let mapBounds = bounds;
+	let runSettings = {};
 
 	let aborted = false;
 	let vizState = "uninitialized";
 
 	let riverPath;
 	let currentLocation;
+	let startCoordinates;
 	let featureGroups = [];
 	let activeFeatureIndex = -1;
 	let totalLength;
@@ -74,7 +79,12 @@
 					addTopoLayer({ map });
 				}
 
-				const geocoder = initGeocoder({ map });		
+				const geocoder = initGeocoder({ map });	
+				
+				if (startingSearch) {
+					initRunner({ map, e: startingSearch });
+					startingSearch = null;
+				}
             });
 
 			map.on('click', async (e) => {
@@ -132,6 +142,7 @@
 		d3.select(".mapboxgl-ctrl-geocoder").style("display", "none");
 
 		currentLocation = e.lngLat;
+		startCoordinates = e.lngLat;
 		
 		// Use the NLDI API to find the closest flowline coordinate to the click
 		const closestFeature = await findClosestFeature(e);
@@ -198,13 +209,23 @@
 
 		const cameraStart = findArtificialCameraPoint({ distanceGap, originPoint: smoothedPath[0], targetPoint: firstBearingPoint}) 
 
-
 		// console.log('Distances:', routeDistance, cameraRouteDistance, trueRouteDistance);
 		const initialBearing = bearingBetween( cameraStart, smoothedPath[0] );
 
 		// We'll calculate the pitch based on the altitude/distance from camera to target
 		const cameraPitch = calculatePitch(initialElevation, 1000*distance(cameraStart, smoothedPath[0]));
+
+		// Pre-calculate initial camera center/zoom based on starting coordinates, so that flyTo fucntion can end in correct place
 		const { zoom, center } = precalculateInitialCamera({ map, cameraStart, initialElevation, initialBearing, cameraPitch });
+
+		runSettings = { zoom, center, cameraBaseAltitude, cameraPitch, coordinatePath, initialBearing, smoothedPath, routeDistance, distanceGap, elevations, riverFeatures };
+		vizState = "overview";
+
+		return;
+	}
+
+	const startRun = ({ map, zoom, center, cameraBaseAltitude, cameraPitch, coordinatePath, initialBearing, smoothedPath, routeDistance, distanceGap, elevations, riverFeatures }) => {
+
 		altitudeMultiplier = 1;
 		paused = false;
 		playbackSpeed = 1;
@@ -671,12 +692,6 @@
 
 		const bounds = getDataBounds(coordinatePath, true);
 
-		// map.flyTo({
-		// 	bearing: 0,
-		// 	pitch: 0,
-		// 	zoom: 6
-		// });
-
 		map.fitBounds(bounds, {
 			bearing: 0,
 			pitch: 0,
@@ -686,7 +701,8 @@
 		})
 
 		map.once('moveend', () => {
-			resetMapState({ map });
+			vizState = "overview";
+			// resetMapState({ map });
 		})
 	};
 
@@ -699,6 +715,8 @@
 		map.interactive = true;
 		map.scrollZoom.enable();
 		aborted = false;
+
+		clearRiverLines({ map });
 
 		currentLocation = undefined;
 		activeFeatureIndex = -1;
@@ -730,9 +748,7 @@
 		return data;
 	}
 
-	const drawFlowPath = ({ map, featureData, lineWidth=2 }) => {
-		const sourceID = 'route'
-
+	const clearRiverLines = ({ map, sourceID="route"}) => {
 		if (map.getLayer(sourceID)) {
 			map.removeLayer(sourceID);
 		}
@@ -740,7 +756,11 @@
 		if (map.getSource(sourceID)) {
 			map.removeSource(sourceID);
 		}
-		
+	}
+
+	const drawFlowPath = ({ map, featureData, lineWidth=2 }) => {
+		const sourceID = 'route'
+		clearRiverLines({ map, sourceID })
 		addRivers({ map, featureData, lineWidth, sourceID });
 	}
 
@@ -874,10 +894,10 @@
 			display: flex;
 			position: absolute;
 			right: 3rem;
-			top: 2rem;
+			top: 3rem;
 			z-index: 20;
 			flex-direction: column;
-			gap: 2rem;
+			gap: 1rem;
 		}
 	}
 
@@ -920,6 +940,9 @@
 <ContactBox {vizState} />
 
 <div class="right-column">
-	<NavigationInfo on:abort-run={exitFunction} on:progress-set={(e) => handleJump(e) } {vizState} {activeFeatureIndex} {featureGroups} {totalLength} />
-	<Controls {setAltitudeMultipier} {altitudeMultiplier} {jumpIndex} {playbackSpeed} {setPlaybackSpeed} {paused} {togglePause} {activeFeatureIndex} featureGroupLength={featureGroups.length} />
+	<NavigationInfo on:abort-run={exitFunction} on:progress-set={(e) => handleJump(e) }
+		on:run-path={() => { startRun({ map, ...runSettings }) }} on:exit-path={() => resetMapState({ map })}
+		{vizState} {activeFeatureIndex} {featureGroups} {totalLength} {startCoordinates}
+	/>
+	<Controls {setAltitudeMultipier} {altitudeMultiplier} {jumpIndex} {playbackSpeed} {setPlaybackSpeed} {paused} {togglePause} {activeFeatureIndex} {vizState} featureGroupLength={featureGroups.length} />
 </div>

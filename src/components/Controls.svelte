@@ -1,5 +1,6 @@
 <script>
     export let activeFeatureIndex;
+    export let vizState;
     export let featureGroupLength;
 
     export let paused;
@@ -144,7 +145,7 @@
 
 </style>
 
-<div class="wrapper" style="display: {activeFeatureIndex >= 0 ? "grid" : "none"};">
+<div class="wrapper" style="display: {activeFeatureIndex >= 0 && vizState === "running" ? "grid" : "none"};">
 
     <div class="button-wrapper">
         <button class="control-button skip-back-button" class:button-active={false} on:click={() => { jumpIndex("backward"); }} disabled={activeFeatureIndex <= 0}><img class="svg-icon-img" src="/images/skip-back.svg" alt="skip back button"/></button>
