@@ -17,6 +17,10 @@
         message = "";
         loading = false;
     }
+    else if (vizState === "overview") {
+        message = window.innerWidth > 600 ? "" : "Run the path again, copy a link to share, or exit and try another path using the buttons below.";
+        loading = false;
+    }
     else if (vizState === "uninitialized") {
         resetPrompt();
     }

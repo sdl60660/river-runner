@@ -26,15 +26,20 @@
 	export let mapStyle;
 	export let addTopo;
 
+	const urlParams = new URLSearchParams(window.location.search);
+	let startingSearch = urlParams.has('lat') ? { lngLat: { lat: +urlParams.get('lat'), lng: +urlParams.get('lng') }}: null;
+
 	let container;
 	let map;
 	let mapBounds = bounds;
+	let runSettings = {};
 
 	let aborted = false;
 	let vizState = "uninitialized";
 
 	let riverPath;
 	let currentLocation;
+	let startCoordinates;
 	let featureGroups = [];
 	let activeFeatureIndex = -1;
 	let totalLength;
@@ -74,7 +79,12 @@
 					addTopoLayer({ map });
 				}
 
-				const geocoder = initGeocoder({ map });		
+				const geocoder = initGeocoder({ map });	
+				
+				if (startingSearch) {
+					initRunner({ map, e: startingSearch });
+					startingSearch = null;
+				}
             });
 
 			map.on('click', async (e) => {
@@ -132,6 +142,7 @@
 		d3.select(".mapboxgl-ctrl-geocoder").style("display", "none");
 
 		currentLocation = e.lngLat;
+		startCoordinates = e.lngLat;
 		
 		// Use the NLDI API to find the closest flowline coordinate to the click
 		const closestFeature = await findClosestFeature(e);
@@ -198,13 +209,29 @@
 
 		const cameraStart = findArtificialCameraPoint({ distanceGap, originPoint: smoothedPath[0], targetPoint: firstBearingPoint}) 
 
-
 		// console.log('Distances:', routeDistance, cameraRouteDistance, trueRouteDistance);
 		const initialBearing = bearingBetween( cameraStart, smoothedPath[0] );
 
 		// We'll calculate the pitch based on the altitude/distance from camera to target
 		const cameraPitch = calculatePitch(initialElevation, 1000*distance(cameraStart, smoothedPath[0]));
+
+		// Pre-calculate initial camera center/zoom based on starting coordinates, so that flyTo fucntion can end in correct place
 		const { zoom, center } = precalculateInitialCamera({ map, cameraStart, initialElevation, initialBearing, cameraPitch });
+
+		runSettings = { zoom, center, cameraBaseAltitude, cameraPitch, coordinatePath, initialBearing, smoothedPath, routeDistance, distanceGap, elevations, riverFeatures };
+		startRun({ map, ...runSettings });
+		
+		// When using the vizState change/return instead of startRun, it displays the overview before automatically starting the run
+		// This is probably ideal in an ideal world, but I'm worried too many users will just miss the run functionality entirely
+		// vizState = "overview";
+		// map.scrollZoom.enable();
+
+		// return;
+	}
+
+	const startRun = ({ map, zoom, center, cameraBaseAltitude, cameraPitch, coordinatePath, initialBearing, smoothedPath, routeDistance, distanceGap, elevations, riverFeatures }) => {		
+		map.scrollZoom.disable();
+
 		altitudeMultiplier = 1;
 		paused = false;
 		playbackSpeed = 1;
@@ -215,6 +242,7 @@
 				return t;
 			}
 		});
+
 		vizState = "running";
 		// const locationTracerPoint = addLocationMarker({ map, origin: coordinatePath[0] });
 
@@ -365,14 +393,14 @@
 				feature.length_km = Math.round(feature.distance_from_destination);
 				feature.stop_point = null;
 
-				feature.feature_data = [ { geometry: { coordinates: flowlinesData.features.slice(feature.feature_data_index).map( feature => feature.geometry.coordinates.slice(-1)[0] ) }} ];
+				feature.feature_data = [ { geometry: { coordinates: flowlinesData.features.slice(feature.feature_data_index).map( feature => feature.geometry.coordinates ).flat() }} ];
 			}
 			else {
 				const featureLength = feature.distance_from_destination - riverFeatures[i+1].distance_from_destination;
 				feature.length_km = Math.round(featureLength);
 				feature.stop_point = riverFeatures[i+1].progress;
 
-				feature.feature_data = [ { geometry: { coordinates: flowlinesData.features.slice(feature.feature_data_index, riverFeatures[i+1].feature_data_index).map( feature => feature.geometry.coordinates.slice(-1)[0] ) }} ];
+				feature.feature_data = [ { geometry: { coordinates: flowlinesData.features.slice(feature.feature_data_index, riverFeatures[i+1].feature_data_index).map( feature => feature.geometry.coordinates ).flat() }} ];
 			}
 		})
 
@@ -545,8 +573,6 @@
 		const startPoints = riverFeatures.map(d => d.progress);
 		let startPoint = startPoints[0];
 
-		console.log(startPoints, startPoint);
-
 		const stopPoints = riverFeatures.map(d => d.stop_point)
 		let stopPoint = stopPoints[0];
 		activeFeatureIndex = 0;
@@ -668,14 +694,12 @@
 		if (!aborted) {
 			activeFeatureIndex += 1;
 		}
+		else {
+			activeFeatureIndex = -1;
+		}
 
+		aborted = false;
 		const bounds = getDataBounds(coordinatePath, true);
-
-		// map.flyTo({
-		// 	bearing: 0,
-		// 	pitch: 0,
-		// 	zoom: 6
-		// });
 
 		map.fitBounds(bounds, {
 			bearing: 0,
@@ -686,7 +710,10 @@
 		})
 
 		map.once('moveend', () => {
-			resetMapState({ map });
+			vizState = "overview";
+			// map.interactive = true;
+			map.scrollZoom.enable();
+			// resetMapState({ map });
 		})
 	};
 
@@ -699,6 +726,8 @@
 		map.interactive = true;
 		map.scrollZoom.enable();
 		aborted = false;
+
+		clearRiverLines({ map });
 
 		currentLocation = undefined;
 		activeFeatureIndex = -1;
@@ -730,9 +759,7 @@
 		return data;
 	}
 
-	const drawFlowPath = ({ map, featureData, lineWidth=2 }) => {
-		const sourceID = 'route'
-
+	const clearRiverLines = ({ map, sourceID="route"}) => {
 		if (map.getLayer(sourceID)) {
 			map.removeLayer(sourceID);
 		}
@@ -740,8 +767,11 @@
 		if (map.getSource(sourceID)) {
 			map.removeSource(sourceID);
 		}
-		
-		addRivers({ map, featureData, lineWidth, sourceID });
+	}
+
+	const drawFlowPath = ({ map, featureData, lineColor="steelblue", lineWidth=2, sourceID='route'}) => {
+		clearRiverLines({ map, sourceID })
+		addRivers({ map, featureData, lineColor, lineWidth, sourceID });
 	}
 
 	const addRivers = ({ map, featureData, lineColor="steelblue", lineWidth=1, sourceID='route' }) => {
@@ -781,6 +811,20 @@
 				'line-width': lineWidth
 			}
 		});
+	}
+
+	const highlightRiverFeature = (featureIndex) => {
+		drawFlowPath({
+			map,
+			featureData: featureGroups[featureIndex].feature_data,
+			lineColor: "yellow",
+			lineWidth: 4,
+			sourceID: "highlighted-section"
+		});
+	}
+
+	const resetRiverHighlight = () => {
+		clearRiverLines({ map, sourceID: 'highlighted-section' });
 	}
 
 	const addTopoLayer = ({ map }) => {
@@ -874,10 +918,10 @@
 			display: flex;
 			position: absolute;
 			right: 3rem;
-			top: 2rem;
+			top: 3rem;
 			z-index: 20;
 			flex-direction: column;
-			gap: 2rem;
+			gap: 1rem;
 		}
 	}
 
@@ -920,6 +964,14 @@
 <ContactBox {vizState} />
 
 <div class="right-column">
-	<NavigationInfo on:abort-run={exitFunction} on:progress-set={(e) => handleJump(e) } {vizState} {activeFeatureIndex} {featureGroups} {totalLength} />
-	<Controls {setAltitudeMultipier} {altitudeMultiplier} {jumpIndex} {playbackSpeed} {setPlaybackSpeed} {paused} {togglePause} {activeFeatureIndex} featureGroupLength={featureGroups.length} />
+	<NavigationInfo
+		on:highlight-feature={(e) => highlightRiverFeature(e.detail.featureIndex)}
+		on:remove-highlight={resetRiverHighlight}
+		on:run-path={() => { startRun({ map, ...runSettings }) }}
+		on:exit-path={() => resetMapState({ map })}
+		on:abort-run={exitFunction}
+		on:progress-set={(e) => handleJump(e) }
+		{vizState} {activeFeatureIndex} {featureGroups} {totalLength} {startCoordinates}
+	/>
+	<Controls {setAltitudeMultipier} {altitudeMultiplier} {jumpIndex} {playbackSpeed} {setPlaybackSpeed} {paused} {togglePause} {activeFeatureIndex} {vizState} featureGroupLength={featureGroups.length} />
 </div>
