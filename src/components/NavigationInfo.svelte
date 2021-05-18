@@ -157,6 +157,12 @@
             text-align: center;
             cursor: unset;
         }
+
+        .progress-point {
+            left: unset;
+            top: 0;
+            transform: translate(0, -50%);
+        }
     }
 
     /* Tablet */
@@ -210,6 +216,17 @@
             {:else}
                 <div class="feature-listing">{featureGroups[activeFeatureIndex].name} ({featureGroups[activeFeatureIndex].length_km} km)</div>
             {/if}
+
+            {#each featureGroups as progressPoint, i}
+                <div style=
+                    "
+                    background-color: {activeFeatureIndex === i ? "rgb(76, 79, 230)" : activeFeatureIndex > i ? "rgb(117, 117, 117)" : "rgb(243, 243, 243)" };
+                    left: calc(1rem + ({(i / (featureGroups.length))}*100%));
+                    "
+                    class="progress-point"
+                    key={i}>
+                </div>
+            {/each}
         {/if}
 
     </div>
