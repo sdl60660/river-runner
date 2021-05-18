@@ -341,7 +341,7 @@
         <button class="control-button start-button" on:click={runNavigationPath}><img class="svg-icon-img" src="/images/repeat.svg" alt={"restart river run"} title={"Restart river run"} /></button>
         <button class="control-button share-button" on:click={copyPathLink}>
             <div class="copy-popup" style="display: {copyPopupVisible ? "block" : "none"};">Link copied!</div>
-            <img class="svg-icon-img" src="/images/copy.svg" alt={"share this path"} title={"Share this path"} />
+            <img class="svg-icon-img" src="/images/link.svg" alt={"copy a link to this path"} title={"Share this path"} />
         </button>
         <button class="control-button exit-button" on:click={exitNavigationPath}><img class="svg-icon-img" src="/images/x.svg" alt={"exit this path"} title={"Exit this path"} /></button>
     </div>
