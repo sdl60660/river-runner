@@ -388,14 +388,14 @@
 				feature.length_km = Math.round(feature.distance_from_destination);
 				feature.stop_point = null;
 
-				feature.feature_data = [ { geometry: { coordinates: flowlinesData.features.slice(feature.feature_data_index).map( feature => feature.geometry.coordinates.slice(-1)[0] ) }} ];
+				feature.feature_data = [ { geometry: { coordinates: flowlinesData.features.slice(feature.feature_data_index).map( feature => feature.geometry.coordinates ).flat() }} ];
 			}
 			else {
 				const featureLength = feature.distance_from_destination - riverFeatures[i+1].distance_from_destination;
 				feature.length_km = Math.round(featureLength);
 				feature.stop_point = riverFeatures[i+1].progress;
 
-				feature.feature_data = [ { geometry: { coordinates: flowlinesData.features.slice(feature.feature_data_index, riverFeatures[i+1].feature_data_index).map( feature => feature.geometry.coordinates.slice(-1)[0] ) }} ];
+				feature.feature_data = [ { geometry: { coordinates: flowlinesData.features.slice(feature.feature_data_index, riverFeatures[i+1].feature_data_index).map( feature => feature.geometry.coordinates ).flat() }} ];
 			}
 		})
 
@@ -691,6 +691,9 @@
 		if (!aborted) {
 			activeFeatureIndex += 1;
 		}
+		else {
+			activeFeatureIndex = -1;
+		}
 
 		const bounds = getDataBounds(coordinatePath, true);
 
@@ -810,7 +813,7 @@
 		console.log(featureGroups[featureIndex].feature_data)
 		drawFlowPath({
 			map,
-			featureData: [featureGroups[featureIndex].feature_data[0]],
+			featureData: featureGroups[featureIndex].feature_data,
 			lineColor: "yellow",
 			lineWidth: 4,
 			sourceID: "highlighted-section"
