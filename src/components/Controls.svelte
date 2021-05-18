@@ -82,6 +82,10 @@
         margin: auto;
     }
 
+    .skip-back-button, .skip-forward-button {
+        display: none;
+    }
+
     @media only screen and (max-width: 600px) {
         .detail-speed-slider {
             display: none;
@@ -89,6 +93,39 @@
 
         .wrapper {
             background-color: none;
+        }
+
+        .button-wrapper {
+            z-index: 30;
+            position: absolute;
+            left: 50%;
+            top: 20vh;
+            transform: translate(-50%, 50%);
+            gap: 1.5rem;
+            display: none;
+        }
+
+        .control-button {
+            padding: 0.2rem;
+            border-radius: 8rem;
+            /* border: 1px solid black; */
+            width: 1.5rem;
+            height: 1.5rem;
+            font-weight: bold;
+            /* font-size: 0.8rem; this is just until I replace the pause icon with an svg */
+            cursor: pointer;
+            margin: auto;
+            border: 1px solid black;
+        }
+
+        .svg-icon-img {
+            height: 90%;
+            width: auto;
+            margin: auto;
+        }
+
+        .skip-back-button, .skip-forward-button {
+            display: block;
         }
     }
 
@@ -104,9 +141,11 @@
 <div class="wrapper" style="display: {activeFeatureIndex >= 0 ? "grid" : "none"};">
 
     <div class="button-wrapper">
+        <button class="control-button skip-back-button" class:button-active={playbackSpeed === -1} on:click={() => {}}><img class="svg-icon-img" src="/images/skip-back.svg" alt="skip back button"/></button>
         <button class="control-button rewind-button" class:button-active={playbackSpeed === -1} on:click={() => setPlaybackSpeed(-1)}><img class="svg-icon-img" src="/images/rewind.svg" alt="rewind button"/></button>
-        <button class="control-button pause-button" on:click={togglePause}>{(paused || playbackSpeed !== 1) ? "▶" : "| |"}</button>
+        <button class="control-button pause-button" on:click={togglePause}><img class="svg-icon-img" src="{(paused || playbackSpeed !== 1) ? "/images/play.svg" : "images/pause.svg"}" alt={(paused || playbackSpeed !== 1) ? "play button" : "pause button"} /></button>
         <button class="control-button fastforward-button" class:button-active={playbackSpeed === 2} on:click={() => setPlaybackSpeed(2)}><img class="svg-icon-img" src="/images/fast-forward.svg" alt="fast-forward button"/></button>
+        <button class="control-button skip-forward-button" class:button-active={playbackSpeed === -1} on:click={() => {}}><img class="svg-icon-img" src="/images/skip-forward.svg" alt="skip forward button"/></button>
     </div>
 
     <div class="detail-speed-slider">
