@@ -1,12 +1,14 @@
 <script>
-    export let vizState;
     export let activeFeatureIndex;
+    export let featureGroupLength;
 
     export let paused;
     export let togglePause;
 
     export let playbackSpeed;
     export let setPlaybackSpeed;
+
+    export let jumpIndex;
 
     export let altitudeMultiplier;
     export let setAltitudeMultipier;
@@ -99,18 +101,18 @@
             z-index: 30;
             position: absolute;
             left: 50%;
-            top: 20vh;
+            bottom: 5vh;
             transform: translate(-50%, 50%);
             gap: 1.5rem;
-            display: none;
+            /* display: none; */
         }
 
         .control-button {
-            padding: 0.2rem;
+            /* padding: 0.2rem; */
             border-radius: 8rem;
             /* border: 1px solid black; */
-            width: 1.5rem;
-            height: 1.5rem;
+            width: 2.5;
+            height: 2.5rem;
             font-weight: bold;
             /* font-size: 0.8rem; this is just until I replace the pause icon with an svg */
             cursor: pointer;
@@ -127,6 +129,10 @@
         .skip-back-button, .skip-forward-button {
             display: block;
         }
+
+        .skip-back-button img, .skip-forward-button img {
+            height: 80%;
+        }
     }
 
     /* Tablet */
@@ -141,11 +147,11 @@
 <div class="wrapper" style="display: {activeFeatureIndex >= 0 ? "grid" : "none"};">
 
     <div class="button-wrapper">
-        <button class="control-button skip-back-button" class:button-active={playbackSpeed === -1} on:click={() => {}}><img class="svg-icon-img" src="/images/skip-back.svg" alt="skip back button"/></button>
+        <button class="control-button skip-back-button" class:button-active={false} on:click={() => { jumpIndex("backward"); }} disabled={activeFeatureIndex <= 0}><img class="svg-icon-img" src="/images/skip-back.svg" alt="skip back button"/></button>
         <button class="control-button rewind-button" class:button-active={playbackSpeed === -1} on:click={() => setPlaybackSpeed(-1)}><img class="svg-icon-img" src="/images/rewind.svg" alt="rewind button"/></button>
         <button class="control-button pause-button" on:click={togglePause}><img class="svg-icon-img" src="{(paused || playbackSpeed !== 1) ? "/images/play.svg" : "images/pause.svg"}" alt={(paused || playbackSpeed !== 1) ? "play button" : "pause button"} /></button>
         <button class="control-button fastforward-button" class:button-active={playbackSpeed === 2} on:click={() => setPlaybackSpeed(2)}><img class="svg-icon-img" src="/images/fast-forward.svg" alt="fast-forward button"/></button>
-        <button class="control-button skip-forward-button" class:button-active={playbackSpeed === -1} on:click={() => {}}><img class="svg-icon-img" src="/images/skip-forward.svg" alt="skip forward button"/></button>
+        <button class="control-button skip-forward-button" class:button-active={false} on:click={() => { jumpIndex("forward"); }} disabled={activeFeatureIndex >= featureGroupLength-1}><img class="svg-icon-img" src="/images/skip-forward.svg" alt="skip forward button"/></button>
     </div>
 
     <div class="detail-speed-slider">

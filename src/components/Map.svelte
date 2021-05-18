@@ -13,7 +13,7 @@
 	import Controls from './Controls.svelte';
 
 	import along from '@turf/along';
-	import { featureCollection, lineString } from '@turf/helpers';
+	import { feature, featureCollection, lineString } from '@turf/helpers';
 	import lineDistance from '@turf/line-distance';
 	import distance from '@turf/distance';
 	import destination from '@turf/destination';
@@ -306,7 +306,6 @@
 
 	const getFeatureGroups = (flowlinesData) => {
 		const featurePoints = flowlinesData.features.filter( feature => feature.properties.feature_id );
-		console.log(featurePoints);
 		const featureNames = featurePoints.map( feature => feature.properties.feature_id );
 		let uniqueFeatureNames = featureNames.filter((item, i, ar) => ar.indexOf(item) === i);
 		const fullDistance = flowlinesData.features[0].properties.pathlength;
@@ -819,6 +818,17 @@
 		phaseJump = e.detail.pathProgress;
 	}
 
+	const jumpIndex = (direction) => {
+		if (direction === "forward" && activeFeatureIndex+1 < featureGroups.length) {
+			activeFeatureIndex = Math.min(activeFeatureIndex+1, featureGroups.length - 1);
+			phaseJump = featureGroups[activeFeatureIndex].progress;
+		} 
+		else if (direction === "backward" && activeFeatureIndex-1 >= 0) {
+			activeFeatureIndex = Math.max( activeFeatureIndex-1, 0);
+			phaseJump = featureGroups[activeFeatureIndex].progress;
+		}
+	}
+
 	const setAltitudeMultipier = (e) => {
 		// console.log(e.target.value);
 		altitudeChange = true;
@@ -911,5 +921,5 @@
 
 <div class="right-column">
 	<NavigationInfo on:abort-run={exitFunction} on:progress-set={(e) => handleJump(e) } {vizState} {activeFeatureIndex} {featureGroups} {totalLength} />
-	<Controls {setAltitudeMultipier} {altitudeMultiplier} {playbackSpeed} {setPlaybackSpeed} {paused} {togglePause} {activeFeatureIndex} {vizState} />
+	<Controls {setAltitudeMultipier} {altitudeMultiplier} {jumpIndex} {playbackSpeed} {setPlaybackSpeed} {paused} {togglePause} {activeFeatureIndex} featureGroupLength={featureGroups.length} />
 </div>
