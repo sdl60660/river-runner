@@ -160,8 +160,10 @@
 
         .progress-point {
             left: unset;
-            top: 0;
-            transform: translate(-50%, -50%);
+            bottom: 0;
+            transform: translate(-50%, 50%);
+            height: 10px;
+            width: 10px;
         }
     }
 
