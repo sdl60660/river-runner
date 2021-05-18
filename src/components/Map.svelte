@@ -219,13 +219,17 @@
 		const { zoom, center } = precalculateInitialCamera({ map, cameraStart, initialElevation, initialBearing, cameraPitch });
 
 		runSettings = { zoom, center, cameraBaseAltitude, cameraPitch, coordinatePath, initialBearing, smoothedPath, routeDistance, distanceGap, elevations, riverFeatures };
-		vizState = "overview";
-		map.scrollZoom.enable();
+		startRun({ map, ...runSettings });
+		
+		// When using the vizState change/return instead of startRun, it displays the overview before automatically starting the run
+		// This is probably ideal in an ideal world, but I'm worried too many users will just miss the run functionality entirely
+		// vizState = "overview";
+		// map.scrollZoom.enable();
 
-		return;
+		// return;
 	}
 
-	const startRun = ({ map, zoom, center, cameraBaseAltitude, cameraPitch, coordinatePath, initialBearing, smoothedPath, routeDistance, distanceGap, elevations, riverFeatures }) => {
+	const startRun = ({ map, zoom, center, cameraBaseAltitude, cameraPitch, coordinatePath, initialBearing, smoothedPath, routeDistance, distanceGap, elevations, riverFeatures }) => {		
 		map.scrollZoom.disable();
 
 		altitudeMultiplier = 1;
@@ -238,6 +242,7 @@
 				return t;
 			}
 		});
+
 		vizState = "running";
 		// const locationTracerPoint = addLocationMarker({ map, origin: coordinatePath[0] });
 
@@ -568,8 +573,6 @@
 		const startPoints = riverFeatures.map(d => d.progress);
 		let startPoint = startPoints[0];
 
-		console.log(startPoints, startPoint);
-
 		const stopPoints = riverFeatures.map(d => d.stop_point)
 		let stopPoint = stopPoints[0];
 		activeFeatureIndex = 0;
@@ -695,6 +698,7 @@
 			activeFeatureIndex = -1;
 		}
 
+		aborted = false;
 		const bounds = getDataBounds(coordinatePath, true);
 
 		map.fitBounds(bounds, {
@@ -810,7 +814,6 @@
 	}
 
 	const highlightRiverFeature = (featureIndex) => {
-		console.log(featureGroups[featureIndex].feature_data)
 		drawFlowPath({
 			map,
 			featureData: featureGroups[featureIndex].feature_data,

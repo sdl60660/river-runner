@@ -272,11 +272,11 @@
 
 <svelte:window bind:innerWidth={screenWidth} />
 
-<div class="navbox-wrapper" style={`display: ${visible === true && (screenWidth > 600 || (activeFeatureIndex >= 0 && featureGroups)) ? "block" : "none"};`}>
+<div class="navbox-wrapper" style={`display: ${visible === true && (screenWidth > 600 || vizState === "overview" || (activeFeatureIndex >= 0 && featureGroups)) ? "block" : "none"};`}>
 
     <div class="total-length" style="display: {screenWidth > 600 && totalLength ? "block" : "none"}">Total Length: {Math.round(totalLength)} km</div>
 
-    <div class="info-box">
+    <div class="info-box" style="display: {screenWidth <= 600 && vizState === "overview" ? "none" : "block"}">
 
         <!-- Desktop/Tablet -->
         {#if screenWidth > 600}
@@ -336,12 +336,13 @@
         <CloseButton on:abort-run />
     </div>
 
-    <div class="pre-run-controls" style="display: {(screenWidth > 600 && vizState === "overview") ? "flex" : "none"}">
-        <button class="control-button start-button" on:click={runNavigationPath}><img class="svg-icon-img left-shift" src="/images/play.svg" alt={"start river run"} title={"Start river run"} /></button>
-        <button class="control-button exit-button" on:click={exitNavigationPath}><img class="svg-icon-img" src="/images/x.svg" alt={"exit this path"} title={"Exit this path"} /></button>
+    <div class="pre-run-controls" style="display: {(vizState === "overview") ? "flex" : "none"}">
+        <!-- <button class="control-button start-button" on:click={runNavigationPath}><img class="svg-icon-img left-shift" src="/images/play.svg" alt={"start river run"} title={"Start river run"} /></button> -->
+        <button class="control-button start-button" on:click={runNavigationPath}><img class="svg-icon-img" src="/images/repeat.svg" alt={"restart river run"} title={"Restart river run"} /></button>
         <button class="control-button share-button" on:click={copyPathLink}>
             <div class="copy-popup" style="display: {copyPopupVisible ? "block" : "none"};">Link copied!</div>
             <img class="svg-icon-img" src="/images/copy.svg" alt={"share this path"} title={"Share this path"} />
         </button>
+        <button class="control-button exit-button" on:click={exitNavigationPath}><img class="svg-icon-img" src="/images/x.svg" alt={"exit this path"} title={"Exit this path"} /></button>
     </div>
 </div>
