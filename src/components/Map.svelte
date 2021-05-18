@@ -220,11 +220,13 @@
 
 		runSettings = { zoom, center, cameraBaseAltitude, cameraPitch, coordinatePath, initialBearing, smoothedPath, routeDistance, distanceGap, elevations, riverFeatures };
 		vizState = "overview";
+		map.scrollZoom.enable();
 
 		return;
 	}
 
 	const startRun = ({ map, zoom, center, cameraBaseAltitude, cameraPitch, coordinatePath, initialBearing, smoothedPath, routeDistance, distanceGap, elevations, riverFeatures }) => {
+		map.scrollZoom.disable();
 
 		altitudeMultiplier = 1;
 		paused = false;
@@ -702,6 +704,8 @@
 
 		map.once('moveend', () => {
 			vizState = "overview";
+			// map.interactive = true;
+			map.scrollZoom.enable();
 			// resetMapState({ map });
 		})
 	};
@@ -758,10 +762,9 @@
 		}
 	}
 
-	const drawFlowPath = ({ map, featureData, lineWidth=2 }) => {
-		const sourceID = 'route'
+	const drawFlowPath = ({ map, featureData, lineColor="steelblue", lineWidth=2, sourceID='route'}) => {
 		clearRiverLines({ map, sourceID })
-		addRivers({ map, featureData, lineWidth, sourceID });
+		addRivers({ map, featureData, lineColor, lineWidth, sourceID });
 	}
 
 	const addRivers = ({ map, featureData, lineColor="steelblue", lineWidth=1, sourceID='route' }) => {
@@ -801,6 +804,21 @@
 				'line-width': lineWidth
 			}
 		});
+	}
+
+	const highlightRiverFeature = (featureIndex) => {
+		console.log(featureGroups[featureIndex].feature_data)
+		drawFlowPath({
+			map,
+			featureData: [featureGroups[featureIndex].feature_data[0]],
+			lineColor: "yellow",
+			lineWidth: 4,
+			sourceID: "highlighted-section"
+		});
+	}
+
+	const resetRiverHighlight = () => {
+		clearRiverLines({ map, sourceID: 'highlighted-section' });
 	}
 
 	const addTopoLayer = ({ map }) => {
@@ -940,8 +958,13 @@
 <ContactBox {vizState} />
 
 <div class="right-column">
-	<NavigationInfo on:abort-run={exitFunction} on:progress-set={(e) => handleJump(e) }
-		on:run-path={() => { startRun({ map, ...runSettings }) }} on:exit-path={() => resetMapState({ map })}
+	<NavigationInfo
+		on:highlight-feature={(e) => highlightRiverFeature(e.detail.featureIndex)}
+		on:remove-highlight={resetRiverHighlight}
+		on:run-path={() => { startRun({ map, ...runSettings }) }}
+		on:exit-path={() => resetMapState({ map })}
+		on:abort-run={exitFunction}
+		on:progress-set={(e) => handleJump(e) }
 		{vizState} {activeFeatureIndex} {featureGroups} {totalLength} {startCoordinates}
 	/>
 	<Controls {setAltitudeMultipier} {altitudeMultiplier} {jumpIndex} {playbackSpeed} {setPlaybackSpeed} {paused} {togglePause} {activeFeatureIndex} {vizState} featureGroupLength={featureGroups.length} />

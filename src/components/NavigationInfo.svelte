@@ -32,6 +32,14 @@
         dispatch('exit-path');
     };
 
+    const highlightFeature = (featureIndex) => {
+        dispatch('highlight-feature', { featureIndex })
+    }
+
+    const removeHighlight = () => {
+        dispatch('remove-highlight');
+    }
+
     const setPhase = (pathProgress, featureIndex) => {
         if ( activeFeatureIndex >= 0 ) {
             dispatch('progress-set', { pathProgress, featureIndex })
@@ -97,6 +105,12 @@
     .river-feature:hover {
         color: rgb(76, 79, 230);
         font-weight: 600;
+    }
+
+    .hover-feature:hover {
+        color: yellow;
+        font-weight: 700;
+        cursor: default;
     }
 
     .progress-bar {
@@ -273,7 +287,10 @@
                     key={i}
                     class="feature-listing river-feature"
                     class:river-feature="{activeFeatureIndex >= 0 && vizState === "running"}"
+                    class:hover-feature="{vizState === "overview"}"
                     on:click={() => setPhase(progress, index)}
+                    on:mouseenter={() => { if (vizState === "overview") { highlightFeature(index); } }}
+                    on:mouseleave={() => { if (vizState === "overview") { removeHighlight(); } }}
                 >
                     {i+1}. {name} ({length_km} km)
                 </div>
