@@ -20,7 +20,7 @@ Here's part of the path from Southwest Arizona down to the Mexican border:
 
 ## Running this on your own
 
-If you'd like to run this locally and play around with it, just run the following commands in your terminal:
+If you'd like to run this locally and play around with it, just run the following commands in your terminal (assuming you have [npm](https://www.npmjs.com/get-npm) installed):
 
 1. `git clone https://github.com/sdl60660/river-runner.git`
 2. `cd river-runner`
