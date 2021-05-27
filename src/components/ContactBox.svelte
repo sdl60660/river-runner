@@ -16,6 +16,7 @@
         bottom: 1rem;
         right: 1rem;
         max-width: 32rem;
+
         /* left: 50%;
         transform: translateX(-50%);
         top: 1rem; */
@@ -48,14 +49,15 @@
 
     @media only screen and (max-width: 600px) {
         .contact-box {
-            /* width: 100%; */
+            box-sizing: border-box;
             border-radius: 0;
             right: unset;
             bottom: 0;
             padding: 5px;
             background-color: white;
-            width: calc(100% - 10px);
+            width: 100%;
             text-align: center;
+            height: 1.5rem;
         }
     }
 

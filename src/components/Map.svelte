@@ -13,10 +13,12 @@
 	import Controls from './Controls.svelte';
 
 	import along from '@turf/along';
-	import { feature, featureCollection, lineString } from '@turf/helpers';
+	import { feature, featureCollection, lineString, point } from '@turf/helpers';
 	import lineDistance from '@turf/line-distance';
 	import distance from '@turf/distance';
 	import destination from '@turf/destination';
+	import lineSplit from '@turf/line-split';
+	import length from '@turf/length';
 
 	export let bounds;
 	export let stateBoundaries;
@@ -325,11 +327,20 @@
 		else if (closestFeature.properties.stop_feature_name === "Ocean" || oceanDistance < 50000) {
 			// Gulf of Mexico: lng < -82 && lat < 31
 			// Otherwise split by Texas, basically, between Atlantic/Pacific
-			return (destinationPoint[0] < -82 && destinationPoint[1] < 31) ? "Gulf of Mexico" : destinationPoint[0] > -100 ? "Atlantic Ocean" : "Pacific Ocean";
+			return (
+				destinationPoint[0] < -82 && destinationPoint[1] < 31) ? "Gulf of Mexico" :
+				(destinationPoint[0] < -75.63300750 && destinationPoint[1] > 37.793247 && destinationPoint[1] < 39.61332 ) ? "Chesapeake Bay" :
+				destinationPoint[0] > -100 ? "Atlantic Ocean" :
+				"Pacific Ocean";
 		}
 		else {
 			return closestFeature.properties.stop_feature_name;
 		}
+	}
+
+	const getPartialDistance = (fullLine, splitCoordinate) => {
+		const index = fullLine.findIndex(d => d === splitCoordinate);
+		return index === 0 ? 0 : length(lineString(fullLine.slice(0, index)))
 	}
 
 	const getFeatureGroups = (flowlinesData) => {
@@ -929,8 +940,9 @@
 		.map-wrapper {
 			/* this prevents some weird stuff on mobile screens when the geolocator search suggestons come up*/
 			/* height: max(400px, calc(100% - 20vh)); */
-			height: calc(100% - 20vh);
+			height: calc(100% - 20vh - 1.5rem);
 			top: 20vh;
+			bottom: 1.5rem;
 		}
 	}
 
