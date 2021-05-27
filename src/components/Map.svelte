@@ -174,7 +174,7 @@
 
 		// Construct full coordinate path by taking the first coordinate in each flowline (each coordinate in the flowline is an unnecessary level of detail)
 		const coordinatePath = flowlinesData.features.length > 3 ? [flowlinesData.features[0].geometry.coordinates[0], ...flowlinesData.features.map( feature => feature.geometry.coordinates.slice(-1)[0] ) ]
-															 : flowlinesData.features.map( feature => feature.geometry.coordinates).flat();
+															 : flowlinesData.features.map( feature => feature.geometry.coordinates).flat().filter((d,i) => i % 2 === 0);
 
 		// Update props used by child components
 		riverPath = [{ geometry: { coordinates: coordinatePath }}];
@@ -191,7 +191,7 @@
 		drawFlowPath({ map, featureData: [combinedFlowlines], lineWidth: 3 });
 
 		const cameraBaseAltitude = 4300;
-		const elevationArrayStep = 100;
+		const elevationArrayStep = Math.min((coordinatePath.length/2) - 1, 100);
 		const elevations = await getElevations(coordinatePath, elevationArrayStep);
 		// Take base altitude and then adjust up based on the elevation of the first coordinate
 		// The multiplier is necessary for higher elevations since they tend to be mountainous areas, as well, requiring additional height for the camera
@@ -204,12 +204,14 @@
 		const routeDistance = pathDistance(smoothedPath);
 		const trueRouteDistance = pathDistance(coordinatePath);
 
-		const firstBearingPoint = along(
+		let firstBearingPoint = along(
 			lineString(smoothedPath),
 			routeDistance * 0.00005
 		).geometry.coordinates;
 
-		// (Add error handling here)
+		if (firstBearingPoint === smoothedPath[0]) {
+			firstBearingPoint = smoothedPath[1];
+		}
 		const cameraStart = findArtificialCameraPoint({ distanceGap, originPoint: smoothedPath[0], targetPoint: firstBearingPoint}) 
 
 		// console.log('Distances:', routeDistance, cameraRouteDistance, trueRouteDistance);
@@ -350,9 +352,6 @@
 		let uniqueFeatureNames = featureNames.filter((item, i, ar) => ar.indexOf(item) === i);
 		const fullDistance = flowlinesData.features[0].properties.pathlength;
 
-		const fullPath = flowlinesData.features.map( feature => feature.geometry.coordinates ).flat();
-		const fullPathDistance = length(lineString(fullPath));
-
 		// This fixes a rare, but frustrating bug, where because I don't sample each flowline for VAA data, and because...
 		// I assume once a feature starts that it continues until the next unique feature, this function gets confused by...
 		// Long rivers sandwiching small unnames features, like the snake river in Idaho, and thinks that the small feature interruption
@@ -363,7 +362,7 @@
 			}
 			else {
 				const firstOccurence = featurePoints.findIndex(point => point.properties.feature_id === name);
-				const featureData = featurePoints.find(point => point.properties.feature_name === name);
+				const featureData = featurePoints.find(point => point.properties.feature_id === name);
 
 				const sandwichOccurence = featurePoints.slice(firstOccurence).findIndex(point => point.properties.feature_id === uniqueFeatureNames[i-1]);
 				const surroundingFeatureData = featurePoints.slice(firstOccurence).find(point => point.properties.feature_id === uniqueFeatureNames[i-1]);
@@ -380,13 +379,11 @@
 		let riverFeatures = uniqueFeatureNames.map((feature, index) => {
 			
 			const featureData = flowlinesData.features.find(item => item.properties.feature_id === feature);
-			const featureIndex = flowlinesData.features.findIndex(item => item.properties.feature_id === feature);			
-			const progress = fullDistance === -999 ? (featureIndex / flowlinesData.features.length) :
-							getPartialDistance(fullPath, featureData.geometry.coordinates[0]) / fullPathDistance;
+			const featureIndex = flowlinesData.features.findIndex(item => item.properties.feature_id === feature);
 
 			return ({
 				feature_data_index: featureIndex,
-				progress,
+				progress: fullDistance === -999 ? (featureIndex / flowlinesData.features.length) : ((fullDistance - featureData.properties.pathlength) / fullDistance),
 				name: featureData.properties.feature_name,
 				distance_from_destination: featureData.properties.pathlength === -9999 ? 0 : featureData.properties.pathlength,
 				index,
@@ -394,8 +391,6 @@
 				active: false
 			})
 		});
-
-		console.log(riverFeatures.map(d => d.progress));
 
 		// Because I'm not sampling every flowline, sometimes I get weird results at the end of the flowpath where, for example, there's a flowline
 		// that's part of the Mississippi Delta, but isn't technically isn't grouped under the Mississippi river, and it considers it the last step
@@ -592,8 +587,7 @@
 		const startPoints = riverFeatures.map(d => d.progress);
 		let startPoint = startPoints[0];
 
-		const stopPoints = riverFeatures.map(d => d.stop_point);
-		console.log('stop points', stopPoints);
+		const stopPoints = riverFeatures.map(d => d.stop_point)
 		let stopPoint = stopPoints[0];
 		activeFeatureIndex = 0;
 		
@@ -679,10 +673,12 @@
 			const elevationEstimate = elevationLast + ((elevationNext - elevationLast)*elevationStepProgress);
 			const tickElevation = altitudeMultiplier*cameraBaseAltitude + 1.25*Math.round(elevationEstimate);
 
-			const alongTarget = along(
+			let alongTarget = along(
 				lineString(route),
 				routeDistance * (phase === 0 ? 0.00005 : phase)
 			).geometry.coordinates;
+
+			if (alongTarget === route[0]) { alongTarget = route[1] };
 
 			const alongCamera = (phase - altitudeMultiplier*phaseGap) < 0 ?
 				findArtificialCameraPoint({ distanceGap: altitudeMultiplier*distanceGap, originPoint: route[0], targetPoint: alongTarget}) 
@@ -775,7 +771,21 @@
 			)
 		)
 
+		console.log(responses);
+
 		const data = responses.map(res => res.features.slice(-1)[0].properties.ele)
+			.map((d, i, n) => {
+				if (d) {
+					return d;
+				}
+				else if (i === 0) {
+					return n[(i+1)]
+				}
+				else {
+					return n[(i-1)]
+				}
+			});
+		console.log(data);
 		return data;
 	}
 
