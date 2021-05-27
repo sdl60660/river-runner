@@ -191,7 +191,7 @@
 		drawFlowPath({ map, featureData: [combinedFlowlines], lineWidth: 3 });
 
 		const cameraBaseAltitude = 4300;
-		const elevationArrayStep = 100;
+		const elevationArrayStep = Math.min((coordinatePath.length/2) - 1, 100);
 		const elevations = await getElevations(coordinatePath, elevationArrayStep);
 		// Take base altitude and then adjust up based on the elevation of the first coordinate
 		// The multiplier is necessary for higher elevations since they tend to be mountainous areas, as well, requiring additional height for the camera
@@ -204,11 +204,14 @@
 		const routeDistance = pathDistance(smoothedPath);
 		const trueRouteDistance = pathDistance(coordinatePath);
 
-		const firstBearingPoint = along(
+		let firstBearingPoint = along(
 			lineString(smoothedPath),
 			routeDistance * 0.00005
 		).geometry.coordinates;
 
+		if (firstBearingPoint === smoothedPath[0]) {
+			firstBearingPoint = smoothedPath[1];
+		}
 		const cameraStart = findArtificialCameraPoint({ distanceGap, originPoint: smoothedPath[0], targetPoint: firstBearingPoint}) 
 
 		// console.log('Distances:', routeDistance, cameraRouteDistance, trueRouteDistance);
@@ -359,7 +362,7 @@
 			}
 			else {
 				const firstOccurence = featurePoints.findIndex(point => point.properties.feature_id === name);
-				const featureData = featurePoints.find(point => point.properties.feature_name === name);
+				const featureData = featurePoints.find(point => point.properties.feature_id === name);
 
 				const sandwichOccurence = featurePoints.slice(firstOccurence).findIndex(point => point.properties.feature_id === uniqueFeatureNames[i-1]);
 				const surroundingFeatureData = featurePoints.slice(firstOccurence).find(point => point.properties.feature_id === uniqueFeatureNames[i-1]);
@@ -670,10 +673,12 @@
 			const elevationEstimate = elevationLast + ((elevationNext - elevationLast)*elevationStepProgress);
 			const tickElevation = altitudeMultiplier*cameraBaseAltitude + 1.25*Math.round(elevationEstimate);
 
-			const alongTarget = along(
+			let alongTarget = along(
 				lineString(route),
 				routeDistance * (phase === 0 ? 0.00005 : phase)
 			).geometry.coordinates;
+
+			if (alongTarget === route[0]) { alongTarget = route[1] };
 
 			const alongCamera = (phase - altitudeMultiplier*phaseGap) < 0 ?
 				findArtificialCameraPoint({ distanceGap: altitudeMultiplier*distanceGap, originPoint: route[0], targetPoint: alongTarget}) 
@@ -766,7 +771,21 @@
 			)
 		)
 
+		console.log(responses);
+
 		const data = responses.map(res => res.features.slice(-1)[0].properties.ele)
+			.map((d, i, n) => {
+				if (d) {
+					return d;
+				}
+				else if (i === 0) {
+					return n[(i+1)]
+				}
+				else {
+					return n[(i-1)]
+				}
+			});
+		console.log(data);
 		return data;
 	}
 
