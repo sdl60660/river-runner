@@ -332,7 +332,7 @@
 			// Otherwise split by Texas, basically, between Atlantic/Pacific
 			return (
 				destinationPoint[0] < -82 && destinationPoint[1] < 31) ? "Gulf of Mexico" :
-				(destinationPoint[0] < -75.63300750 && destinationPoint[1] > 37.793247 && destinationPoint[1] < 39.61332 ) ? "Chesapeake Bay" :
+				(destinationPoint[0] < -75.63300750 && destination[0] > -77.684621 && destinationPoint[1] > 37.793247 && destinationPoint[1] < 39.61332 ) ? "Chesapeake Bay" :
 				destinationPoint[0] > -100 ? "Atlantic Ocean" :
 				"Pacific Ocean";
 		}
