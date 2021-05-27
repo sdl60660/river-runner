@@ -13,10 +13,12 @@
 	import Controls from './Controls.svelte';
 
 	import along from '@turf/along';
-	import { feature, featureCollection, lineString } from '@turf/helpers';
+	import { feature, featureCollection, lineString, point } from '@turf/helpers';
 	import lineDistance from '@turf/line-distance';
 	import distance from '@turf/distance';
 	import destination from '@turf/destination';
+	import lineSplit from '@turf/line-split';
+	import length from '@turf/length';
 
 	export let bounds;
 	export let stateBoundaries;
@@ -172,7 +174,7 @@
 
 		// Construct full coordinate path by taking the first coordinate in each flowline (each coordinate in the flowline is an unnecessary level of detail)
 		const coordinatePath = flowlinesData.features.length > 3 ? [flowlinesData.features[0].geometry.coordinates[0], ...flowlinesData.features.map( feature => feature.geometry.coordinates.slice(-1)[0] ) ]
-															 : flowlinesData.features.map( feature => feature.geometry.coordinates).flat().filter((d,i) => i % 2 === 0);
+															 : flowlinesData.features.map( feature => feature.geometry.coordinates).flat();
 
 		// Update props used by child components
 		riverPath = [{ geometry: { coordinates: coordinatePath }}];
@@ -207,6 +209,7 @@
 			routeDistance * 0.00005
 		).geometry.coordinates;
 
+		// (Add error handling here)
 		const cameraStart = findArtificialCameraPoint({ distanceGap, originPoint: smoothedPath[0], targetPoint: firstBearingPoint}) 
 
 		// console.log('Distances:', routeDistance, cameraRouteDistance, trueRouteDistance);
@@ -325,11 +328,20 @@
 		else if (closestFeature.properties.stop_feature_name === "Ocean" || oceanDistance < 50000) {
 			// Gulf of Mexico: lng < -82 && lat < 31
 			// Otherwise split by Texas, basically, between Atlantic/Pacific
-			return (destinationPoint[0] < -82 && destinationPoint[1] < 31) ? "Gulf of Mexico" : destinationPoint[0] > -100 ? "Atlantic Ocean" : "Pacific Ocean";
+			return (
+				destinationPoint[0] < -82 && destinationPoint[1] < 31) ? "Gulf of Mexico" :
+				(destinationPoint[0] < -75.63300750 && destinationPoint[1] > 37.793247 && destinationPoint[1] < 39.61332 ) ? "Chesapeake Bay" :
+				destinationPoint[0] > -100 ? "Atlantic Ocean" :
+				"Pacific Ocean";
 		}
 		else {
 			return closestFeature.properties.stop_feature_name;
 		}
+	}
+
+	const getPartialDistance = (fullLine, splitCoordinate) => {
+		const index = fullLine.findIndex(d => d === splitCoordinate);
+		return index === 0 ? 0 : length(lineString(fullLine.slice(0, index)))
 	}
 
 	const getFeatureGroups = (flowlinesData) => {
@@ -337,6 +349,9 @@
 		const featureNames = featurePoints.map( feature => feature.properties.feature_id );
 		let uniqueFeatureNames = featureNames.filter((item, i, ar) => ar.indexOf(item) === i);
 		const fullDistance = flowlinesData.features[0].properties.pathlength;
+
+		const fullPath = flowlinesData.features.map( feature => feature.geometry.coordinates ).flat();
+		const fullPathDistance = length(lineString(fullPath));
 
 		// This fixes a rare, but frustrating bug, where because I don't sample each flowline for VAA data, and because...
 		// I assume once a feature starts that it continues until the next unique feature, this function gets confused by...
@@ -365,11 +380,13 @@
 		let riverFeatures = uniqueFeatureNames.map((feature, index) => {
 			
 			const featureData = flowlinesData.features.find(item => item.properties.feature_id === feature);
-			const featureIndex = flowlinesData.features.findIndex(item => item.properties.feature_id === feature);
+			const featureIndex = flowlinesData.features.findIndex(item => item.properties.feature_id === feature);			
+			const progress = fullDistance === -999 ? (featureIndex / flowlinesData.features.length) :
+							getPartialDistance(fullPath, featureData.geometry.coordinates[0]) / fullPathDistance;
 
 			return ({
 				feature_data_index: featureIndex,
-				progress: fullDistance === -999 ? (featureIndex / flowlinesData.features.length) : ((fullDistance - featureData.properties.pathlength) / fullDistance),
+				progress,
 				name: featureData.properties.feature_name,
 				distance_from_destination: featureData.properties.pathlength === -9999 ? 0 : featureData.properties.pathlength,
 				index,
@@ -377,6 +394,8 @@
 				active: false
 			})
 		});
+
+		console.log(riverFeatures.map(d => d.progress));
 
 		// Because I'm not sampling every flowline, sometimes I get weird results at the end of the flowpath where, for example, there's a flowline
 		// that's part of the Mississippi Delta, but isn't technically isn't grouped under the Mississippi river, and it considers it the last step
@@ -573,7 +592,8 @@
 		const startPoints = riverFeatures.map(d => d.progress);
 		let startPoint = startPoints[0];
 
-		const stopPoints = riverFeatures.map(d => d.stop_point)
+		const stopPoints = riverFeatures.map(d => d.stop_point);
+		console.log('stop points', stopPoints);
 		let stopPoint = stopPoints[0];
 		activeFeatureIndex = 0;
 		
@@ -929,8 +949,9 @@
 		.map-wrapper {
 			/* this prevents some weird stuff on mobile screens when the geolocator search suggestons come up*/
 			/* height: max(400px, calc(100% - 20vh)); */
-			height: calc(100% - 20vh);
+			height: calc(100% - 20vh - 1.5rem);
 			top: 20vh;
+			bottom: 1.5rem;
 		}
 	}
 
