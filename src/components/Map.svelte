@@ -667,7 +667,7 @@
 
 			// Calculate camera elevation using the base elevation and the elevation at the specific coordinate point
 			const elevationLast = elevations[Math.floor(elevations.length*phase)];
-			const elevationNext = elevations[Math.ceil(elevations.length*phase)] || 0;
+			const elevationNext = elevations[Math.ceil(elevations.length*phase)] || elevations[(Math.ceil(elevations.length*phase) - 1)];
 			const elevationStepProgress = elevations.length*phase - Math.floor(elevations.length*phase);
 
 			const elevationEstimate = elevationLast + ((elevationNext - elevationLast)*elevationStepProgress);
