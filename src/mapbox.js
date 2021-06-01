@@ -1,6 +1,6 @@
 import mapbox from 'mapbox-gl';
-import mapboxAccessToken from './access_token';
+import { secondaryToken } from './access_tokens';
 
-mapbox.accessToken = mapboxAccessToken;
+mapbox.accessToken = secondaryToken;
 
 export { mapbox };
