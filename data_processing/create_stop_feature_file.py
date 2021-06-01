@@ -44,7 +44,7 @@ with open('data/ocean_area.geojson', 'r') as f:
     ocean_feature['properties']['stop_feature_type'] = 'ocean'
     ocean_feature['properties']['stop_feature_name'] = 'Ocean'
 
-
+# Grabbed this feature from here: https://geodata.lib.berkeley.edu/catalog/stanford-qh320kj0191
 with open('data/sf_bay.geojson', 'r') as f:
     sf_bay = json.load(f)
     bay_feature = sf_bay['features'][0]
