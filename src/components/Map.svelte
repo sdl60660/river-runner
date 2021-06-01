@@ -191,7 +191,7 @@
 		combinedFlowlines.geometry.coordinates = flowlinesData.features.map(a => a.geometry.coordinates).flat();
 		drawFlowPath({ map, featureData: [combinedFlowlines], lineWidth: 3 });
 
-		const cameraBaseAltitude = 4300;
+		const cameraBaseAltitude = window.innerWidth < 600 ? 4800 : 4300;
 		const elevationArrayStep = Math.min((coordinatePath.length/2) - 1, 100);
 		const elevations = await getElevations(coordinatePath, elevationArrayStep);
 		// Take base altitude and then adjust up based on the elevation of the first coordinate
