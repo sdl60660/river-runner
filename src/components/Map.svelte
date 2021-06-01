@@ -1,6 +1,7 @@
 <script>
 	import { tick, onMount } from 'svelte';
 	import { mapbox } from '../mapbox.js';
+	import mapboxAccessToken from '../access_token';
 	import * as d3 from 'd3';
 
 	import { bearingBetween, distanceToPolygon, getDataBounds } from '../utils';
@@ -104,7 +105,7 @@
 
 	const initGeocoder = ({ map }) => {
 		const geocoder = new MapboxGeocoder({
-			accessToken: "pk.eyJ1Ijoic2FtbGVhcm5lciIsImEiOiJja2IzNTFsZXMwaG44MzRsbWplbGNtNHo0In0.BmjC6OX6egwKdm0fAmN_Nw",
+			accessToken: mapboxAccessToken,
 			countries: 'us',
 			bbox: bounds.flat(),
 			mapboxgl: mapbox,
@@ -771,12 +772,10 @@
 
 		const responses = await Promise.all(
 			elevationCoordinates.map(
-				([lng, lat]) => fetch(`https://api.mapbox.com/v4/mapbox.mapbox-terrain-v2/tilequery/${lng},${lat}.json?&access_token=pk.eyJ1Ijoic2FtbGVhcm5lciIsImEiOiJja2IzNTFsZXMwaG44MzRsbWplbGNtNHo0In0.BmjC6OX6egwKdm0fAmN_Nw`)
+				([lng, lat]) => fetch(`https://api.mapbox.com/v4/mapbox.mapbox-terrain-v2/tilequery/${lng},${lat}.json?&access_token=${mapboxAccessToken}`)
 					.then(response => response.json())
 			)
 		)
-
-		console.log(responses);
 
 		const data = responses.map(res => res.features.slice(-1)[0].properties.ele)
 			.map((d, i, n) => {
@@ -790,7 +789,7 @@
 					return n[(i-1)]
 				}
 			});
-		console.log(data);
+			
 		return data;
 	}
 
