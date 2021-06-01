@@ -45,7 +45,13 @@ with open('data/ocean_area.geojson', 'r') as f:
     ocean_feature['properties']['stop_feature_name'] = 'Ocean'
 
 
-all_features = canada['features'] + mexico['features'] + [ocean_feature] + sorted_features
+with open('data/sf_bay.geojson', 'r') as f:
+    sf_bay = json.load(f)
+    bay_feature = sf_bay['features'][0]
+    bay_feature['properties']['stop_feature_type'] = 'oscean'
+    bay_feature['properties']['stop_feature_name'] = 'San Francisco Bay'
+
+all_features = canada['features'] + mexico['features'] + [ocean_feature] + [bay_feature] + sorted_features
 
 # Output as a GeoJSON file for now (~7MB), but then use mapshaper.org to compress to a TopoJSON (~2MB)
 output_data = {"type":"FeatureCollection", "features": all_features }

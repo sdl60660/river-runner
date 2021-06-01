@@ -315,7 +315,7 @@
 				closestFeature = feature;
 			}
 
-			if (feature.properties.stop_feature_name === "Ocean") {
+			if (feature.properties.stop_feature_type === "ocean") {
 				oceanDistance = featureDistance;
 			}
 		})
@@ -327,8 +327,13 @@
 		// Sometimes there's a large inlet/bay that creates artificial distance between the destination point and my imperfect ocean shapefile polygon
 		// It may then think that another feature, like a lake is the "stop feature", (this happens in the Alabama gulf, for example).
 		// We're going to say that if the ocean is within 50km of the stop point, it's very likely the true end point
-		else if (closestFeature.properties.stop_feature_name === "Ocean" || oceanDistance < 50000) {
+		else if (closestFeature.properties.stop_feature_type === "ocean" || oceanDistance < 50000) {
+			if (closestFeature.properties.stop_feature_name === "San Francisco Bay") {
+				return "San Francisco Bay"
+			}
+
 			// Gulf of Mexico: lng < -82 && lat < 31
+			// Chesapeake Bay: -75.6 > lng > -77.68 && 39.61 > lat > 37.79
 			// Otherwise split by Texas, basically, between Atlantic/Pacific
 			return (
 				destinationPoint[0] < -82 && destinationPoint[1] < 31) ? "Gulf of Mexico" :
