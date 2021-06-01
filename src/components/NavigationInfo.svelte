@@ -322,7 +322,7 @@
                 <div style=
                     "
                     background-color: {activeFeatureIndex === i ? "rgb(76, 79, 230)" : activeFeatureIndex > i ? "rgb(117, 117, 117)" : "rgb(243, 243, 243)" };
-                    left: calc(10% + ({(i / (featureGroups.length-1))}*80%));
+                    left: { featureGroups.length === 1 ? "50%" : `calc(10% + (${(i / (featureGroups.length-1))}*80%))` };
                     "
                     class="progress-point"
                     key={i}>
