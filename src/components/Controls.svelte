@@ -85,11 +85,21 @@
         margin: auto;
     }
 
+    .slow-button {
+        height: 1rem;
+        width: 1rem;
+        position: absolute;
+    }
+
     .skip-back-button, .skip-forward-button {
         display: none;
     }
 
     @media only screen and (max-width: 600px) {
+        .slow-button {
+            display: none;
+        }
+
         .detail-speed-slider {
             display: none;
         }
@@ -151,6 +161,7 @@
         <button class="control-button skip-back-button" class:button-active={false} on:click={() => { jumpIndex("backward"); }} disabled={activeFeatureIndex <= 0}><img class="svg-icon-img" src="/images/skip-back.svg" alt="skip back button"/></button>
         <button class="control-button rewind-button" class:button-active={playbackSpeed === -1} on:click={() => setPlaybackSpeed(-1)}><img class="svg-icon-img" src="/images/rewind.svg" alt="rewind button"/></button>
         <button class="control-button pause-button" on:click={togglePause}><img class="svg-icon-img" src="{(paused || playbackSpeed !== 1) ? "/images/play.svg" : "images/pause.svg"}" alt={(paused || playbackSpeed !== 1) ? "play button" : "pause button"} /></button>
+        <!-- <button class="control-button slow-button" class:button-active={playbackSpeed === 0.5} on:click={() => { console.log("slow motion") }}><img class="svg-icon-img" src="/images/slow-motion.svg" alt={"slow motion button"} /></button> -->
         <button class="control-button fastforward-button" class:button-active={playbackSpeed === 2} on:click={() => setPlaybackSpeed(2)}><img class="svg-icon-img" src="/images/fast-forward.svg" alt="fast-forward button"/></button>
         <button class="control-button skip-forward-button" class:button-active={false} on:click={() => { jumpIndex("forward"); }} disabled={activeFeatureIndex >= featureGroupLength-1}><img class="svg-icon-img" src="/images/skip-forward.svg" alt="skip forward button"/></button>
     </div>

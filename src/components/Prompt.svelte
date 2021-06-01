@@ -61,27 +61,32 @@
         loading = false;
         setTimeout(() => { resetPrompt() }, 2500);
     }
-
 </script>
 
-
 <style>
+    .wrapper {
+        font-family: "Roboto", "Inter", Arial, Helvetica, sans-serif;
 
-    .message-box {
-        background-color: rgba(243, 243, 243, 0.856);
-        padding: 1rem;
-        border-radius: 3px;
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
 
         position: absolute;
         z-index: 20;
         left: 50%;
         transform: translateX(-50%);
         top: 1rem;
+    }
+
+    .message-box {
+        background-color: rgba(243, 243, 243, 0.856);
+        padding: 1rem;
+        border-radius: 3px;
 
         display: flex;
         box-shadow: 4px 2px 2px rgba(56, 56, 56, 0.925);
 
-        font-family: "Roboto","Inter", Arial, Helvetica, sans-serif;
+        font-family: "Roboto", "Inter", Arial, Helvetica, sans-serif;
     }
 
     /* .spinner {
@@ -92,18 +97,30 @@
         margin: auto 8px;
     }
 
+    .scroll-helper {
+        color: white;
+        text-align: center;
+        font-size: 0.85rem;
+    }
+
     /* Mobile */
     @media only screen and (max-width: 600px) {
+        .scroll-helper {
+            display: none;
+        }
+
+        .wrapper {
+            top: 0;
+            left: 0;
+            border-radius: 0;
+            transform: unset;
+        }
+
         .message-box {
             padding: 1rem 2rem;
             width: calc(100% - 4rem);
             height: calc(20vh - 2rem);
 
-            top: 0;
-            left: 0;
-            border-radius: 0;
-
-            transform: unset;
             box-shadow: unset;
 
             font-size: 1rem;
@@ -126,7 +143,7 @@
 
     /* Tablet */
     @media only screen and (min-width: 601px) and (max-width: 1100px) {
-        .message-box {
+        .wrapper {
             top: 1.5rem;
             transform: translateX(-85%);
         }
@@ -134,10 +151,16 @@
 
 </style>
 
-<div style={`display: ${message === "" ? "none" : "flex"};`} class="message-box">
-    <div class="message-text">{message}</div>
-    <span class="spinner" style={`display: ${ loading ? "block" : "none"};`}>
-        <Moon size="20" color="#141414" unit="px" duration="1s" />
-    </span>
+<div class="wrapper">
+    <div style={`display: ${message === "" ? "none" : "flex"};`} class="message-box">
+        <div class="message-text">{message}</div>
+        <span class="spinner" style={`display: ${ loading ? "block" : "none"};`}>
+            <Moon size="20" color="#141414" unit="px" duration="1s" />
+        </span>
+    </div>
+
+    <div style="display:{ vizState === "uninitialized" && loading === false && window.innerWidth > 600 ? "block" : "none" };" class="scroll-helper">
+        (scroll or pinch to zoom)
+    </div>
 </div>
 
