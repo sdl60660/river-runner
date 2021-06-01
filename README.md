@@ -26,4 +26,4 @@ If you'd like to run this locally and play around with it, just run the followin
 2. `cd river-runner`
 3. `npm install`
 4. `npm run dev` (then follow the link to the local server, probably `http://localhost:5000`).
-5. If you're running this on your own or forking into a new app, please replace the Mapbox Access Token strings in `src/access_token.js` with your own. You can generate a couple of tokens (for free), by creating an account and visiting [this page](https://account.mapbox.com/access-tokens/).
+5. If you're running this on your own or forking into a new app, please replace the Mapbox Access Token strings in `src/access_tokens.js` with your own. You can generate a couple of tokens (for free), by creating a Mapbox account and visiting [this page](https://account.mapbox.com/access-tokens/).
