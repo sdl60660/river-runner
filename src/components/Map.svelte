@@ -83,6 +83,14 @@
 				}
 
 				const geocoder = initGeocoder({ map });	
+				const nav = new mapbox.NavigationControl({
+					showCompass: false,
+					visualizePitch: true
+				});
+
+				if (window.innerWidth > 600) {
+					map.addControl(nav, 'top-left');
+				}
 				
 				if (startingSearch) {
 					initRunner({ map, e: startingSearch });
@@ -947,6 +955,15 @@
 		z-index: 1;
 	}
 
+	/* :global(.mapboxgl-ctrl-top-left) {
+		top: 1rem;
+		left: 1rem;
+	} */
+
+	:global(.mapboxgl-ctrl-top-left .mapboxgl-ctrl) {
+		margin: 1rem 0 0 1rem !important;
+	}
+
 	@media only screen and (min-width: 601px) {
 		.right-column {
 			display: flex;
@@ -982,6 +999,10 @@
         .right-column {
             bottom: 3rem;
         }
+
+		:global(.mapboxgl-ctrl-top-left .mapboxgl-ctrl) {
+			margin: 1.5rem 0 0 1rem !important;
+		}
     }
 
 </style>
