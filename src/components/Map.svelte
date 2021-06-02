@@ -74,24 +74,29 @@
 			mapBounds = map.getBounds();
 
             map.on('load', () => {
+				// If there's feature data passed in as a prop (doesn't really happen anymore), render rivers on load
 				if (featureData) {
 					addRivers({ map, featureData, lineWidth: 1 });
 				}
 
+				// Add 3D topo layer if flag is set (should basically always be)
 				if (addTopo) {
 					addTopoLayer({ map });
 				}
 
+				// Add geocoder search bar to search for location/address instead of clicking
 				const geocoder = initGeocoder({ map });	
+
+				// Initialize and add explicit zoom controls in top-left corner, if not on mobile
 				const nav = new mapbox.NavigationControl({
 					showCompass: false,
 					visualizePitch: true
 				});
-
 				if (window.innerWidth > 600) {
 					map.addControl(nav, 'top-left');
 				}
 				
+				// If starting coordinates were passed in as a parameter (from a shared link), load starting path
 				if (startingSearch) {
 					initRunner({ map, e: startingSearch });
 					startingSearch = null;
