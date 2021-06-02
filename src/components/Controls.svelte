@@ -167,7 +167,6 @@
     </div>
 
     <div class="detail-speed-slider">
-        <!-- <label for="altitude">Camera Altitude</label> -->
         <input type="range" id="altitude" name="altitude" min="0.6" max="5" step="0.01" value={altitudeMultiplier} on:input={(e) => setAltitudeMultipier(e)}>
         <div class="slider-label slider-label-left">More Detail</div>
         <div class="slider-label slider-label-right">Faster</div>
