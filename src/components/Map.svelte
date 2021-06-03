@@ -48,7 +48,8 @@
 	let totalLength;
 
 	let phaseJump;
-	let altitudeMultiplier = 1;
+	// Zoom level won't be adjustable on mobile, but it will be set slightly higher to avoid jiterriness
+	let altitudeMultiplier = window.innerWidth > 600 ? 1 : 1.1;
 	let altitudeChange = false;
 	let paused = false;
 	let playbackSpeed = 1;
@@ -204,7 +205,7 @@
 		combinedFlowlines.geometry.coordinates = flowlinesData.features.map(a => a.geometry.coordinates).flat();
 		drawFlowPath({ map, featureData: [combinedFlowlines], lineWidth: 3 });
 
-		const cameraBaseAltitude = window.innerWidth < 600 ? 4800 : 4300;
+		const cameraBaseAltitude = 4300;
 		const elevationArrayStep = Math.min((coordinatePath.length/2) - 1, 100);
 		const elevations = await getElevations(coordinatePath, elevationArrayStep);
 		// Take base altitude and then adjust up based on the elevation of the first coordinate
@@ -214,7 +215,7 @@
 		const distanceGap = initialElevation*Math.tan(targetPitch * Math.PI/180) / 1000;
 
 		// Create smoothed path by averaging coordinates with their neighbors. This helps reduce horizontal movement with bendy rivers.
-		const smoothedPath = pathSmoother(coordinatePath, Math.min(8, Math.floor(coordinatePath.length / 2)));
+		const smoothedPath = pathSmoother(coordinatePath, Math.min(9, Math.floor(coordinatePath.length / 2)));
 		const routeDistance = pathDistance(smoothedPath);
 		const trueRouteDistance = pathDistance(coordinatePath);
 
@@ -610,7 +611,7 @@
 		let stopPoint = stopPoints[0];
 		activeFeatureIndex = 0;
 		
-		let route = pathSmoother(coordinatePath, Math.min(Math.floor(8*altitudeMultiplier), Math.floor(coordinatePath.length / 2)));
+		let route = pathSmoother(coordinatePath, Math.min(Math.floor(9*altitudeMultiplier), Math.floor(coordinatePath.length / 2)));
 		let routeDistance = pathDistance(route);
 
 		let phase = 0;
