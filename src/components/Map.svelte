@@ -157,6 +157,7 @@
 		map.interactive = false;
 		map.scrollZoom.disable();
 		d3.select(".mapboxgl-ctrl-geocoder").style("display", "none");
+		d3.select(".mapboxgl-ctrl-top-left").style("display", "none");
 
 		currentLocation = e.lngLat;
 		startCoordinates = e.lngLat;
@@ -776,6 +777,7 @@
 		}
 
 		d3.select(".mapboxgl-ctrl-geocoder").style("display", "block");
+		d3.select(".mapboxgl-ctrl-top-left").style("display", "block");
 	}
 
 	const getElevations = async (coordinatePath, arrayStep=10) => {
