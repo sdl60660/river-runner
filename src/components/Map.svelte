@@ -268,7 +268,7 @@
 		// const locationTracerPoint = addLocationMarker({ map, origin: coordinatePath[0] });
 
 		// Maintain a consistent speed using the route distance. The higher the speed coefficient, the slower the runner will move.
-		const speedCoefficient = smoothedPath.length < 50 ? 200 : 158 - 5*(cameraPitch - 70);
+		const speedCoefficient = smoothedPath.length < 50 ? 200 : 165 - 5*(cameraPitch - 70);
 		const animationDuration = Math.round(speedCoefficient*routeDistance);
 
 		map.once('moveend', () => {
@@ -489,8 +489,8 @@
 		return point;
 	}
 
-	const getFeatureVAA = async (feature, index) => {
-		if (index > 50 && index % 10 !== 0) {
+	const getFeatureVAA = async (feature, index, thinningIndex) => {
+		if (index > 50 && index % thinningIndex !== 0) {
 			return feature;
 		}
 		else {
@@ -511,8 +511,9 @@
 	}
 
 	const addVAAData = (flowlineFeatures) => {
+		const thinningIndex = Math.ceil(flowlineFeatures.length / 250);
 		return Promise.all(
-			flowlineFeatures.map(async (feature, i) => await getFeatureVAA(feature, i))
+			flowlineFeatures.map(async (feature, i) => await getFeatureVAA(feature, i, thinningIndex))
 		)
 	}
 
