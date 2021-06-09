@@ -85,6 +85,13 @@
 					addTopoLayer({ map });
 				}
 
+				// Add light fog effect on horizon
+				// map.setFog({ 
+				// 	range: [2, 12], 
+				// 	color: "white", 
+				// 	'horizon-blend': 0.05 
+				// });
+
 				// Add geocoder search bar to search for location/address instead of clicking
 				const geocoder = initGeocoder({ map });	
 
@@ -206,12 +213,21 @@
 		combinedFlowlines.geometry.coordinates = flowlinesData.features.map(a => a.geometry.coordinates).flat();
 		drawFlowPath({ map, featureData: [combinedFlowlines], lineWidth: 3 });
 
-		const cameraBaseAltitude = 4300;
+		let terrainElevationMultiplier = 1;
+		let cameraBaseAltitude = 3600;
 		const elevationArrayStep = Math.min((coordinatePath.length/2) - 1, 100);
-		const elevations = await getElevations(coordinatePath, elevationArrayStep);
+
+		// const elevations = await getElevations(coordinatePath, elevationArrayStep);
+		let elevations = getElevationsMapQuery(coordinatePath, elevationArrayStep);
+		if (elevations.includes(null)) {
+			elevations = await getElevations(coordinatePath, elevationArrayStep);
+			cameraBaseAltitude = 4300;
+			terrainElevationMultiplier = 1.25;
+		}
+
 		// Take base altitude and then adjust up based on the elevation of the first coordinate
 		// The multiplier is necessary for higher elevations since they tend to be mountainous areas, as well, requiring additional height for the camera
-		const initialElevation = cameraBaseAltitude + 1.25*Math.round(elevations[0]);
+		const initialElevation = cameraBaseAltitude + terrainElevationMultiplier*Math.round(elevations[0]);
 		const targetPitch = 67;
 		const distanceGap = initialElevation*Math.tan(targetPitch * Math.PI/180) / 1000;
 
@@ -239,7 +255,7 @@
 		// Pre-calculate initial camera center/zoom based on starting coordinates, so that flyTo fucntion can end in correct place
 		const { zoom, center } = precalculateInitialCamera({ map, cameraStart, initialElevation, initialBearing, cameraPitch });
 
-		runSettings = { zoom, center, cameraBaseAltitude, cameraPitch, coordinatePath, initialBearing, smoothedPath, routeDistance, distanceGap, elevations, riverFeatures };
+		runSettings = { zoom, center, cameraBaseAltitude, cameraPitch, coordinatePath, initialBearing, smoothedPath, routeDistance, distanceGap, elevations, terrainElevationMultiplier, riverFeatures };
 		startRun({ map, ...runSettings });
 		
 		// When using the vizState change/return instead of startRun, it displays the overview before automatically starting the run
@@ -250,7 +266,7 @@
 		// return;
 	}
 
-	const startRun = ({ map, zoom, center, cameraBaseAltitude, cameraPitch, coordinatePath, initialBearing, smoothedPath, routeDistance, distanceGap, elevations, riverFeatures }) => {		
+	const startRun = ({ map, zoom, center, cameraBaseAltitude, cameraPitch, coordinatePath, initialBearing, smoothedPath, routeDistance, distanceGap, elevations, terrainElevationMultiplier, riverFeatures }) => {		
 		map.scrollZoom.disable();
 
 		altitudeMultiplier = 1;
@@ -268,7 +284,7 @@
 		// const locationTracerPoint = addLocationMarker({ map, origin: coordinatePath[0] });
 
 		// Maintain a consistent speed using the route distance. The higher the speed coefficient, the slower the runner will move.
-		const speedCoefficient = smoothedPath.length < 50 ? 200 : 165 - 5*(cameraPitch - 70);
+		const speedCoefficient = smoothedPath.length < 50 ? 200 : 175 - 5*(cameraPitch - 70);
 		const animationDuration = Math.round(speedCoefficient*routeDistance);
 
 		map.once('moveend', () => {
@@ -282,6 +298,7 @@
 				routeDistance,
 				distanceGap,
 				elevations,
+				terrainElevationMultiplier,
 				riverFeatures
 			});
 		});
@@ -336,8 +353,8 @@
 			}
 		})
 
-		// If the closest feature in the stop feature set is more than 100 km away, this is landing on an unidentified inland water feature
-		if (minDistance > 100000) {
+		// If the closest feature in the stop feature set is more than 10 km away, this is landing on an unidentified inland water feature
+		if (minDistance > 10000 && closestFeature.properties.stop_feature_type !== "ocean") {
 			return "Inland Water Feature";
 		}
 		// Sometimes there's a large inlet/bay that creates artificial distance between the destination point and my imperfect ocean shapefile polygon
@@ -353,7 +370,7 @@
 			// Otherwise split by Texas, basically, between Atlantic/Pacific
 			return (
 				destinationPoint[0] < -82 && destinationPoint[1] < 31) ? "Gulf of Mexico" :
-				(destinationPoint[0] < -75.63300750 && destination[0] > -77.684621 && destinationPoint[1] > 37.793247 && destinationPoint[1] < 39.61332 ) ? "Chesapeake Bay" :
+				(destinationPoint[0] < -75.63300750 && destinationPoint[0] > -77.684621 && destinationPoint[1] > 37.793247 && destinationPoint[1] < 39.61332 ) ? "Chesapeake Bay" :
 				destinationPoint[0] > -100 ? "Atlantic Ocean" :
 				"Pacific Ocean";
 		}
@@ -541,7 +558,7 @@
 			},
 			elevation
 		);
-		
+
 		camera.setPitchBearing(pitch, bearing);
 		map.setFreeCameraOptions(camera);
 	}
@@ -603,7 +620,7 @@
 		})
 	}
 
-	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4300, cameraPitch=70, distanceGap, coordinatePath, elevations, riverFeatures }) => {
+	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4300, cameraPitch=70, distanceGap, coordinatePath, elevations, terrainElevationMultiplier, riverFeatures }) => {
 		let start;
 
 		const startPoints = riverFeatures.map(d => d.progress);
@@ -693,7 +710,7 @@
 			const elevationStepProgress = elevations.length*phase - Math.floor(elevations.length*phase);
 
 			const elevationEstimate = elevationLast + ((elevationNext - elevationLast)*elevationStepProgress);
-			const tickElevation = altitudeMultiplier*cameraBaseAltitude + 1.25*Math.round(elevationEstimate);
+			const tickElevation = altitudeMultiplier*cameraBaseAltitude + terrainElevationMultiplier*Math.round(elevationEstimate);
 
 			let alongTarget = along(
 				lineString(route),
@@ -781,6 +798,14 @@
 		d3.select(".mapboxgl-ctrl-top-left").style("display", "block");
 	}
 
+	const getElevationsMapQuery = (coordinatePath, arrayStep=10) => {
+		const elevationCoordinates = coordinatePath.filter((element, index) => {
+			return index % arrayStep === 0;
+		})
+
+		return elevationCoordinates.map((d) => map.queryTerrainElevation(d, { exaggerated: true }));
+	}
+
 	const getElevations = async (coordinatePath, arrayStep=10) => {
 
 		const elevationCoordinates = coordinatePath.filter((element, index) => {
@@ -806,6 +831,8 @@
 					return n[(i-1)]
 				}
 			});
+
+		console.log(data);
 			
 		return data;
 	}
