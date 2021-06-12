@@ -178,9 +178,13 @@
 			resetMapState({ map, error: true });
 			return;
 		}
-		
-		// Get downstream flowline path from origin point
-		let flowlinesData = await getDownStreamFlowlines(closestFeature);
+
+		// Get downstream flowline path from origin point, as well as NWIS Sites, Reference Gages, WQP Sites, WaDE Sites
+		let [flowlinesData, nwisData, refgageData, wqpData, wadeData] = await Promise.all(
+			['flowlines', 'nwissite', 'ref_gage', 'wqp', 'wade'].map(siteType => getSiteData(closestFeature, siteType))
+		);
+
+		// Append VAA data from firebase to flowline data
 		flowlinesData.features = await addVAAData(flowlinesData.features);
 		
 		// Find the parent features of flowlines along the path
@@ -327,12 +331,19 @@
 		return closestFeature;
 	}
 
-	const getDownStreamFlowlines = async (closestFeature) => {
-		const flowlinesURL = closestFeature.properties.navigation + '/DM/flowlines?f=json&distance=6000';
-		const flowlinesResponse = await fetch(flowlinesURL);
-		const flowlinesData = await flowlinesResponse.json();
-		return flowlinesData;
-	}
+	// const getDownStreamFlowlines = async (closestFeature) => {
+	// 	const flowlinesURL = closestFeature.properties.navigation + '/DM/flowlines?f=json&distance=6000';
+	// 	const flowlinesResponse = await fetch(flowlinesURL);
+	// 	const flowlinesData = await flowlinesResponse.json();
+	// 	return flowlinesData;
+	// }
+
+	const getSiteData = async (closestFeature, siteType) => {
+		const siteURL = closestFeature.properties.navigation + '/DM/' + siteType + '?f=json&distance=6000';
+		const response = await fetch(siteURL);
+		const data = await response.json();
+		return data;
+	};
 
 	const determineStoppingFeature = ({ destinationPoint, stoppingFeatures }) => {
 		let minDistance = 10000000;
