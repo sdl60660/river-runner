@@ -248,7 +248,9 @@
 		const distanceGap = initialElevation*Math.tan(targetPitch * Math.PI/180) / 1000;
 
 		// Create smoothed path by averaging coordinates with their neighbors. This helps reduce horizontal movement with bendy rivers.
-		const smoothedPath = pathSmoother(coordinatePath, Math.min(9, Math.floor(coordinatePath.length / 2)));
+		// const smoothedPath = pathSmoother(coordinatePath, Math.min(9, Math.floor(coordinatePath.length / 2)));
+		const smoothedPath = pathSmoother(coordinatePath, Math.min(Math.floor(9*altitudeMultiplier), Math.floor(coordinatePath.length / 2)));
+
 		const routeDistance = pathDistance(smoothedPath);
 		const trueRouteDistance = pathDistance(coordinatePath);
 
