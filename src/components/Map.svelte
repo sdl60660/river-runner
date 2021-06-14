@@ -355,8 +355,14 @@
 	const getSiteData = async (closestFeature, siteType) => {
 		const siteURL = closestFeature.properties.navigation + '/DM/' + siteType + '?f=json&distance=6000';
 		const response = await fetch(siteURL);
-		const data = await response.json();
-		return data;
+
+		try {
+			const data = await response.json();
+			return data;
+		}
+		catch {
+			return null;
+		}		
 	};
 
 	const determineStoppingFeature = ({ destinationPoint, stoppingFeatures }) => {
@@ -486,6 +492,10 @@
 
 
 	const addFeatureExtrusions = ({ map, formatterFunction, featureSet, layerID, color, markerRadius, markerHeight=50 }) => {
+		if ( featureSet === null ) {
+			return;
+		}
+		
 		if (map.getLayer(layerID)) {
 			map.removeLayer(layerID);
 		}
