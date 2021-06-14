@@ -524,7 +524,7 @@
 			}
 
 			if (e.features.length > 0) {
-				new mapbox.Popup({ closeButton: true, closeOnClick: false, maxWidth: 400 })
+				new mapbox.Popup({ closeButton: false, closeOnClick: true, maxWidth: 400 })
 					.setLngLat(e.lngLat)
 					.setHTML(
 						formatterFunction({ feature: e.features[0] })
@@ -567,7 +567,7 @@
 
 	const addFeaturePopups = ({ map, featureSet, filterIndex=100 }) => {
 		featureSet.features.filter((d, i) => i % filterIndex === 0).forEach(site => {
-			const popup = new mapbox.Popup({ closeButton: false, closeOnClick: true, maxWidth: 400 })
+			const popup = new mapbox.Popup({ closeButton: false, closeOnClick: false, maxWidth: 400 })
 				.setLngLat(site.properties.original_center)
 				.setHTML(`<span>Water Data Exchange Water Point of Diversion: <a href="${site.properties.uri}">${site.properties.identifier}</a></span>`)
 				.addTo(map);
