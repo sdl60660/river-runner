@@ -39,6 +39,8 @@
 
 	let aborted = false;
 	let vizState = "uninitialized";
+	let postRun = false;
+	let runTimeout;
 
 	let riverPath;
 	let currentLocation;
@@ -256,14 +258,19 @@
 		const { zoom, center } = precalculateInitialCamera({ map, cameraStart, initialElevation, initialBearing, cameraPitch });
 
 		runSettings = { zoom, center, cameraBaseAltitude, cameraPitch, coordinatePath, initialBearing, smoothedPath, routeDistance, distanceGap, elevations, terrainElevationMultiplier, riverFeatures };
-		startRun({ map, ...runSettings });
 		
 		// When using the vizState change/return instead of startRun, it displays the overview before automatically starting the run
-		// This is probably ideal in an ideal world, but I'm worried too many users will just miss the run functionality entirely
-		// vizState = "overview";
-		// map.scrollZoom.enable();
+		// We'll do this with a countdown timer on desktop, and just right into it on mobile
+		if (window.innerWidth > 600) {
+			vizState = "overview";
+			map.scrollZoom.enable();
 
-		// return;
+			postRun = false;
+			runTimeout = setTimeout(() => { startRun({ map, ...runSettings }); }, 5100);
+		}
+		else {
+			startRun({ map, ...runSettings });
+		}
 	}
 
 	const startRun = ({ map, zoom, center, cameraBaseAltitude, cameraPitch, coordinatePath, initialBearing, smoothedPath, routeDistance, distanceGap, elevations, terrainElevationMultiplier, riverFeatures }) => {		
@@ -766,6 +773,7 @@
 
 		map.once('moveend', () => {
 			vizState = "overview";
+			postRun = true;
 			// map.interactive = true;
 			map.scrollZoom.enable();
 			// resetMapState({ map });
@@ -1063,7 +1071,7 @@
 		on:exit-path={() => resetMapState({ map })}
 		on:abort-run={exitFunction}
 		on:progress-set={(e) => handleJump(e) }
-		{vizState} {activeFeatureIndex} {featureGroups} {totalLength} {startCoordinates}
+		{vizState} {postRun} {runTimeout} {activeFeatureIndex} {featureGroups} {totalLength} {startCoordinates}
 	/>
 	<Controls {setAltitudeMultipier} {altitudeMultiplier} {jumpIndex} {playbackSpeed} {setPlaybackSpeed} {paused} {togglePause} {activeFeatureIndex} {vizState} featureGroupLength={featureGroups.length} />
 </div>

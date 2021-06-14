@@ -6,6 +6,9 @@
     import CloseButton from './CloseButton.svelte';
 
     export let vizState;
+    export let postRun;
+    export let runTimeout;
+
     export let featureGroups = [];
     export let activeFeatureIndex;
     export let totalLength;
@@ -20,11 +23,18 @@
 
     let copyPopupVisible = false;
 
+    let xStart = 24;
+    let yStart = 4;
+    let radius = 20;
+
+    let autoplayDisrupted = false;
+
     $: visible = (vizState === "running" || vizState === "overview") ? true : (vizState === "uninitialized") ? false : visible;
 
     const dispatch = createEventDispatcher();
     
     const runNavigationPath = () => {
+        autoplayDisrupted = false;
         dispatch('run-path');
     } 
 
@@ -50,6 +60,11 @@
         copyTextToClipboard(`https://river-runner.samlearner.com/?lng=${startCoordinates.lng}&lat=${startCoordinates.lat}`);
         copyPopupVisible = true;
         setTimeout(() => { copyPopupVisible = false; }, 1200);
+    }
+
+    const disruptAutoplay = () => {
+        clearTimeout(runTimeout);
+        autoplayDisrupted = true;
     }
 
     onMount(() => {
@@ -213,11 +228,27 @@
         transform: translate(-50%, 110%);
         border-radius: 2px;
         opacity: 0.95;
+    }
 
-        /* -webkit-transition: opacity 3s ease-in-out;
-        -moz-transition: opacity 3s ease-in-out;
-        -ms-transition: opacity 3s ease-in-out;
-        -o-transition: opacity 3s ease-in-out; */
+    .svg-wrapper {
+        position: absolute;
+        left: -5px;
+        top: -5px;
+        width: 50px;
+        height: 50px;
+        z-index: 100;
+    }
+
+    .path {
+        stroke-dasharray: 125.6;
+        stroke-dashoffset: 125.6;
+        animation: dash 5s linear forwards;
+    }
+
+    @keyframes dash {
+        to {
+            stroke-dashoffset: 0;
+        }
     }
 
     /* Mobile */
@@ -337,8 +368,30 @@
     </div>
 
     <div class="pre-run-controls" style="display: {(vizState === "overview") ? "flex" : "none"}">
-        <!-- <button class="control-button start-button" on:click={runNavigationPath}><img class="svg-icon-img left-shift" src="/images/play.svg" alt={"start river run"} title={"Start river run"} /></button> -->
-        <button class="control-button start-button" on:click={runNavigationPath}><img class="svg-icon-img" src="/images/repeat.svg" alt={"restart river run"} title={"Restart river run"} /></button>
+        
+        {#if postRun}
+            <button class="control-button start-button" on:click={runNavigationPath}>
+                <img class="svg-icon-img" src="/images/repeat.svg" alt={"restart river run"} title={"Restart river run"} />
+            </button>  
+        {:else if autoplayDisrupted}
+            <button class="control-button start-button" on:click={runNavigationPath}>
+                <img class="svg-icon-img left-shift" src="/images/play.svg" alt={"start river run"} title={"Start river run"} />
+            </button>
+        {:else}
+            <button class="control-button start-button" on:click={disruptAutoplay}>
+                <img class="svg-icon-img" src="/images/pause.svg" alt={"stop river run auto-play"} title={"Stop river run auto-play"} />
+                <svg class="svg-wrapper">
+                    <path
+                        class="path"
+                        stroke="yellow"
+                        stroke-width="5px"
+                        fill="none"
+                        d={`M ${xStart},${yStart} a ${radius} ${radius} 0 1 1 0 ${radius * 2} ${radius} ${radius} 0 1 1 0 ${-radius * 2} z`}
+                    />
+                </svg>
+            </button>
+        {/if}
+
         <button class="control-button share-button" on:click={copyPathLink}>
             <div class="copy-popup" style="display: {copyPopupVisible ? "block" : "none"};">Link copied!</div>
             <img class="svg-icon-img" src="/images/link.svg" alt={"copy a link to this path"} title={"Share this path"} />
