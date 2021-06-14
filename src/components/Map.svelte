@@ -49,6 +49,7 @@
 	let totalLength;
 
 	let phaseJump;
+	
 	// Zoom level won't be adjustable on mobile, but it will be set slightly higher to avoid jiterriness
 	let altitudeMultiplier = window.innerWidth > 600 ? 0.7 : 1.1;
 	let altitudeChange = false;
@@ -113,7 +114,9 @@
             });
 
 			map.on('click', async (e) => {
-				initRunner({ map, e });
+				if (vizState === "uninitialized") {
+					initRunner({ map, e });
+				}
 			});
         };
 
@@ -186,14 +189,9 @@
 			featureTypes.map(siteType => getSiteData(closestFeature, siteType))
 		);
 
-		// console.log(nwisData);
-		// console.log(refgageData);
-		// console.log(wqpData);
-		// console.log(wadeData);
-
-		addFeatureExtrusions({ map, featureSet: nwisData, layerID: 'nwis-points', color: 'green', markerRadius: 0.1 });
-		addFeatureExtrusions({ map, featureSet: wqpData, layerID: 'wqp-points', color: 'yellow', markerRadius: 0.06 });
-		addFeatureExtrusions({ map, featureSet: wadeData, layerID: 'wade-points', color: '#9e0e0e', markerRadius: 0.06 });
+		addFeatureExtrusions({ map, featureSet: nwisData, formatterFunction: nwisPopupFormat, layerID: 'nwis-points', color: 'green', markerRadius: 0.1, markerHeight: 80 });
+		addFeatureExtrusions({ map, featureSet: wqpData, formatterFunction: wqpPopupFormat, layerID: 'wqp-points', color: 'yellow', markerRadius: 0.06 });
+		addFeatureExtrusions({ map, featureSet: wadeData, formatterFunction: wadePopupFormat, layerID: 'wade-points', color: '#9e0e0e', markerRadius: 0.06 });
 		// addFeaturePopups({ map, featureSet: wadeData, filterIndex: 100 });
 
 		// Append VAA data from firebase to flowline data
@@ -306,6 +304,8 @@
 		const animationDuration = Math.round(speedCoefficient*routeDistance);
 
 		map.once('moveend', () => {
+			map.interactive = true;
+
 			// When "raindrop" animation (flyto) is finished, begin the river run
 			runRiver({
 				map,
@@ -484,42 +484,8 @@
 		return riverFeatures;
 	}
 
-	const addFeaturePoints = ({ map, featureSet, layerID, color }) => {
-		if (map.getLayer(layerID)) {
-			map.removeLayer(layerID);
-		}
 
-		if (map.getSource(layerID)) {
-			map.removeSource(layerID);
-		}
-
-		map.addSource(layerID, {
-			'type': 'geojson',
-			'data': featureSet
-		});
-
-		map.addLayer({
-			'id': layerID,
-			'source': layerID,
-			'type': 'circle',
-			'paint': {
-				'circle-radius': {
-					'base': 2,
-					'stops': [
-						[7, 2],
-						[14, 10]
-					]
-				},
-				'circle-color': color,
-				'circle-pitch-alignment': 'map',
-				// 'circle-rotation-alignment': 'map'
-			},
-		});
-
-		return;
-	}
-
-	const addFeatureExtrusions = ({ map, featureSet, layerID, color, markerRadius }) => {
+	const addFeatureExtrusions = ({ map, formatterFunction, featureSet, layerID, color, markerRadius, markerHeight=50 }) => {
 		if (map.getLayer(layerID)) {
 			map.removeLayer(layerID);
 		}
@@ -546,17 +512,62 @@
 			'paint': {
 				'fill-extrusion-color': color,
 				'fill-extrusion-opacity': 0.8,
-				'fill-extrusion-height': 50,
+				'fill-extrusion-height': markerHeight,
 				'fill-extrusion-base': 0
 			},
+		});
+
+		map.on('click', layerID, (e) => {
+			if (layerID === "wqp-points" && 
+				map.queryRenderedFeatures(e.point).some(feature => feature.source === 'nwis-points')) {
+					return;
+			}
+
+			if (e.features.length > 0) {
+				new mapbox.Popup({ closeButton: true, closeOnClick: false, maxWidth: 400 })
+					.setLngLat(e.lngLat)
+					.setHTML(
+						formatterFunction({ feature: e.features[0] })
+					)
+					.addTo(map);
+			}
 		});
 
 		return;
 	}
 
+	const nwisPopupFormat = ({ feature }) => {
+		console.log('NWIS', feature.properties);
+		const siteNumber = feature.properties.identifier.slice(5);
+		return `
+			<div style="text-align: center"><h3><strong>${feature.properties.name} (<a target="_blank" href="https://geoconnex.us/usgs/monitoring-location/${siteNumber}">${siteNumber}</a>)</strong></h3></div>
+			<img src="https://waterdata.usgs.gov/nwisweb/graph?agency_cd=USGS&site_no=${siteNumber}&parm_cd=00060&period=7" alt="NWIS streamgage data for site ${siteNumber}" />
+		`;
+	}
+
+	const wqpPopupFormat = ({ feature }) => {
+		console.log('WQP', feature.properties);
+
+		const identifier = feature.properties.identifier;
+		const portalLink = feature.properties.uri.replace("https://www.waterqualitydata.us/provider/", "https://geoconnex.us/wqp/");
+		const dataLink = `https://www.waterqualitydata.us/data/Result/search?siteid=${identifier}`;
+
+		return `
+			<div style="text-align: center"><h3><strong>Water Quality Portal Site (${identifier})</strong></h3></div>
+			<ul>
+				<li><a target="_blank" href="${portalLink}">Water Quality Portal Site Metadata</a></li>
+				<li><a target="_blank" href="${dataLink}">Water Quality Sample Data</a></li>
+			</ul>
+		`;
+	}
+
+	const wadePopupFormat = ({ feature }) => {
+		return `<span>Water Data Exchange Water Point of Diversion: <a target="_blank" href="${feature.properties.uri}">${feature.properties.identifier}</a></span>`;
+	}
+
 	const addFeaturePopups = ({ map, featureSet, filterIndex=100 }) => {
 		featureSet.features.filter((d, i) => i % filterIndex === 0).forEach(site => {
-			const popup = new mapbox.Popup({ closeButton: false ,closeOnClick: false, maxWidth: 400, offset: 10 })
+			const popup = new mapbox.Popup({ closeButton: false, closeOnClick: true, maxWidth: 400 })
 				.setLngLat(site.properties.original_center)
 				.setHTML(`<span>Water Data Exchange Water Point of Diversion: <a href="${site.properties.uri}">${site.properties.identifier}</a></span>`)
 				.addTo(map);
