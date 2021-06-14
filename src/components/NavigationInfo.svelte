@@ -47,7 +47,8 @@
     }
 
     const copyPathLink = () => {
-        copyTextToClipboard(`https://river-runner.samlearner.com/?lng=${startCoordinates.lng}&lat=${startCoordinates.lat}`);
+        const urlPath = window.location.href.split("?")[0]
+        copyTextToClipboard(`${urlPath}?lng=${startCoordinates.lng}&lat=${startCoordinates.lat}`);
         copyPopupVisible = true;
         setTimeout(() => { copyPopupVisible = false; }, 1200);
     }
