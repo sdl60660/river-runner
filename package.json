@@ -26,6 +26,7 @@
     "@turf/bearing": "^6.3.0",
     "@turf/boolean-point-in-polygon": "^6.3.0",
     "@turf/buffer": "^6.3.0",
+    "@turf/circle": "^6.3.0",
     "@turf/collect": "^6.3.0",
     "@turf/destination": "^6.3.0",
     "@turf/distance": "^6.3.0",

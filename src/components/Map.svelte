@@ -20,6 +20,7 @@
 	import destination from '@turf/destination';
 	import lineSplit from '@turf/line-split';
 	import length from '@turf/length';
+	import circle from '@turf/circle';
 
 	export let bounds;
 	export let stateBoundaries;
@@ -49,7 +50,7 @@
 
 	let phaseJump;
 	// Zoom level won't be adjustable on mobile, but it will be set slightly higher to avoid jiterriness
-	let altitudeMultiplier = window.innerWidth > 600 ? 1 : 1.1;
+	let altitudeMultiplier = window.innerWidth > 600 ? 0.7 : 1.1;
 	let altitudeChange = false;
 	let paused = false;
 	let playbackSpeed = 1;
@@ -180,9 +181,20 @@
 		}
 
 		// Get downstream flowline path from origin point, as well as NWIS Sites, Reference Gages, WQP Sites, WaDE Sites
+		const featureTypes = ['flowlines', 'nwissite', 'ref_gage', 'wqp', 'wade'];
 		let [flowlinesData, nwisData, refgageData, wqpData, wadeData] = await Promise.all(
-			['flowlines', 'nwissite', 'ref_gage', 'wqp', 'wade'].map(siteType => getSiteData(closestFeature, siteType))
+			featureTypes.map(siteType => getSiteData(closestFeature, siteType))
 		);
+
+		// console.log(nwisData);
+		// console.log(refgageData);
+		// console.log(wqpData);
+		// console.log(wadeData);
+
+		addFeatureExtrusions({ map, featureSet: nwisData, layerID: 'nwis-points', color: 'green', markerRadius: 0.1 });
+		addFeatureExtrusions({ map, featureSet: wqpData, layerID: 'wqp-points', color: 'yellow', markerRadius: 0.06 });
+		addFeatureExtrusions({ map, featureSet: wadeData, layerID: 'wade-points', color: '#9e0e0e', markerRadius: 0.06 });
+		// addFeaturePopups({ map, featureSet: wadeData, filterIndex: 100 });
 
 		// Append VAA data from firebase to flowline data
 		flowlinesData.features = await addVAAData(flowlinesData.features);
@@ -248,7 +260,7 @@
 		if (firstBearingPoint === smoothedPath[0]) {
 			firstBearingPoint = smoothedPath[1];
 		}
-		const cameraStart = findArtificialCameraPoint({ distanceGap, originPoint: smoothedPath[0], targetPoint: firstBearingPoint}) 
+		const cameraStart = findArtificialCameraPoint({ distanceGap: altitudeMultiplier*distanceGap, originPoint: smoothedPath[0], targetPoint: firstBearingPoint}) 
 
 		// console.log('Distances:', routeDistance, cameraRouteDistance, trueRouteDistance);
 		const initialBearing = bearingBetween( cameraStart, smoothedPath[0] );
@@ -273,7 +285,7 @@
 	const startRun = ({ map, zoom, center, cameraBaseAltitude, cameraPitch, coordinatePath, initialBearing, smoothedPath, routeDistance, distanceGap, elevations, terrainElevationMultiplier, riverFeatures }) => {		
 		map.scrollZoom.disable();
 
-		altitudeMultiplier = 1;
+		altitudeMultiplier = 0.7;
 		paused = false;
 		playbackSpeed = 1;
 
@@ -468,6 +480,85 @@
 		})
 
 		return riverFeatures;
+	}
+
+	const addFeaturePoints = ({ map, featureSet, layerID, color }) => {
+		if (map.getLayer(layerID)) {
+			map.removeLayer(layerID);
+		}
+
+		if (map.getSource(layerID)) {
+			map.removeSource(layerID);
+		}
+
+		map.addSource(layerID, {
+			'type': 'geojson',
+			'data': featureSet
+		});
+
+		map.addLayer({
+			'id': layerID,
+			'source': layerID,
+			'type': 'circle',
+			'paint': {
+				'circle-radius': {
+					'base': 2,
+					'stops': [
+						[7, 2],
+						[14, 10]
+					]
+				},
+				'circle-color': color,
+				'circle-pitch-alignment': 'map',
+				// 'circle-rotation-alignment': 'map'
+			},
+		});
+
+		return;
+	}
+
+	const addFeatureExtrusions = ({ map, featureSet, layerID, color, markerRadius }) => {
+		if (map.getLayer(layerID)) {
+			map.removeLayer(layerID);
+		}
+
+		if (map.getSource(layerID)) {
+			map.removeSource(layerID);
+		}
+
+
+		featureSet.features.forEach(d => {
+			d.properties.original_center = d.geometry.coordinates;
+			d.geometry = circle(d.geometry.coordinates, markerRadius, { steps: 30 }).geometry;
+		});
+
+		map.addSource(layerID, {
+			'type': 'geojson',
+			'data': featureSet
+		});
+
+		map.addLayer({
+			'id': layerID,
+			'source': layerID,
+			'type': 'fill-extrusion',
+			'paint': {
+				'fill-extrusion-color': color,
+				'fill-extrusion-opacity': 0.8,
+				'fill-extrusion-height': 50,
+				'fill-extrusion-base': 0
+			},
+		});
+
+		return;
+	}
+
+	const addFeaturePopups = ({ map, featureSet, filterIndex=100 }) => {
+		featureSet.features.filter((d, i) => i % filterIndex === 0).forEach(site => {
+			const popup = new mapbox.Popup({ closeButton: false ,closeOnClick: false, maxWidth: 400, offset: 10 })
+				.setLngLat(site.properties.original_center)
+				.setHTML(`<span>Water Data Exchange Water Point of Diversion: <a href="${site.properties.uri}">${site.properties.identifier}</a></span>`)
+				.addTo(map);
+		})
 	}
 
 	const addLocationMarker = ({ map, origin, pointID='location-marker' }) => {
