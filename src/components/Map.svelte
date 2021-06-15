@@ -22,6 +22,7 @@
 	import LocatorMap from './LocatorMap.svelte';
 	import ContactBox from './ContactBox.svelte';
 	import Controls from './Controls.svelte';
+	import Legend from './Legend.svelte';
 
 	export let bounds;
 	export let stateBoundaries;
@@ -58,6 +59,9 @@
 	let paused = false;
 	let playbackSpeed = 1;
 	// let pitchMutiplier = 1; // this one might be a bad idea
+
+	let siteTypes = [];
+	let siteTypeData = {};
 
 	onMount( async () => {
 		await tick();
@@ -116,6 +120,30 @@
         };
 
 		document.head.appendChild(link);
+
+		siteTypeData = {
+			'NWIS Sites': {
+				color: 'green',
+				layerID: 'nwis-points',
+				formatterFunction: nwisPopupFormat,
+				markerRadius: 0.1,
+				markerHeight: 80
+			},
+			'Water Quality Portal': {
+				color: 'yellow',
+				layerID: 'wqp-points',
+				formatterFunction: wqpPopupFormat,
+				markerRadius: 0.06,
+				markerHeight: 50
+			},
+			'Water Data Exchange 2.0 Sites': {
+				color: '#9e0e0e',
+				layerID: 'wade-points',
+				formatterFunction: wadePopupFormat,
+				markerRadius: 0.06,
+				markerHeight: 50
+			}
+		};
 
 		return () => {
 			map.remove();
@@ -184,15 +212,20 @@
 			featureTypes.map(siteType => getSiteData(closestFeature, siteType))
 		);
 
-		// nwisData.features = appendNWISImageData(nwisData.features);
 		nwisData.features.forEach( feature => {
 			feature.properties.display_image = activeNWISSites.includes(feature.properties.identifier.slice(5));
 		})
 
-		addFeatureExtrusions({ map, featureSet: nwisData, formatterFunction: nwisPopupFormat, layerID: 'nwis-points', color: 'green', markerRadius: 0.1, markerHeight: 80 });
-		addFeatureExtrusions({ map, featureSet: wqpData, formatterFunction: wqpPopupFormat, layerID: 'wqp-points', color: 'yellow', markerRadius: 0.06 });
-		addFeatureExtrusions({ map, featureSet: wadeData, formatterFunction: wadePopupFormat, layerID: 'wade-points', color: '#9e0e0e', markerRadius: 0.06 });
-		// addFeaturePopups({ map, featureSet: wadeData, filterIndex: 100 });
+		siteTypes = [];
+		[nwisData, wqpData, wadeData].forEach(featureSet => {
+			if (featureSet !== null) {
+				const sourceName = featureSet.features[0].properties.sourceName;
+				siteTypes.push(sourceName);
+
+				const siteData = siteTypeData[sourceName];
+				addFeatureExtrusions({ map, featureSet, ...siteData });
+			}
+		})
 
 		// Append VAA data from firebase to flowline data
 		flowlinesData.features = await addVAAData(flowlinesData.features);
@@ -563,7 +596,6 @@
 	}
 
 	const nwisPopupFormat = ({ feature }) => {
-		console.log('NWIS', feature.properties);
 		const siteNumber = feature.properties.identifier.slice(5);
 		return feature.properties.display_image ?
 		`
@@ -1123,6 +1155,31 @@
 		playbackSpeed = newVal;
 	}
 
+	const toggleSiteLayer = (layerID, siteName) => {
+		const currentVisibility = map.getLayoutProperty(
+			layerID,
+			'visibility'
+		);
+ 
+		// Toggle layer visibility by changing the layout object's visibility property.
+		if (!currentVisibility || currentVisibility === 'visible') {
+			siteTypeData[siteName].hidden = true;
+			map.setLayoutProperty(
+				layerID,
+				'visibility',
+				'none'
+			);
+		}
+		else {
+			siteTypeData[siteName].hidden = false;
+			map.setLayoutProperty(
+				layerID,
+				'visibility',
+				'visible'
+			);
+		}
+	}
+
 	$: coordinates.update(() => {
 		if (mapBounds._sw) {
 			return [
@@ -1216,4 +1273,5 @@
 		{vizState} {activeFeatureIndex} {featureGroups} {totalLength} {startCoordinates}
 	/>
 	<Controls {setAltitudeMultipier} {altitudeMultiplier} {jumpIndex} {playbackSpeed} {setPlaybackSpeed} {paused} {togglePause} {activeFeatureIndex} {vizState} featureGroupLength={featureGroups.length} />
+	<Legend {vizState} {activeFeatureIndex} {siteTypeData} {siteTypes} {toggleSiteLayer} />
 </div>

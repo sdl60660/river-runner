@@ -1,0 +1,62 @@
+<script>
+    export let vizState;
+    export let activeFeatureIndex;
+    export let siteTypeData;
+    export let siteTypes = [];
+
+    export let toggleSiteLayer;
+
+</script>
+
+<style>
+    .legend {
+        padding: 1rem;
+        background-color: rgba(255, 255, 255, 0.918);
+        border-radius: 4px;
+        z-index: 50;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .site-type-listing {
+        display: grid;
+        grid-template-columns: 1fr 8fr;
+        grid-gap: 4px;
+        cursor: pointer;
+    }
+
+    .site-type-icon {
+        align-self: center;
+        justify-self: center;
+        height: 10px;
+        width: 10px;
+        border: 1px solid black;
+    }
+
+    .site-type-name {
+        font-family: 'Roboto', 'Inter', Arial, Helvetica, sans-serif;
+        font-weight: bold;
+        justify-self: left;
+    }
+
+    .hidden {
+        opacity: 0.2;
+    }
+
+    .hidden .site-type-name {
+        text-decoration: line-through;
+    }
+</style>
+
+
+<div class="legend" style="display: {activeFeatureIndex >= 0 && vizState === "running" ? "flex" : "none"}" >
+    {#each siteTypes as site, i}
+        <div
+            class="site-type-listing"
+            class:hidden={siteTypeData[site].hidden}
+            on:click={() => { toggleSiteLayer(siteTypeData[site].layerID, site); }}
+        >
+            <div class="site-type-icon" style="background-color: {siteTypeData[site].color};"></div><div class="site-type-name">{site}</div>
+        </div>
+    {/each}
+</div>
