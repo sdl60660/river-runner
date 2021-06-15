@@ -999,6 +999,10 @@
 		z-index: 1;
 	}
 
+	:global(.mapboxgl-canvas) {
+		cursor: pointer;
+	}
+
 	/* :global(.mapboxgl-ctrl-top-left) {
 		top: 1rem;
 		left: 1rem;
