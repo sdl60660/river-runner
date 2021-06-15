@@ -11,7 +11,7 @@
 <style>
     .legend {
         padding: 1rem;
-        background-color: rgba(255, 255, 255, 0.918);
+        background-color: rgba(221, 221, 221, 0.89);
         border-radius: 4px;
         z-index: 50;
         display: flex;
