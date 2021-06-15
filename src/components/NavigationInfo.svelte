@@ -383,7 +383,7 @@
                 <svg class="svg-wrapper">
                     <path
                         class="path"
-                        stroke="yellow"
+                        stroke="steelblue"
                         stroke-width="5px"
                         fill="none"
                         d={`M ${xStart},${yStart} a ${radius} ${radius} 0 1 1 0 ${radius * 2} ${radius} ${radius} 0 1 1 0 ${-radius * 2} z`}
