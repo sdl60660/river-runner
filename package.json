@@ -22,6 +22,7 @@
     "svelte": "^3.0.0"
   },
   "dependencies": {
+    "@rollup/plugin-json": "^4.1.0",
     "@turf/along": "^6.3.0",
     "@turf/bearing": "^6.3.0",
     "@turf/boolean-point-in-polygon": "^6.3.0",
@@ -39,6 +40,7 @@
     "@turf/polygon-to-line": "^6.3.0",
     "d3": "^6.7.0",
     "mapbox-gl": "2.3",
+    "node-html-parser": "^3.3.5",
     "scrollama": "^2.2.2",
     "sirv-cli": "^1.0.0",
     "svelte-loading-spinners": "^0.1.4",

@@ -3,15 +3,7 @@
 	import { mapbox } from '../mapbox.js';
 	import { mapboxAccessToken } from '../access_tokens';
 	import * as d3 from 'd3';
-
-	import { bearingBetween, distanceToPolygon, getDataBounds } from '../utils';
-	import { coordinates, stoppingFeature } from '../state';
-	
-	import Prompt from './Prompt.svelte';
-	import NavigationInfo from './NavigationInfo.svelte';
-	import LocatorMap from './LocatorMap.svelte';
-	import ContactBox from './ContactBox.svelte';
-	import Controls from './Controls.svelte';
+	import { parse } from 'node-html-parser';
 
 	import along from '@turf/along';
 	import { feature, featureCollection, lineString, point } from '@turf/helpers';
@@ -22,8 +14,18 @@
 	import length from '@turf/length';
 	import circle from '@turf/circle';
 
+	import { bearingBetween, distanceToPolygon, getDataBounds } from '../utils';
+	import { coordinates, stoppingFeature } from '../state';
+	
+	import Prompt from './Prompt.svelte';
+	import NavigationInfo from './NavigationInfo.svelte';
+	import LocatorMap from './LocatorMap.svelte';
+	import ContactBox from './ContactBox.svelte';
+	import Controls from './Controls.svelte';
+
 	export let bounds;
 	export let stateBoundaries;
+	export let activeNWISSites;
 	export let stoppingFeatures;
 	export let featureData = undefined;
 	export let visibleIndex;
@@ -57,7 +59,7 @@
 	let playbackSpeed = 1;
 	// let pitchMutiplier = 1; // this one might be a bad idea
 
-	onMount(async () => {
+	onMount( async () => {
 		await tick();
 
 		const link = document.createElement('link');
@@ -86,13 +88,6 @@
 				if (addTopo) {
 					addTopoLayer({ map });
 				}
-
-				// Add light fog effect on horizon
-				// map.setFog({ 
-				// 	range: [2, 12], 
-				// 	color: "white", 
-				// 	'horizon-blend': 0.05 
-				// });
 
 				// Add geocoder search bar to search for location/address instead of clicking
 				const geocoder = initGeocoder({ map });	
@@ -188,6 +183,11 @@
 		let [flowlinesData, nwisData, refgageData, wqpData, wadeData] = await Promise.all(
 			featureTypes.map(siteType => getSiteData(closestFeature, siteType))
 		);
+
+		// nwisData.features = appendNWISImageData(nwisData.features);
+		nwisData.features.forEach( feature => {
+			feature.properties.display_image = activeNWISSites.includes(feature.properties.identifier.slice(5));
+		})
 
 		addFeatureExtrusions({ map, featureSet: nwisData, formatterFunction: nwisPopupFormat, layerID: 'nwis-points', color: 'green', markerRadius: 0.1, markerHeight: 80 });
 		addFeatureExtrusions({ map, featureSet: wqpData, formatterFunction: wqpPopupFormat, layerID: 'wqp-points', color: 'yellow', markerRadius: 0.06 });
@@ -490,6 +490,22 @@
 		return riverFeatures;
 	}
 
+	// const appendNWISImageData = async (features) => {
+
+	// 	features.forEach(async (feature) => {
+	// 		const request = await fetch(feature.properties.uri);
+	// 		const text = await request.text();
+
+	// 		const root = parse(text);
+	// 		const jsonLD = root.querySelector("script[type='application/ld+json']");
+	// 		const imageURL = JSON.parse(jsonLD.text).image;
+
+	// 		console.log(imageURL);
+	// 		feature.imageURL = imageURL;
+	// 	})
+
+	// 	return features;
+	// }
 
 	const addFeatureExtrusions = ({ map, formatterFunction, featureSet, layerID, color, markerRadius, markerHeight=50 }) => {
 		if ( featureSet === null ) {
@@ -528,7 +544,7 @@
 		});
 
 		map.on('click', layerID, (e) => {
-			if (layerID === "wqp-points" && 
+			if ((layerID === "wqp-points" || layerID === "wade-points") && 
 				map.queryRenderedFeatures(e.point).some(feature => feature.source === 'nwis-points')) {
 					return;
 			}
@@ -549,10 +565,21 @@
 	const nwisPopupFormat = ({ feature }) => {
 		console.log('NWIS', feature.properties);
 		const siteNumber = feature.properties.identifier.slice(5);
-		return `
-			<div style="text-align: center"><h3><strong>${feature.properties.name} (<a target="_blank" href="https://geoconnex.us/usgs/monitoring-location/${siteNumber}">${siteNumber}</a>)</strong></h3></div>
-			<img src="https://waterdata.usgs.gov/nwisweb/graph?agency_cd=USGS&site_no=${siteNumber}&parm_cd=00060&period=7" alt="NWIS streamgage data for site ${siteNumber}" />
-		`;
+		return feature.properties.display_image ?
+		`
+			<div style="text-align: center">
+				<h3><strong>${feature.properties.name} (<a target="_blank" href="https://geoconnex.us/usgs/monitoring-location/${siteNumber}">${siteNumber}</a>)</strong></h3>
+				<img src="https://waterdata.usgs.gov/nwisweb/graph?agency_cd=USGS&site_no=${siteNumber}&parm_cd=00065&period=7" alt="NWIS streamgage data for site ${siteNumber}" />
+			</div>
+		`
+		:
+		`
+			<div style="text-align: center">
+				<h3><strong>${feature.properties.name} (<a target="_blank" href="https://geoconnex.us/usgs/monitoring-location/${siteNumber}">${siteNumber}</a>)</strong></h3>
+				<em>[No chart data available]</em>
+			</div>
+		`
+		;
 	}
 
 	const wqpPopupFormat = ({ feature }) => {
