@@ -583,18 +583,17 @@
 	}
 
 	const wqpPopupFormat = ({ feature }) => {
-		console.log('WQP', feature.properties);
-
+		// console.log('WQP', feature.properties);
 		const identifier = feature.properties.identifier;
 		const portalLink = feature.properties.uri.replace("https://www.waterqualitydata.us/provider/", "https://geoconnex.us/wqp/");
 		const dataLink = `https://www.waterqualitydata.us/data/Result/search?siteid=${identifier}`;
 
 		return `
-			<div style="text-align: center"><h3><strong>Water Quality Portal Site (${identifier})</strong></h3></div>
-			<ul>
-				<li><a target="_blank" href="${portalLink}">Water Quality Portal Site Metadata</a></li>
-				<li><a target="_blank" href="${dataLink}">Water Quality Sample Data</a></li>
-			</ul>
+			<div style="padding: 0 1rem; display: flex; flex-direction: column;">
+				<h3 style="margin: 0.5rem 0; justify-self: center;"><strong>Water Quality Portal Site (${feature.properties.name})</strong></h3>
+				<a target="_blank" href="${portalLink}">Portal Site Metadata</a></li>
+				<a target="_blank" href="${dataLink}">Water Quality Sample Data</a>
+			</div>
 		`;
 	}
 
@@ -1143,10 +1142,9 @@
 		z-index: 1;
 	}
 
-	/* :global(.mapboxgl-ctrl-top-left) {
-		top: 1rem;
-		left: 1rem;
-	} */
+	:global(.mapboxgl-canvas) {
+		cursor: pointer;
+	}
 
 	:global(.mapboxgl-ctrl-top-left .mapboxgl-ctrl) {
 		margin: 1rem 0 0 1rem !important;
