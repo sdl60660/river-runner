@@ -20,7 +20,7 @@
 
     .site-type-listing {
         display: grid;
-        grid-template-columns: 1fr 8fr;
+        grid-template-columns: 1fr 8fr 1fr;
         grid-gap: 4px;
         cursor: pointer;
     }
@@ -46,6 +46,17 @@
     .hidden .site-type-name {
         text-decoration: line-through;
     }
+
+    .link-icon {
+        height: 1rem;
+        vertical-align: middle;
+    }
+
+    .helper {
+        display: inline-block;
+        height: 100%;
+        vertical-align: middle;
+    }
 </style>
 
 
@@ -56,7 +67,13 @@
             class:hidden={siteTypeData[site].hidden}
             on:click={() => { toggleSiteLayer(siteTypeData[site].layerID, site); }}
         >
-            <div class="site-type-icon" style="background-color: {siteTypeData[site].color};"></div><div class="site-type-name">{site}</div>
+            <div class="site-type-icon" style="background-color: {siteTypeData[site].color};"></div>
+            <div class="site-type-name">{siteTypeData[site].displayName}</div>
+            <div class="icon-wrapper">
+                <a href="{siteTypeData[site].informationLink}" target="_blank" on:click|stopPropagation={() => {}}>
+                    <img class="link-icon" src="/images/link.svg" alt="site-type-information-link">
+                </a>
+            </div>
         </div>
     {/each}
 </div>

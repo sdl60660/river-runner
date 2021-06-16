@@ -128,21 +128,27 @@
 				layerID: 'nwis-points',
 				formatterFunction: nwisPopupFormat,
 				markerRadius: 0.1,
-				markerHeight: 80
+				markerHeight: 80,
+				displayName: 'USGS Monitoring Locations',
+				informationLink: 'https://waterdata.usgs.gov/nwis'
 			},
 			'Water Quality Portal': {
 				color: 'yellow',
 				layerID: 'wqp-points',
 				formatterFunction: wqpPopupFormat,
 				markerRadius: 0.06,
-				markerHeight: 50
+				markerHeight: 50,
+				displayName: 'Water Quality Portal sites',
+				informationLink: 'https://www.waterqualitydata.us/'
 			},
 			'Water Data Exchange 2.0 Sites': {
 				color: '#9e0e0e',
 				layerID: 'wade-points',
 				formatterFunction: wadePopupFormat,
 				markerRadius: 0.06,
-				markerHeight: 50
+				markerHeight: 50,
+				displayName: 'Points of Diversion',
+				informationLink: 'https://westernstateswater.org/wade/'
 			}
 		};
 
@@ -1121,6 +1127,7 @@
 
 	:global(.mapboxgl-popup-content) {
 		padding: 10px 1rem 1rem !important;
+		box-shadow: 3px 3px 2px 1px rgba(34, 34, 34, 0.4) !important;
 	}
 
 	@media only screen and (min-width: 601px) {
