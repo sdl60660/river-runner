@@ -4,6 +4,7 @@
 	import { mapboxAccessToken } from '../access_tokens';
 	import * as d3 from 'd3';
 	import { parse } from 'node-html-parser';
+	import { Moon } from 'svelte-loading-spinners';
 
 	import along from '@turf/along';
 	import { feature, featureCollection, lineString, point } from '@turf/helpers';
@@ -378,13 +379,6 @@
 		return closestFeature;
 	}
 
-	// const getDownStreamFlowlines = async (closestFeature) => {
-	// 	const flowlinesURL = closestFeature.properties.navigation + '/DM/flowlines?f=json&distance=6000';
-	// 	const flowlinesResponse = await fetch(flowlinesURL);
-	// 	const flowlinesData = await flowlinesResponse.json();
-	// 	return flowlinesData;
-	// }
-
 	const getSiteData = async (closestFeature, siteType) => {
 		const siteURL = closestFeature.properties.navigation + '/DM/' + siteType + '?f=json&distance=6000';
 		const response = await fetch(siteURL);
@@ -441,11 +435,6 @@
 		else {
 			return closestFeature.properties.stop_feature_name;
 		}
-	}
-
-	const getPartialDistance = (fullLine, splitCoordinate) => {
-		const index = fullLine.findIndex(d => d === splitCoordinate);
-		return index === 0 ? 0 : length(lineString(fullLine.slice(0, index)))
 	}
 
 	const getFeatureGroups = (flowlinesData) => {
@@ -523,23 +512,6 @@
 		return riverFeatures;
 	}
 
-	// const appendNWISImageData = async (features) => {
-
-	// 	features.forEach(async (feature) => {
-	// 		const request = await fetch(feature.properties.uri);
-	// 		const text = await request.text();
-
-	// 		const root = parse(text);
-	// 		const jsonLD = root.querySelector("script[type='application/ld+json']");
-	// 		const imageURL = JSON.parse(jsonLD.text).image;
-
-	// 		console.log(imageURL);
-	// 		feature.imageURL = imageURL;
-	// 	})
-
-	// 	return features;
-	// }
-
 	const addFeatureExtrusions = ({ map, formatterFunction, featureSet, layerID, color, markerRadius, markerHeight=50 }) => {
 		if ( featureSet === null ) {
 			return;
@@ -599,9 +571,12 @@
 		const siteNumber = feature.properties.identifier.slice(5);
 		return feature.properties.display_image ?
 		`
-			<div style="text-align: center">
+			<div style="text-align: center; height: 440px; width: 576px;">
 				<h3><strong>${feature.properties.name} (<a target="_blank" href="https://geoconnex.us/usgs/monitoring-location/${siteNumber}">${siteNumber}</a>)</strong></h3>
-				<img src="https://waterdata.usgs.gov/nwisweb/graph?agency_cd=USGS&site_no=${siteNumber}&parm_cd=00065&period=7" alt="NWIS streamgage data for site ${siteNumber}" />
+				<div style="position: relative; min-height: 40px;">
+					<div style="position: absolute; top: 50%; left: 50%; transform: translateX(-50%); z-index: 10;">Loading Chart...</div>
+					<img style="position: absolute; top: 0; left: 0; z-index: 20;" src="https://waterdata.usgs.gov/nwisweb/graph?agency_cd=USGS&site_no=${siteNumber}&parm_cd=00065&period=7" alt="NWIS streamgage data for site ${siteNumber}" />
+				</div>
 			</div>
 		`
 		:
@@ -642,53 +617,6 @@
 		})
 	}
 
-	const addLocationMarker = ({ map, origin, pointID='location-marker' }) => {
-		if (map.getLayer(pointID)) {
-			map.removeLayer(pointID);
-		}
-
-		if (map.getSource(pointID)) {
-			map.removeSource(pointID);
-		}
-
-		const point = {
-			'type': 'FeatureCollection',
-			'features': [
-				{
-					'type': 'Feature',
-					'properties': {},
-					'geometry': {
-						'type': 'Point',
-						'coordinates': origin
-					}
-				}
-			]
-		};
-
-		map.addSource(pointID, {
-			'type': 'geojson',
-			'data': point
-		});
-
-		map.addLayer({
-			'id': pointID,
-			'source': pointID,
-			'type': 'circle',
-			'paint': {
-				'circle-radius': {
-					'base': 2,
-					'stops': [
-						[7, 2],
-						[14, 10]
-					]
-				},
-				'circle-color': "#ff0000"
-			}
-		});
-
-		return point;
-	}
-
 	const getFeatureVAA = async (feature, index, thinningIndex) => {
 		if (index > 50 && index % thinningIndex !== 0) {
 			return feature;
@@ -715,19 +643,6 @@
 		return Promise.all(
 			flowlineFeatures.map(async (feature, i) => await getFeatureVAA(feature, i, thinningIndex))
 		)
-	}
-
-	const createArticialCameraPoints = (smoothedPath, coordinatePath, cameraTargetIndexGap, originPoint) => {
-		const firstPointsBearing = bearingBetween( coordinatePath[(Math.min(coordinatePath.length-1, 10))], coordinatePath[0] );
-		const pointDistances = smoothedPath.slice(0, Math.min(80, smoothedPath.length-1)).map((coordinate, index) => {
-			return distance(coordinate, smoothedPath[index+1]);
-		});  
-		const averagePointDistance = pointDistances.reduce((a,b) => a + b, 0) / pointDistances.length; 
-
-		return [...Array(cameraTargetIndexGap).keys()].reverse().map(index => {
-			const offsetDistance = averagePointDistance*(index+1);
-			return destination(originPoint, offsetDistance, firstPointsBearing).geometry.coordinates;
-		})
 	}
 	
 	const positionCamera = ({ map, cameraCoordinates, elevation, pitch, bearing }) => {
@@ -990,7 +905,6 @@
 	}
 
 	const getElevations = async (coordinatePath, arrayStep=10) => {
-
 		const elevationCoordinates = coordinatePath.filter((element, index) => {
 			return index % arrayStep === 0;
 		})
@@ -1014,8 +928,6 @@
 					return n[(i-1)]
 				}
 			});
-
-		console.log(data);
 			
 		return data;
 	}
@@ -1205,6 +1117,10 @@
 
 	:global(.mapboxgl-ctrl-top-left .mapboxgl-ctrl) {
 		margin: 1rem 0 0 1rem !important;
+	}
+
+	:global(.mapboxgl-popup-content) {
+		padding: 1rem;
 	}
 
 	@media only screen and (min-width: 601px) {
