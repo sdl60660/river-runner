@@ -1120,7 +1120,7 @@
 	}
 
 	:global(.mapboxgl-popup-content) {
-		padding: 1rem;
+		padding: 10px 1rem 1rem !important;
 	}
 
 	@media only screen and (min-width: 601px) {
