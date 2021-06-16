@@ -149,6 +149,15 @@
 				markerHeight: 50,
 				displayName: 'Points of Diversion',
 				informationLink: 'https://westernstateswater.org/wade/'
+			},
+			'Streamgage catalog for CA SB19': {
+				color: 'blue',
+				layerID: 'ca-gage-points',
+				formatterFunction: caGagePopupFormat,
+				markerRadius: 0.06,
+				markerHeight: 50,
+				displayName: 'California Stream Gages',
+				informationLink: 'https://gispublic.waterboards.ca.gov/portal/home/item.html?id=32dfb85bd2744487affe6e3475190093'
 			}
 		};
 
@@ -214,17 +223,19 @@
 		}
 
 		// Get downstream flowline path from origin point, as well as NWIS Sites, Reference Gages, WQP Sites, WaDE Sites
-		const featureTypes = ['flowlines', 'nwissite', 'ref_gage', 'wqp', 'wade'];
-		let [flowlinesData, nwisData, refgageData, wqpData, wadeData] = await Promise.all(
+		const featureTypes = ['flowlines', 'nwissite', 'ca_gages', 'wqp', 'wade'];
+		let [flowlinesData, nwisData, caGageData, wqpData, wadeData] = await Promise.all(
 			featureTypes.map(siteType => getSiteData(closestFeature, siteType))
 		);
 
-		nwisData.features.forEach( feature => {
-			feature.properties.display_image = activeNWISSites.includes(feature.properties.identifier.slice(5));
-		})
+		if (nwisData) {
+			nwisData.features.forEach( feature => {
+				feature.properties.display_image = activeNWISSites.includes(feature.properties.identifier.slice(5));
+			})
+		}
 
 		siteTypes = [];
-		[nwisData, wqpData, wadeData].forEach(featureSet => {
+		[nwisData, wqpData, wadeData, caGageData].forEach(featureSet => {
 			if (featureSet !== null) {
 				const sourceName = featureSet.features[0].properties.sourceName;
 				siteTypes.push(sourceName);
@@ -596,7 +607,6 @@
 	}
 
 	const wqpPopupFormat = ({ feature }) => {
-		// console.log('WQP', feature.properties);
 		const identifier = feature.properties.identifier;
 		const portalLink = feature.properties.uri.replace("https://www.waterqualitydata.us/provider/", "https://geoconnex.us/wqp/");
 		const dataLink = `https://www.waterqualitydata.us/data/Result/search?siteid=${identifier}`;
@@ -606,6 +616,15 @@
 				<h3 style="margin: 0.5rem 0; justify-self: center;"><strong>Water Quality Portal Site (${feature.properties.name})</strong></h3>
 				<a target="_blank" href="${portalLink}">Portal Site Metadata</a></li>
 				<a target="_blank" href="${dataLink}">Water Quality Sample Data</a>
+			</div>
+		`;
+	}
+
+	const caGagePopupFormat = ({ feature }) => {
+		return `
+			<div style="padding: 0 1rem; display: flex; flex-direction: column;">
+				<h3 style="margin: 0.5rem 0; justify-self: center;"><strong>Stream Gage: ${feature.properties.name} (${feature.properties.identifier})</strong></h3>
+				<a target="_blank" href="${feature.properties.uri}">Station Metadata</a></li>
 			</div>
 		`;
 	}

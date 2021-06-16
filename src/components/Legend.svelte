@@ -51,12 +51,6 @@
         height: 1rem;
         vertical-align: middle;
     }
-
-    .helper {
-        display: inline-block;
-        height: 100%;
-        vertical-align: middle;
-    }
 </style>
 
 
