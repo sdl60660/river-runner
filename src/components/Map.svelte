@@ -566,7 +566,7 @@
 		});
 
 		map.on('click', layerID, (e) => {
-			if ((layerID === "wqp-points" || layerID === "wade-points") && 
+			if ((layerID === "wqp-points" || layerID === "wade-points" || layerID === "ca-gage-points") && 
 				map.queryRenderedFeatures(e.point).some(feature => feature.source === 'nwis-points')) {
 					return;
 			}
@@ -621,10 +621,11 @@
 	}
 
 	const caGagePopupFormat = ({ feature }) => {
+		console.log(feature.properties);
 		return `
 			<div style="padding: 0 1rem; display: flex; flex-direction: column;">
 				<h3 style="margin: 0.5rem 0; justify-self: center;"><strong>Stream Gage: ${feature.properties.name} (${feature.properties.identifier})</strong></h3>
-				<a target="_blank" href="${feature.properties.uri}">Station Metadata</a></li>
+				<a target="_blank" href="http://cdec.water.ca.gov/dynamicapp/staMeta?station_id=${feature.properties.identifier}">Station Metadata</a></li>
 			</div>
 		`;
 	}
