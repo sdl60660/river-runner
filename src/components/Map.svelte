@@ -228,12 +228,24 @@
 			featureTypes.map(siteType => getSiteData(closestFeature, siteType))
 		);
 
+		// Determine which NWIS Sites have display images, based on the active gage data stored in a static data file
 		if (nwisData) {
 			nwisData.features.forEach( feature => {
 				feature.properties.display_image = activeNWISSites.includes(feature.properties.identifier.slice(5));
 			})
 		}
 
+		// Gather the true station metadata web links for any CA gages
+		if (caGageData) {
+			const weblinkResponses = await Promise.all( caGageData.features.map( gage => fetch( `https://sb19.linked-data.internetofwater.dev/collections/ca_gages/items/${gage.properties.identifier}?f=json` )) )
+			const weblinkData = await Promise.all( weblinkResponses.map(a => a.json() ));
+			
+			caGageData.features.forEach((d, i) => {
+				d.properties.weblink = weblinkData[i].properties.weblink;
+			});
+		}
+
+		// For each site type that exists on a given run, plot it the points and add them to a data array for the legend to use
 		siteTypes = [];
 		[nwisData, wqpData, wadeData, caGageData].forEach(featureSet => {
 			if (featureSet !== null) {
@@ -621,11 +633,11 @@
 	}
 
 	const caGagePopupFormat = ({ feature }) => {
-		console.log(feature.properties);
+		// console.log(feature.properties);
 		return `
 			<div style="padding: 0 1rem; display: flex; flex-direction: column;">
 				<h3 style="margin: 0.5rem 0; justify-self: center;"><strong>Stream Gage: ${feature.properties.name} (${feature.properties.identifier})</strong></h3>
-				<a target="_blank" href="http://cdec.water.ca.gov/dynamicapp/staMeta?station_id=${feature.properties.identifier}">Station Metadata</a></li>
+				<a target="_blank" href="${feature.properties.weblink}">Station Metadata</a></li>
 			</div>
 		`;
 	}
