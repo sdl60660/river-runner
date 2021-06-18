@@ -604,7 +604,7 @@
 		return feature.properties.display_image ?
 		`
 			<div style="text-align: center; height: 440px; width: 576px;">
-				<h3><strong>${formattedFeatureName} (<a target="_blank" href="https://geoconnex.us/usgs/monitoring-location/${siteNumber}">${siteNumber}</a>)</strong></h3>
+				<h3>${formattedFeatureName} (<a target="_blank" href="https://geoconnex.us/usgs/monitoring-location/${siteNumber}">${siteNumber}</a>)</h3>
 				<div style="position: relative; min-height: 40px;">
 					<div style="position: absolute; top: 50%; left: 50%; transform: translateX(-50%); z-index: 10;">
 						<div class="lds-ring"><div></div><div></div><div></div><div></div></div>
@@ -616,7 +616,7 @@
 		:
 		`
 			<div style="text-align: center">
-				<h3><strong>${formattedFeatureName} (<a target="_blank" href="https://geoconnex.us/usgs/monitoring-location/${siteNumber}">${siteNumber}</a>)</strong></h3>
+				<h3>${formattedFeatureName} (<a target="_blank" href="https://geoconnex.us/usgs/monitoring-location/${siteNumber}">${siteNumber}</a>)</h3>
 				<em>[No chart data available]</em>
 			</div>
 		`
@@ -632,7 +632,7 @@
 
 		return `
 			<div style="padding: 0 1rem; display: flex; flex-direction: column;">
-				<h3 style="margin: 0.5rem 0; justify-self: center;"><strong>Water Quality Portal Site (${formattedName})</strong></h3>
+				<h3 style="margin: 0.5rem 0; justify-self: center;">Water Quality Portal Site (${formattedName})</h3>
 				<a target="_blank" href="${portalLink}">Portal Site Metadata</a></li>
 				<a target="_blank" href="${dataLink}">Water Quality Sample Data</a>
 			</div>
@@ -642,7 +642,7 @@
 	const caGagePopupFormat = ({ feature }) => {
 		return `
 			<div style="padding: 0 1rem; display: flex; flex-direction: column;">
-				<h3 style="margin: 0.5rem 0; justify-self: center;"><strong>Stream Gage: ${formatPopupTitleCase(feature.properties.name)} (${feature.properties.identifier})</strong></h3>
+				<h3 style="margin: 0.5rem 0; justify-self: center;">Stream Gage: ${formatPopupTitleCase(feature.properties.name)} (${feature.properties.identifier})</h3>
 				<a target="_blank" href="${feature.properties.weblink}">Station Metadata</a></li>
 			</div>
 		`;
@@ -1172,7 +1172,8 @@
 
 	:global(.mapboxgl-popup-content h3) {
 		font-size: 1.1rem;
-		margin-top: 0;
+		margin: 0.5rem 0;
+		font-weight: bold;
 	}
 
 	@media only screen and (min-width: 601px) {
