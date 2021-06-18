@@ -45,6 +45,7 @@
     "sirv-cli": "^1.0.0",
     "svelte-loading-spinners": "^0.1.4",
     "svelte-slider": "^1.0.0",
+    "title-case": "^3.0.3",
     "topojson-client": "^3.1.0",
     "topojson-server": "^3.0.1"
   }

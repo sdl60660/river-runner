@@ -4,7 +4,7 @@
 	import { mapboxAccessToken } from '../access_tokens';
 	import * as d3 from 'd3';
 	import { parse } from 'node-html-parser';
-	import { Moon } from 'svelte-loading-spinners';
+	import { titleCase } from "title-case";
 
 	import along from '@turf/along';
 	import { feature, featureCollection, lineString, point } from '@turf/helpers';
@@ -15,7 +15,7 @@
 	import length from '@turf/length';
 	import circle from '@turf/circle';
 
-	import { bearingBetween, distanceToPolygon, getDataBounds } from '../utils';
+	import { bearingBetween, distanceToPolygon, getDataBounds, formatPopupTitleCase } from '../utils';
 	import { coordinates, stoppingFeature } from '../state';
 	
 	import Prompt from './Prompt.svelte';
@@ -33,6 +33,7 @@
 	export let visibleIndex;
 	export let mapStyle;
 	export let addTopo;
+
 
 	const urlParams = new URLSearchParams(window.location.search);
 	let startingSearch = urlParams.has('lat') ? { lngLat: { lat: +urlParams.get('lat'), lng: +urlParams.get('lng') }}: null;
@@ -598,12 +599,16 @@
 
 	const nwisPopupFormat = ({ feature }) => {
 		const siteNumber = feature.properties.identifier.slice(5);
+		const formattedFeatureName = formatPopupTitleCase(feature.properties.name);
+
 		return feature.properties.display_image ?
 		`
 			<div style="text-align: center; height: 440px; width: 576px;">
-				<h3><strong>${feature.properties.name} (<a target="_blank" href="https://geoconnex.us/usgs/monitoring-location/${siteNumber}">${siteNumber}</a>)</strong></h3>
+				<h3><strong>${formattedFeatureName} (<a target="_blank" href="https://geoconnex.us/usgs/monitoring-location/${siteNumber}">${siteNumber}</a>)</strong></h3>
 				<div style="position: relative; min-height: 40px;">
-					<div style="position: absolute; top: 50%; left: 50%; transform: translateX(-50%); z-index: 10;">Loading Chart...</div>
+					<div style="position: absolute; top: 50%; left: 50%; transform: translateX(-50%); z-index: 10;">
+						<div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+					</div>
 					<img style="position: absolute; top: 0; left: 0; z-index: 20;" src="https://waterdata.usgs.gov/nwisweb/graph?agency_cd=USGS&site_no=${siteNumber}&parm_cd=00065&period=7" alt="NWIS streamgage data for site ${siteNumber}" />
 				</div>
 			</div>
@@ -611,7 +616,7 @@
 		:
 		`
 			<div style="text-align: center">
-				<h3><strong>${feature.properties.name} (<a target="_blank" href="https://geoconnex.us/usgs/monitoring-location/${siteNumber}">${siteNumber}</a>)</strong></h3>
+				<h3><strong>${formattedFeatureName} (<a target="_blank" href="https://geoconnex.us/usgs/monitoring-location/${siteNumber}">${siteNumber}</a>)</strong></h3>
 				<em>[No chart data available]</em>
 			</div>
 		`
@@ -623,9 +628,11 @@
 		const portalLink = feature.properties.uri.replace("https://www.waterqualitydata.us/provider/", "https://geoconnex.us/wqp/");
 		const dataLink = `https://www.waterqualitydata.us/data/Result/search?siteid=${identifier}`;
 
+		const formattedName = feature.properties.name.includes(" ") ? formatPopupTitleCase(feature.properties.name) : feature.properties.name;
+
 		return `
 			<div style="padding: 0 1rem; display: flex; flex-direction: column;">
-				<h3 style="margin: 0.5rem 0; justify-self: center;"><strong>Water Quality Portal Site (${feature.properties.name})</strong></h3>
+				<h3 style="margin: 0.5rem 0; justify-self: center;"><strong>Water Quality Portal Site (${formattedName})</strong></h3>
 				<a target="_blank" href="${portalLink}">Portal Site Metadata</a></li>
 				<a target="_blank" href="${dataLink}">Water Quality Sample Data</a>
 			</div>
@@ -633,10 +640,9 @@
 	}
 
 	const caGagePopupFormat = ({ feature }) => {
-		// console.log(feature.properties);
 		return `
 			<div style="padding: 0 1rem; display: flex; flex-direction: column;">
-				<h3 style="margin: 0.5rem 0; justify-self: center;"><strong>Stream Gage: ${feature.properties.name} (${feature.properties.identifier})</strong></h3>
+				<h3 style="margin: 0.5rem 0; justify-self: center;"><strong>Stream Gage: ${formatPopupTitleCase(feature.properties.name)} (${feature.properties.identifier})</strong></h3>
 				<a target="_blank" href="${feature.properties.weblink}">Station Metadata</a></li>
 			</div>
 		`;
@@ -1158,8 +1164,15 @@
 	}
 
 	:global(.mapboxgl-popup-content) {
-		padding: 10px 1rem 1rem !important;
+		padding: 1rem 1rem 1rem !important;
 		box-shadow: 3px 3px 2px 1px rgba(34, 34, 34, 0.4) !important;
+		font-size: 0.85rem;
+		font-family: "Roboto", "Inter", Arial, Helvetica, sans-serif;
+	}
+
+	:global(.mapboxgl-popup-content h3) {
+		font-size: 1.1rem;
+		margin-top: 0;
 	}
 
 	@media only screen and (min-width: 601px) {

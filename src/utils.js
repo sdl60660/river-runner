@@ -2,8 +2,9 @@ import bearing from '@turf/bearing';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import pointToLineDistance from '@turf/point-to-line-distance';
 import polygonToLine from '@turf/polygon-to-line';
-
 import { point, polygon } from '@turf/helpers';
+
+import { titleCase } from "title-case";
 import * as d3 from 'd3';
 
 const bearingBetween = (coordinate1, coordinate2) => { 
@@ -130,5 +131,29 @@ const copyTextToClipboard = (text) => {
 
 const stateAbbreviations = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'];
 
+const formatPopupTitleCase = (rawText) => {
 
-export { bearingBetween, contructCoordinateQuadtree, roundToDigits, getDataBounds, distanceToPolygon, copyTextToClipboard, stateAbbreviations };
+  let correctedText = rawText.slice();
+  // Check for commas without spaces after (seems to happen a lot with these)
+  for (let i=0; i < rawText.length; i++) {
+    if (rawText[i] === ',' && i+1 < rawText.length && rawText[i+1] !== " ") {
+      correctedText = correctedText.substr(0, i+1) + ' ' + correctedText.substr(i+1);
+    }
+  }
+
+  // This will use the library's default titlecase rules, which are close, but miss a few cases
+  const firstPass = titleCase(correctedText.toLowerCase());
+
+  return firstPass.split(" ").map(word => {
+    // If a word/segment ends with a dot (acroynm), is two letters or less and not in library's codec (probably a direction/state name), or contains a number, we'll want uppercase
+    if (word.slice(-1)[0] === '.' || (word.length <= 2 && /[A-Z]/.test(word)) || /\d/.test(word)) {
+      return word.toUpperCase();
+    }
+    // Otherwise stick with default titelcase
+    else {
+      return word
+    }
+  }).join(" ")
+}
+
+export { bearingBetween, contructCoordinateQuadtree, roundToDigits, getDataBounds, distanceToPolygon, copyTextToClipboard, stateAbbreviations, formatPopupTitleCase };
