@@ -24,6 +24,7 @@
 	import ContactBox from './ContactBox.svelte';
 	import Controls from './Controls.svelte';
 	import Legend from './Legend.svelte';
+	import WaterLevelDisplay from './WaterLevelDisplay.svelte';
 
 	export let bounds;
 	export let stateBoundaries;
@@ -1230,6 +1231,7 @@
 <Prompt {vizState} {currentLocation} />
 <LocatorMap {bounds} {stateBoundaries} visibleIndex={null} {riverPath} {currentLocation} {vizState} {activeFeatureIndex} {featureGroups} />
 <ContactBox {vizState} />
+<WaterLevelDisplay />
 
 <div class="right-column">
 	<NavigationInfo
