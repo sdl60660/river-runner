@@ -24,6 +24,7 @@
 	import ContactBox from './ContactBox.svelte';
 	import Controls from './Controls.svelte';
 	import Legend from './Legend.svelte';
+	import AltWaterLevelDisplay from './AltWaterLevelDisplay.svelte';
 	import WaterLevelDisplay from './WaterLevelDisplay.svelte';
 
 	export let bounds;
@@ -125,7 +126,7 @@
 		document.head.appendChild(link);
 
 		siteTypeData = {
-			'NWIS Sites': {
+			'NWIS Surface Water Sites': {
 				color: 'green',
 				layerID: 'nwis-points',
 				formatterFunction: nwisPopupFormat,
@@ -250,11 +251,14 @@
 		// For each site type that exists on a given run, plot it the points and add them to a data array for the legend to use
 		siteTypes = [];
 		[nwisData, wqpData, wadeData, caGageData].forEach(featureSet => {
+
 			if (featureSet !== null) {
 				const sourceName = featureSet.features[0].properties.sourceName;
-				siteTypes.push(sourceName);
+				console.log(sourceName);
 
+				siteTypes.push(sourceName);
 				const siteData = siteTypeData[sourceName];
+
 				addFeatureExtrusions({ map, featureSet, ...siteData });
 			}
 		})
@@ -1231,7 +1235,8 @@
 <Prompt {vizState} {currentLocation} />
 <LocatorMap {bounds} {stateBoundaries} visibleIndex={null} {riverPath} {currentLocation} {vizState} {activeFeatureIndex} {featureGroups} />
 <ContactBox {vizState} />
-<WaterLevelDisplay />
+<!-- <WaterLevelDisplay /> -->
+<AltWaterLevelDisplay />
 
 <div class="right-column">
 	<NavigationInfo

@@ -17,7 +17,7 @@
 
     let container;
     let camera, scene, renderer;
-    let controls, water, sun, front, mesh;
+    let controls, water, sun, mesh;
 
     let width;
     let height;
@@ -40,7 +40,7 @@
             scene = new THREE.Scene();
 
             camera = new THREE.PerspectiveCamera( 55, width / height, 1, 20000 );
-            camera.position.set( 0, 70, 150 );
+            camera.position.set( 0, 50, 85 );
 
             //
 
@@ -72,28 +72,7 @@
 
             scene.add( water );
 
-            // front = new Water(
-            //     waterGeometry,
-            //     {
-            //         textureWidth: 512,
-            //         textureHeight: 512,
-            //         waterNormals: new THREE.TextureLoader().load( 'textures/waternormals.jpg', function ( texture ) {
-            //             texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-            //         }),
-            //         sunDirection: new THREE.Vector3(),
-            //         sunColor: 0xffffff,
-            //         waterColor: 0x001e0f,
-            //         distortionScale: 5,
-            //         fog: scene.fog !== undefined
-            //     }
-            // );
-
-            // front.position.set = new THREE.Vector3();
-            // front.position.y = -25;
-            // scene.add( front );
-
             // Skybox
-
             const sky = new Sky();
             sky.scale.setScalar( 10000 );
             scene.add( sky );
@@ -107,7 +86,7 @@
 
             const parameters = {
                 elevation: 7,
-                azimuth: 135
+                azimuth: 45
             };
 
             const pmremGenerator = new THREE.PMREMGenerator( renderer );
@@ -123,7 +102,6 @@
                 water.material.uniforms[ 'sunDirection' ].value.copy( sun ).normalize();
                 // front.material.uniforms[ 'sunDirection' ].value.copy( sun ).normalize();
 
-
                 scene.environment = pmremGenerator.fromScene( sky ).texture;
             }
 
@@ -136,29 +114,7 @@
             directionalLight.position.y = 150;
 
             const ambientLight = new THREE.AmbientLight( 0xffffff );
-
             scene.add( directionalLight, ambientLight );
-
-            // const geometry = new THREE.BoxGeometry( 50, 50, 50 );
-
-            // const waterTexture = new THREE.TextureLoader().load( 'textures/waternormals.jpg', (texture) => { texture.wrapS = texture.wrapT = THREE.RepeatWrapping; });
-	        // const boxMaterial = new THREE.MeshBasicMaterial( { map: waterTexture } );
-
-            // const material = new THREE.MeshPhongMaterial({
-            //     color: 0x001e0f,
-            //     opacity: 0.4,
-            //     transparent: true,
-            // });
-
-            // mesh = new THREE.Mesh( geometry, boxMaterial );
-            // scene.add( mesh );
-
-            // mesh.position.x = 0;
-            // mesh.position.y = -25.1;
-            // mesh.position.z = 0;
-
-            
-            //
 
             controls = new OrbitControls( camera, renderer.domElement );
             controls.maxPolarAngle = Math.PI * 0.495;
@@ -177,7 +133,6 @@
             const time = performance.now() * 0.001;
 
             water.material.uniforms[ 'time' ].value += 1.0 / 60.0;
-            // front.material.uniforms[ 'time' ].value += 1.0 / 60.0;
 
             renderer.render( scene, camera );
         }
@@ -207,8 +162,8 @@
         left: 50%;
         transform: translate(-50%, -50%);
 
-        height: 20rem;
-        width: 20rem;
+        height: 15rem;
+        width: 15rem;
     }
 </style>
 
