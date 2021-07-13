@@ -481,5 +481,5 @@
 <!-- <svelte:window on:keydown={handleKeydown}/> -->
 <div class="container" bind:this={container} bind:clientWidth={width} bind:clientHeight={height}>
     <canvas bind:this={canvas} />
-    <div class="current-flowrate">Current Flowrate: ~{d3.format(",")(currentFlowrate)} ft³/s</div>
+    <div class="current-flowrate">Average Annual Flowrate: ~{d3.format(",")(currentFlowrate)} ft³/s</div>
 </div>
