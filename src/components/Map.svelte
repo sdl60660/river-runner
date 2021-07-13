@@ -313,7 +313,7 @@
 		// Take base altitude and then adjust up based on the elevation of the first coordinate
 		// The multiplier is necessary for higher elevations since they tend to be mountainous areas, as well, requiring additional height for the camera
 		const initialElevation = cameraBaseAltitude + altitudeMultiplier*terrainElevationMultiplier*Math.round(elevations[0]);
-		const targetPitch = 67;
+		const targetPitch = 69;
 		const distanceGap = initialElevation*Math.tan(targetPitch * Math.PI/180) / 1000;
 
 		// Create smoothed path by averaging coordinates with their neighbors. This helps reduce horizontal movement with bendy rivers.
