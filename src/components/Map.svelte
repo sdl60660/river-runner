@@ -1282,7 +1282,7 @@
 <Prompt {vizState} {currentLocation} />
 <LocatorMap {bounds} {stateBoundaries} visibleIndex={null} {riverPath} {currentLocation} {vizState} {activeFeatureIndex} {featureGroups} />
 <ContactBox {vizState} />
-<WaterLevelDisplay {currentFlowrate} {maxFlowrate} />
+<WaterLevelDisplay {currentFlowrate} {maxFlowrate} {vizState} {activeFeatureIndex} />
 
 <div class="right-column">
 	<NavigationInfo

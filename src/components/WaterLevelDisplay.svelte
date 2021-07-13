@@ -9,6 +9,9 @@
     export let currentFlowrate;
     export let maxFlowrate;
 
+    export let vizState;
+    export let activeFeatureIndex;
+
     let container;
     let canvas;
     let camera, scene, renderer;
@@ -452,7 +455,7 @@
 <style>
     .container {
         position: absolute;
-        z-index: 100;
+        /* z-index: 100; */
 
         bottom: 4rem;
         left: 2rem;
@@ -479,7 +482,7 @@
 </style>
 
 <!-- <svelte:window on:keydown={handleKeydown}/> -->
-<div class="container" bind:this={container} bind:clientWidth={width} bind:clientHeight={height}>
+<div class="container" style="z-index: { (vizState === "running" && activeFeatureIndex > 0) || vizState === "overview" ? 100 : -10 };" bind:this={container} bind:clientWidth={width} bind:clientHeight={height}>
     <canvas bind:this={canvas} />
     <div class="current-flowrate">Average Annual Flowrate: ~{d3.format(",")(currentFlowrate)} ft³/s</div>
 </div>
