@@ -313,7 +313,7 @@
 		// Take base altitude and then adjust up based on the elevation of the first coordinate
 		// The multiplier is necessary for higher elevations since they tend to be mountainous areas, as well, requiring additional height for the camera
 		const initialElevation = cameraBaseAltitude + altitudeMultiplier*terrainElevationMultiplier*Math.round(elevations[0]);
-		const targetPitch = 69;
+		const targetPitch = 68;
 		const distanceGap = initialElevation*Math.tan(targetPitch * Math.PI/180) / 1000;
 
 		// Create smoothed path by averaging coordinates with their neighbors. This helps reduce horizontal movement with bendy rivers.
@@ -356,7 +356,7 @@
 	const startRun = ({ map, zoom, center, cameraBaseAltitude, cameraPitch, coordinatePath, initialBearing, smoothedPath, routeDistance, distanceGap, elevations, terrainElevationMultiplier, riverFeatures, flowrates }) => {		
 		map.scrollZoom.disable();
 
-		altitudeMultiplier = 0.7;
+		altitudeMultiplier = 1.0;
 		paused = false;
 		playbackSpeed = 1;
 
@@ -371,7 +371,7 @@
 		// const locationTracerPoint = addLocationMarker({ map, origin: coordinatePath[0] });
 
 		// Maintain a consistent speed using the route distance. The higher the speed coefficient, the slower the runner will move.
-		const speedCoefficient = smoothedPath.length < 50 ? 200 : 175 - 5*(cameraPitch - 70);
+		const speedCoefficient = smoothedPath.length < 50 ? 200 : 185 - 5*(cameraPitch - 70);
 		const animationDuration = Math.round(speedCoefficient*routeDistance);
 
 		map.once('moveend', () => {
