@@ -1,0 +1,26 @@
+name: nwis
+  on:
+    schedule:
+      - cron: "0 0 * * *" # runs at 00:00 UTC everyday
+    
+  build:
+    runs-on: macos
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Use Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14.x'
+
+      - name: Run NWIS Site data update
+        run: npm run update-nwis
+        
+      - name: Commit data
+        run: |
+          git config --global user.name 'Sam Learner'
+          git config --global user.email 'sdl60660@users.noreply.github.com'
+          git commit -am "NWIS Site data update"
+          git push
+  

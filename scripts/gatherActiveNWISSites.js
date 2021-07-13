@@ -49,7 +49,7 @@ const main = async () => {
     };
 
     // Write to JSON file in public/data
-    fs.writeFileSync('../public/data/active_nwis_sites.json', JSON.stringify(outData));
+    fs.writeFileSync('public/data/active_nwis_sites.json', JSON.stringify(outData));
 
     return;
 }
