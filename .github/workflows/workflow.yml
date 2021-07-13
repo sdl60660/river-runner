@@ -1,8 +1,8 @@
 name: NWIS Sites Data Update
 on:
-  # push:
-  #   branches:
-  #     - main
+  push:
+    branches:
+      - main
   schedule:
     - cron: "0 0 * * 0" # runs at 00:00 UTC, once weekly
 jobs:
