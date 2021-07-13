@@ -633,7 +633,7 @@
 
 	const wqpPopupFormat = ({ feature }) => {
 		const identifier = feature.properties.identifier;
-		const portalLink = feature.properties.uri.replace("https://www.waterqualitydata.us/provider/", "https://geoconnex.us/wqp/");
+		const portalLink = feature.properties.uri.replace("https://www.waterqualitydata.us/data/provider/", "https://geoconnex.us/wqp/");
 		const dataLink = `https://www.waterqualitydata.us/data/Result/search?siteid=${identifier}`;
 
 		const formattedName = feature.properties.name.includes(" ") ? formatPopupTitleCase(feature.properties.name) : feature.properties.name;
@@ -920,7 +920,6 @@
 				).geometry.coordinates;
 
 			const bearing = bearingBetween( alongCamera, alongTarget);
-			// console.log( (phase - altitudeMultiplier*phaseGap), alongCamera, bearing)
 
 			// Generate/position a camera along route, pointed in direction of target point at set pitch
 			positionCamera({ map, cameraCoordinates: alongCamera, elevation: tickElevation, pitch: cameraPitch, bearing });
@@ -1283,7 +1282,7 @@
 <Prompt {vizState} {currentLocation} />
 <LocatorMap {bounds} {stateBoundaries} visibleIndex={null} {riverPath} {currentLocation} {vizState} {activeFeatureIndex} {featureGroups} />
 <ContactBox {vizState} />
-<WaterLevelDisplay {currentFlowrate} {maxFlowrate} />
+<WaterLevelDisplay {currentFlowrate} {maxFlowrate} {vizState} {activeFeatureIndex} />
 
 <div class="right-column">
 	<NavigationInfo
