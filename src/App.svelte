@@ -19,7 +19,8 @@
 	const dataFilePromises = [
 		d3.json("data/us_states.json"),
 		d3.json("data/stopping_features.json"),
-		d3.json("data/active_nwis_sites.json")
+		d3.json("data/active_nwis_sites.json"),
+		// d3.csv("data/compressed_flowrate.csv")
 		// ...stateAbbreviations.map(state => getActiveNWISSites(state.toLowerCase()))
 	]
 

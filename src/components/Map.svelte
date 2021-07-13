@@ -24,7 +24,6 @@
 	import ContactBox from './ContactBox.svelte';
 	import Controls from './Controls.svelte';
 	import Legend from './Legend.svelte';
-	import AltWaterLevelDisplay from './AltWaterLevelDisplay.svelte';
 	import WaterLevelDisplay from './WaterLevelDisplay.svelte';
 
 	export let bounds;
@@ -35,7 +34,6 @@
 	export let visibleIndex;
 	export let mapStyle;
 	export let addTopo;
-
 
 	const urlParams = new URLSearchParams(window.location.search);
 	let startingSearch = urlParams.has('lat') ? { lngLat: { lat: +urlParams.get('lat'), lng: +urlParams.get('lng') }}: null;
@@ -62,6 +60,9 @@
 	let altitudeChange = false;
 	let paused = false;
 	let playbackSpeed = 1;
+
+	let currentFlowrate = 10000;
+	let maxFlowrate = 20000;
 	// let pitchMutiplier = 1; // this one might be a bad idea
 
 	let siteTypes = [];
@@ -251,10 +252,8 @@
 		// For each site type that exists on a given run, plot it the points and add them to a data array for the legend to use
 		siteTypes = [];
 		[nwisData, wqpData, wadeData, caGageData].forEach(featureSet => {
-
 			if (featureSet !== null) {
 				const sourceName = featureSet.features[0].properties.sourceName;
-				console.log(sourceName);
 
 				siteTypes.push(sourceName);
 				const siteData = siteTypeData[sourceName];
@@ -263,8 +262,13 @@
 			}
 		})
 
-		// Append VAA data from firebase to flowline data
+		// Append VAA data/flowrate data from firebase to flowline data
 		flowlinesData.features = await addVAAData(flowlinesData.features);
+		flowlinesData.features = await getFlowrateData(flowlinesData.features);
+		const flowrates = flowlinesData.features.map(d => d.properties.flowrate);
+
+		// Set max flowrate for gauge. Max defaults to 20,000 cubic feet/second, but will go up if there's a higher value in the current path's set
+		maxFlowrate = Math.max(...flowrates, 20000);
 		
 		// Find the parent features of flowlines along the path
 		totalLength = flowlinesData.features[0].properties.pathlength > 0 ? flowlinesData.features[0].properties.pathlength : undefined;
@@ -275,8 +279,6 @@
 		const startRiver = flowlinesData.features[0];
 		const originPoint = startRiver.geometry.coordinates[0];
 		const destinationPoint = flowlinesData.features.slice(-1)[0].geometry.coordinates.slice(-1)[0];
-
-		// console.log('Clicked on:', e.lngLat, 'Closest point:', originPoint);
 
 		// Construct full coordinate path by taking the first coordinate in each flowline (each coordinate in the flowline is an unnecessary level of detail)
 		const coordinatePath = flowlinesData.features.length > 3 ? [flowlinesData.features[0].geometry.coordinates[0], ...flowlinesData.features.map( feature => feature.geometry.coordinates.slice(-1)[0] ) ]
@@ -340,7 +342,7 @@
 		// Pre-calculate initial camera center/zoom based on starting coordinates, so that flyTo fucntion can end in correct place
 		const { zoom, center } = precalculateInitialCamera({ map, cameraStart, initialElevation, initialBearing, cameraPitch });
 
-		runSettings = { zoom, center, cameraBaseAltitude, cameraPitch, coordinatePath, initialBearing, smoothedPath, routeDistance, distanceGap, elevations, terrainElevationMultiplier, riverFeatures };
+		runSettings = { zoom, center, cameraBaseAltitude, cameraPitch, coordinatePath, initialBearing, smoothedPath, routeDistance, distanceGap, elevations, terrainElevationMultiplier, riverFeatures, flowrates };
 		startRun({ map, ...runSettings });
 		
 		// When using the vizState change/return instead of startRun, it displays the overview before automatically starting the run
@@ -351,7 +353,7 @@
 		// return;
 	}
 
-	const startRun = ({ map, zoom, center, cameraBaseAltitude, cameraPitch, coordinatePath, initialBearing, smoothedPath, routeDistance, distanceGap, elevations, terrainElevationMultiplier, riverFeatures }) => {		
+	const startRun = ({ map, zoom, center, cameraBaseAltitude, cameraPitch, coordinatePath, initialBearing, smoothedPath, routeDistance, distanceGap, elevations, terrainElevationMultiplier, riverFeatures, flowrates }) => {		
 		map.scrollZoom.disable();
 
 		altitudeMultiplier = 0.7;
@@ -386,7 +388,8 @@
 				distanceGap,
 				elevations,
 				terrainElevationMultiplier,
-				riverFeatures
+				riverFeatures,
+				flowrates
 			});
 		});
 	}
@@ -670,21 +673,20 @@
 		if (index > 50 && index % thinningIndex !== 0) {
 			return feature;
 		}
-		else {
-			const baseUrl = 'https://river-runner-20db3-default-rtdb.firebaseio.com/';
-			const response = await fetch(baseUrl + feature.properties.nhdplus_comid + '.json');
-			const featureData = await response.json();
+		
+		const baseUrl = 'https://river-runner-20db3-default-rtdb.firebaseio.com/';
+		const response = await fetch(baseUrl + feature.properties.nhdplus_comid + '.json');
+		const featureData = await response.json();
 
-			feature.properties = {
-				...feature.properties,
-				...featureData,
-				// feature_name: featureData.gnis_name || `Unnamed River/Stream (${featureData.levelpathid})`
-				feature_name: featureData.gnis_name || `Unnamed River/Stream`,
-				feature_id: featureData.gnis_name || featureData.levelpathid
-			};
+		feature.properties = {
+			...feature.properties,
+			...featureData,
+			// feature_name: featureData.gnis_name || `Unnamed River/Stream (${featureData.levelpathid})`
+			feature_name: featureData.gnis_name || `Unnamed River/Stream`,
+			feature_id: featureData.gnis_name || featureData.levelpathid
+		};
 
-			return feature;
-		}
+		return feature;
 	}
 
 	const addVAAData = (flowlineFeatures) => {
@@ -692,6 +694,49 @@
 		return Promise.all(
 			flowlineFeatures.map(async (feature, i) => await getFeatureVAA(feature, i, thinningIndex))
 		)
+	}
+
+	const getFeatureFlowrate = async (feature, index, thinningIndex, bufferSize=50) => {
+		if (index > bufferSize && index % thinningIndex !== 0) {
+			return feature;
+		}
+
+		const baseUrl = 'https://river-runner-flowrates.firebaseio.com/';
+		const response = await fetch(baseUrl + feature.properties.nhdplus_comid + '.json');
+		const featureData = await response.json();
+
+		feature.properties = {
+			...feature.properties,
+			flowrate: parseFloat(featureData.flowrate)
+		};
+
+		return feature;
+	}
+
+	const getFlowrateData = async (flowlineFeatures, thinningIndex=3, bufferSize=50) => {
+
+		// Gather a sample of flowline flowrate data from firebase server, using thinningIndex
+		const flowrateData = await Promise.all(
+			flowlineFeatures.map(async (feature, i) => await getFeatureFlowrate(feature, i, thinningIndex, bufferSize))
+		)
+
+		// Interpolate gathered data to fill values for flowlines filtered out by thinningIndex
+		flowrateData.forEach((feature, i) => {
+			if (i > bufferSize && i % thinningIndex !== 0) {
+				const lastIndex = thinningIndex*Math.floor(i / thinningIndex);
+				const nextIndex = thinningIndex*Math.ceil(i / thinningIndex);
+
+				const lastValue = flowrateData[lastIndex].properties.flowrate;
+				const nextValue = flowrateData[nextIndex]?.properties?.flowrate;
+
+				let interpolatedValue = nextValue ? lastValue + ((nextValue - lastValue) * ((i % thinningIndex) / thinningIndex)) : lastValue;
+				interpolatedValue = Math.ceil(interpolatedValue);
+
+				feature.properties.flowrate = interpolatedValue;
+			}
+		})
+
+		return flowrateData;
 	}
 	
 	const positionCamera = ({ map, cameraCoordinates, elevation, pitch, bearing }) => {
@@ -767,7 +812,7 @@
 		})
 	}
 
-	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4300, cameraPitch=70, distanceGap, coordinatePath, elevations, terrainElevationMultiplier, riverFeatures }) => {
+	const runRiver = ({ map, animationDuration, cameraBaseAltitude=4300, cameraPitch=70, distanceGap, coordinatePath, elevations, terrainElevationMultiplier, riverFeatures, flowrates }) => {
 		let start;
 
 		const startPoints = riverFeatures.map(d => d.progress);
@@ -879,6 +924,9 @@
 
 			// Generate/position a camera along route, pointed in direction of target point at set pitch
 			positionCamera({ map, cameraCoordinates: alongCamera, elevation: tickElevation, pitch: cameraPitch, bearing });
+
+			// Set new flowrate value for water level gauge
+			currentFlowrate = flowrates[Math.floor(flowrates.length * phase)]
 
 			// This will update the location of the marker on the locator map
 			if (tick % 5 === 0) {
@@ -1235,8 +1283,7 @@
 <Prompt {vizState} {currentLocation} />
 <LocatorMap {bounds} {stateBoundaries} visibleIndex={null} {riverPath} {currentLocation} {vizState} {activeFeatureIndex} {featureGroups} />
 <ContactBox {vizState} />
-<!-- <WaterLevelDisplay /> -->
-<AltWaterLevelDisplay />
+<WaterLevelDisplay {currentFlowrate} {maxFlowrate} />
 
 <div class="right-column">
 	<NavigationInfo
