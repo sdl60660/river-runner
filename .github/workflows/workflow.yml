@@ -14,6 +14,8 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: "14.x"
+      - name: Install npm packages
+        run: npm install dateformat axios fast-xml-parser
       - name: Run NWIS Site data update
         run: npm run update-nwis
       - name: Commit data
