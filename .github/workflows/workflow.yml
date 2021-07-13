@@ -1,10 +1,10 @@
 name: NWIS Sites Data Update
 on:
-  push:
-    branches:
-      - main
+  # push:
+  #   branches:
+  #     - main
   schedule:
-    - cron: "0 0 * * *" # runs at 00:00 UTC everyday
+    - cron: "0 0 * * 0" # runs at 00:00 UTC, once weekly
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -22,5 +22,6 @@ jobs:
         run: |
           git config --global user.name 'Sam Learner'
           git config --global user.email 'sdl60660@users.noreply.github.com'
-          git commit -am "NWIS Site data update"
+          git add public/data/active_nwis_sites.json
+          git commit -m "NWIS Site data update"
           git push
