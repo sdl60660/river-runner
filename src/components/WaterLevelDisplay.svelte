@@ -456,7 +456,6 @@
 
         bottom: 4rem;
         left: 2rem;
-        /* transform: translate(0%, -50%); */
 
         height: 15rem;
         width: 15rem;
@@ -469,7 +468,7 @@
     }
 
     div:focus, canvas:focus {
-        outline:0;
+        outline: 0;
     }
 
     @media only screen and (max-width: 600px) {
