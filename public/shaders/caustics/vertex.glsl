@@ -21,7 +21,6 @@ vec3 project(vec3 origin, vec3 ray, vec3 refractedLight) {
 
 void main() {
   vec4 info = texture2D(water, position.xy * 0.5 + 0.5);
-  info.ba *= 0.5;
   vec3 normal = vec3(info.b, sqrt(1.0 - dot(info.ba, info.ba)), info.a);
 
   /* project the vertices along the refracted vertex ray */

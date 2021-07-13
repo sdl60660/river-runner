@@ -50,10 +50,12 @@ vec3 getWallColor(vec3 point) {
     scale += diffuse * caustic.r * 2.0 * caustic.g;
   } else {
     /* shadow for the rim of the pool */
-    vec2 t = intersectCube(point, refractedLight, vec3(-1.0, -poolHeight, -1.0), vec3(1.0, 2.0, 1.0));
+    /* vec2 t = intersectCube(point, refractedLight, vec3(-1.0, -poolHeight, -1.0), vec3(1.0, 2.0, 1.0));
     diffuse *= 1.0 / (1.0 + exp(-200.0 / (1.0 + 10.0 * (t.y - t.x)) * (point.y + refractedLight.y * t.y - 2.0 / 12.0)));
 
-    scale += diffuse * 0.5;
+    scale += diffuse * 0.5; */
+    vec4 caustic = texture2D(causticTex, 0.75 * (point.xz - point.y * refractedLight.xz / refractedLight.y) * 0.5 + 0.5);
+    scale += diffuse * caustic.r * 2.0 * caustic.g;
   }
 
   return wallColor * scale;

@@ -11,7 +11,7 @@ void main() {
 
   vec4 info = texture2D(water, pos.xz * 0.5 + 0.5);
 
-  if (pos.y < info.r) {
+  /* if (pos.y < info.r) { */
     gl_FragColor.rgb *= underwaterColor * 1.2;
-  }
+  /* } */
 }
