@@ -66,7 +66,7 @@
             0.01,
             400
         );
-        camera.position.set(0, 0.5, 3.35);
+        camera.position.set(0, 0.3, 3.35);
 
         const renderer = new THREE.WebGLRenderer({
             canvas: canvas,
@@ -530,8 +530,8 @@
         });
     });
 
-    const chartHeight = 60;
-    const margin = ({ left: 30, right: 0 });
+    const chartHeight = 50;
+    const margin = ({ left: 10, right: 10 });
 
     $: x = d3
         .scaleLinear()
@@ -564,37 +564,50 @@
 <!-- <svelte:window on:keydown={handleKeydown}/> -->
 <div
     class="container"
-    style="z-index: {(vizState === 'running' && activeFeatureIndex > 0) ||vizState === 'overview' ? 100 : -10};"
+    style="z-index: {(vizState === 'running' && activeFeatureIndex > 0) || vizState === 'overview' ? 100 : -10};"
     bind:this={container}
-    bind:clientWidth={width}
-    bind:clientHeight={height}
 >
-    <canvas bind:this={canvas} />
-    <div class="current-flowrate">
-        Average Annual Flowrate: ~{d3.format(",")(currentFlowrate.level)} ft³/s
-    </div>
     <svg class="flowrate-chart-svg" width={width} height={chartHeight} >
         <path class="flowrate-area" d={area(flowrates)} fill={"steelblue"} />
         <line x1={x(currentFlowrate.index)} x2={x(currentFlowrate.index)} y1={chartHeight} y2={0} stroke={"rgba(255,0,0,0.7)"} stroke-width={2} />
         <!-- <g class="y-axis" /> -->
     </svg>
+    <canvas
+        class="three-canvas"
+        bind:clientWidth={width}
+        bind:clientHeight={height}
+        bind:this={canvas}
+    />
+    <div class="current-flowrate">
+        Avg. Annual Flowrate: ~{d3.format(",")(currentFlowrate.level)} ft³/s
+    </div>
 </div>
 
 <style>
     .container {
-        position: absolute;
+        /* position: absolute; */
         /* z-index: 100; */
 
-        bottom: 6rem;
-        left: 2rem;
+        /* bottom: 8rem;
+        left: 2rem; */
+        display: flex;
+        flex-direction: column;
+        width: 15rem;
+    }
 
-        height: 15rem;
+    .flowrate-chart-svg {
+        border: 1px solid gray;
+        border-radius: 3px;
+    }
+
+    .three-canvas {
+        height: 14rem;
         width: 15rem;
     }
 
     .current-flowrate {
         color: white;
-        font-size: 0.8rem;
+        font-size: 0.85rem;
         text-align: center;
     }
 

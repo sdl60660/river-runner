@@ -1231,14 +1231,24 @@
 	}
 
 	@media only screen and (min-width: 601px) {
-		.right-column {
+		.right-column, .left-column {
 			display: flex;
 			position: absolute;
+			flex-direction: column;
+			gap: 1rem;
+		}
+
+		.right-column {
 			right: 3rem;
 			top: 3rem;
 			z-index: 20;
-			flex-direction: column;
-			gap: 1rem;
+		}
+
+		.left-column {
+			left: 2rem;
+			top: 2rem;
+			justify-content: space-between;
+			bottom: 2rem;
 		}
 	}
 
@@ -1282,9 +1292,14 @@
 </div>
 
 <Prompt {vizState} {currentLocation} />
-<LocatorMap {bounds} {stateBoundaries} visibleIndex={null} {riverPath} {currentLocation} {vizState} {activeFeatureIndex} {featureGroups} />
 <ContactBox {vizState} />
-<WaterLevelDisplay {currentFlowrate} {maxFlowrate} {flowrates} {vizState} {activeFeatureIndex} />
+
+<div class="left-column" style="z-index: {vizState === "running" ? 10 : -10};">
+	<LocatorMap {bounds} {stateBoundaries} visibleIndex={null} {riverPath} {currentLocation} {vizState} {activeFeatureIndex} {featureGroups} />
+	{#if window.innerWidth > 600}
+		<WaterLevelDisplay {currentFlowrate} {maxFlowrate} {flowrates} {vizState} {activeFeatureIndex} />
+	{/if}
+</div>
 
 <div class="right-column">
 	<NavigationInfo
