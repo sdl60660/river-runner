@@ -41,7 +41,7 @@ const main = async () => {
 
     // Get/format today's date and append it to JSON data
     const now = new Date();
-    const date = dateFormat(now, 'yyyy-mm-dd');
+    const date = dateFormat(now, 'yyyy-mm-dd HH:MM:ss');
 
     const outData = {
         date_gathered: date,
