@@ -714,7 +714,7 @@
 		return feature;
 	}
 
-	const getFlowrateData = async (flowlineFeatures, thinningIndex=3, bufferSize=50) => {
+	const getFlowrateData = async (flowlineFeatures, thinningIndex=4, bufferSize=50) => {
 
 		// Gather a sample of flowline flowrate data from firebase server, using thinningIndex
 		const flowrateData = await Promise.all(
