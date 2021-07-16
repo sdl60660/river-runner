@@ -5,16 +5,18 @@
 	import Map from './components/Map.svelte';
 	import Loader from './components/Loader.svelte';
 
-	import { stateAbbreviations } from './utils';
+	// import { stateAbbreviations } from './utils';
+	import SplashBanner from './components/SplashBanner.svelte';
 
+	let bannerVisible = true;
 
-	const getActiveNWISSites = async (stateAbbreviation) => {
-		const requestURL = `https://waterservices.usgs.gov/nwis/site/?format=gm,1.0&stateCd=${stateAbbreviation}&period=P7D&outputDataTypeCd=iv&parameterCd=00060&siteType=ST&siteStatus=active&hasDataTypeCd=iv`;
-		const response = await d3.xml(requestURL);
-		const stateIDs = [...response.documentElement.getElementsByTagName("Placemark")];
+	// const getActiveNWISSites = async (stateAbbreviation) => {
+	// 	const requestURL = `https://waterservices.usgs.gov/nwis/site/?format=gm,1.0&stateCd=${stateAbbreviation}&period=P7D&outputDataTypeCd=iv&parameterCd=00060&siteType=ST&siteStatus=active&hasDataTypeCd=iv`;
+	// 	const response = await d3.xml(requestURL);
+	// 	const stateIDs = [...response.documentElement.getElementsByTagName("Placemark")];
 
-		return stateIDs.map(a => a.getAttribute("id"));
-	}
+	// 	return stateIDs.map(a => a.getAttribute("id"));
+	// }
 
 	const dataFilePromises = [
 		d3.json("data/us_states.json"),
@@ -34,10 +36,27 @@
 		return [states, stoppingFeatures, activeNWISSites];
 	})
 
+	const closeBanner = () => {
+		bannerVisible = false;
+	}
 </script>
 
 {#await dataLoad}
     <Loader />
 {:then data }
-	<Map bounds={[[-125, 24], [-66, 51]]} stateBoundaries={data[0]} stoppingFeatures={data[1]} activeNWISSites={data[2]} visibleIndex={1} addTopo={true} mapStyle={"mapbox://styles/mapbox-map-design/ckhqrf2tz0dt119ny6azh975y"} />
+	<SplashBanner
+		{bannerVisible}
+		on:close-banner={closeBanner}
+	/>
+	<Map
+		bounds={[[-125, 24], [-66, 51]]}
+		stateBoundaries={data[0]}
+		stoppingFeatures={data[1]}
+		activeNWISSites={data[2]}
+		visibleIndex={1}
+		addTopo={true}
+		mapStyle={"mapbox://styles/mapbox-map-design/ckhqrf2tz0dt119ny6azh975y"}
+		{bannerVisible}
+		{closeBanner}
+	/>
 {/await}

@@ -241,4 +241,4 @@
 	{/if}
 </div>
 
-<div class="marker" bind:this={markerEl}></div>
+<div class="marker" style="z-index: {visibleIndex ? 10 : -10}; opacity: {!visibleIndex ? 0.0 : width > 600 ? 0.9 : 1.0};" bind:this={markerEl}></div>
