@@ -21,6 +21,7 @@
 	import Controls from './Controls.svelte';
 	import Legend from './Legend.svelte';
 	import WaterLevelDisplay from './WaterLevelDisplay.svelte';
+	import BottomLogos from './BottomLogos.svelte';
 
 	export let bounds;
 	export let stateBoundaries;
@@ -1294,6 +1295,9 @@
 
 <Prompt {vizState} {currentLocation} {bannerVisible} />
 <ContactBox {vizState} />
+{#if window.innerWidth > 600}
+	<BottomLogos {vizState} />
+{/if}
 
 <div class="left-column" style="z-index: {vizState === "running" ? 10 : -10};">
 	<LocatorMap {bounds} {stateBoundaries} visibleIndex={null} {riverPath} {currentLocation} {vizState} {activeFeatureIndex} {featureGroups} />
