@@ -564,7 +564,10 @@
 <!-- <svelte:window on:keydown={handleKeydown}/> -->
 <div
     class="container"
-    style="z-index: {(vizState === 'running' && activeFeatureIndex > 0) || vizState === 'overview' ? 100 : -10};"
+    style="
+        z-index: {(vizState === 'running' && activeFeatureIndex > 0) || vizState === 'overview' ? 100 : -10};
+        opacity: {(vizState === 'running' && activeFeatureIndex > 0) || vizState === 'overview' ? 1.0 : 0.0};
+    "
     bind:this={container}
 >
     <svg class="flowrate-chart-svg" width={width} height={chartHeight} >

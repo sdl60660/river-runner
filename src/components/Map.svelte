@@ -9,8 +9,6 @@
 	import lineDistance from '@turf/line-distance';
 	import distance from '@turf/distance';
 	import destination from '@turf/destination';
-	import lineSplit from '@turf/line-split';
-	import length from '@turf/length';
 	import circle from '@turf/circle';
 
 	import { bearingBetween, distanceToPolygon, getDataBounds, formatPopupTitleCase } from '../utils';
@@ -23,6 +21,7 @@
 	import Controls from './Controls.svelte';
 	import Legend from './Legend.svelte';
 	import WaterLevelDisplay from './WaterLevelDisplay.svelte';
+	import BottomLogos from './BottomLogos.svelte';
 
 	export let bounds;
 	export let stateBoundaries;
@@ -33,12 +32,16 @@
 	export let mapStyle;
 	export let addTopo;
 
+	export let bannerVisible;
+	export let closeBanner;
+
 	const urlParams = new URLSearchParams(window.location.search);
 	let startingSearch = urlParams.has('lat') ? { lngLat: { lat: +urlParams.get('lat'), lng: +urlParams.get('lng') }}: null;
 
 	let container;
 	let map;
 	let mapBounds = bounds;
+	let geocoder = null;
 	let runSettings = {};
 
 	let aborted = false;
@@ -99,7 +102,9 @@
 				}
 
 				// Add geocoder search bar to search for location/address instead of clicking
-				const geocoder = initGeocoder({ map });	
+				if (!bannerVisible) {
+					geocoder = initGeocoder({ map });	
+				}
 
 				// Initialize and add explicit zoom controls in top-left corner, if not on mobile
 				const nav = new mapbox.NavigationControl({
@@ -112,6 +117,8 @@
 				
 				// If starting coordinates were passed in as a parameter (from a shared link), load starting path
 				if (startingSearch) {
+					closeBanner();
+
 					initRunner({ map, e: startingSearch });
 					startingSearch = null;
 				}
@@ -661,15 +668,6 @@
 		return `<span>Water Data Exchange Water Point of Diversion: <a target="_blank" href="${feature.properties.uri}">${feature.properties.identifier}</a></span>`;
 	}
 
-	const addFeaturePopups = ({ map, featureSet, filterIndex=100 }) => {
-		featureSet.features.filter((d, i) => i % filterIndex === 0).forEach(site => {
-			const popup = new mapbox.Popup({ closeButton: false, closeOnClick: false, maxWidth: 400 })
-				.setLngLat(site.properties.original_center)
-				.setHTML(`<span>Water Data Exchange Water Point of Diversion: <a href="${site.properties.uri}">${site.properties.identifier}</a></span>`)
-				.addTo(map);
-		})
-	}
-
 	const getFeatureVAA = async (feature, index, thinningIndex) => {
 		if (index > 50 && index % thinningIndex !== 0) {
 			return feature;
@@ -714,7 +712,7 @@
 		return feature;
 	}
 
-	const getFlowrateData = async (flowlineFeatures, thinningIndex=3, bufferSize=50) => {
+	const getFlowrateData = async (flowlineFeatures, thinningIndex=4, bufferSize=50) => {
 
 		// Gather a sample of flowline flowrate data from firebase server, using thinningIndex
 		const flowrateData = await Promise.all(
@@ -1199,6 +1197,10 @@
 		}
 	});
 
+	$: if ( !bannerVisible && !geocoder ) {
+		geocoder = initGeocoder({ map });
+	}
+
 </script>
 
 <style>
@@ -1291,8 +1293,11 @@
 	{/if}
 </div>
 
-<Prompt {vizState} {currentLocation} />
+<Prompt {vizState} {currentLocation} {bannerVisible} />
 <ContactBox {vizState} />
+{#if window.innerWidth > 600}
+	<BottomLogos {vizState} />
+{/if}
 
 <div class="left-column" style="z-index: {vizState === "running" ? 10 : -10};">
 	<LocatorMap {bounds} {stateBoundaries} visibleIndex={null} {riverPath} {currentLocation} {vizState} {activeFeatureIndex} {featureGroups} />
