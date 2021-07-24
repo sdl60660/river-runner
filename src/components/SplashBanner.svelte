@@ -1,15 +1,51 @@
 <script>
-    import { createEventDispatcher } from 'svelte';
+    import { createEventDispatcher } from "svelte";
 
     export let bannerVisible = true;
+
     let width;
+    let src = "images/iow_branding/banner_with_logos.png";
 
     const dispatch = createEventDispatcher();
     const closeBanner = () => {
-        dispatch('close-banner')
-    }
+        dispatch("close-banner");
+    };
+
+    const preload = (src) => {
+        return new Promise(function (resolve) {
+            let img = new Image();
+            img.onload = resolve;
+            img.src = src;
+        });
+    };
 </script>
 
+<svelte:window bind:innerWidth={width} />
+
+{#await preload(src) then _}
+    <div
+        class="banner"
+        on:click={closeBanner}
+        style="display: {bannerVisible ? 'block' : 'none'};"
+    >
+        <div class="image-wrapper">
+            <img
+                class="banner-image"
+                {src}
+                alt="Banner with title of app (River Runner) and logos for Duke's internet of water lab. Press button below to close banner and start using app."
+                {width}
+                height="auto"
+            />
+            <button
+                class="advance-button"
+                aria-label="button to close banner and start interacting with app"
+                on:click={closeBanner}
+            >
+                Start
+            </button>
+        </div>
+    </div>
+{/await}
 
 <style>
     .banner {
@@ -38,7 +74,7 @@
         /* margin: auto; */
         cursor: pointer;
         font-size: 1.2rem;
-        font-family: 'Roboto', sans-serif;
+        font-family: "Roboto", sans-serif;
 
         position: absolute;
         top: 100%;
@@ -69,7 +105,8 @@
         transition: 100ms all ease-in-out;
     }
 
-    .advance-button:hover, .advance-button:active {
+    .advance-button:hover,
+    .advance-button:active {
         background-color: #ffffff;
     }
 
@@ -94,28 +131,4 @@
             min-height: 35px;
         }
     }
-
 </style>
-
-<svelte:window bind:innerWidth={width} />
-
-<div class="banner" on:click={closeBanner} style="display: {bannerVisible ? "block" : "none"};">
-    <div
-        class="image-wrapper"
-    >
-        <img
-            class="banner-image"
-            src="images/iow_branding/banner_with_logos.png"
-            alt="Banner with title of app (River Runner) and logos for Duke's internet of water lab. Press button below to close banner and start using app."
-            width={width}
-            height="auto"
-        />
-        <button
-            class="advance-button"
-            aria-label="button to close banner and start interacting with app"
-            on:click={closeBanner}
-        >
-            Start
-        </button>
-    </div>
-</div>
