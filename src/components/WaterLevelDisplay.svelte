@@ -3,7 +3,6 @@
 
     import * as THREE from "three";
     import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-    import HelvetikerFont from "three/examples/fonts/helvetiker_regular.typeface.json";
     import * as d3 from "d3";
 
     export let currentFlowrate;
@@ -40,22 +39,6 @@
     onMount(async () => {
         const utils = await loadFile("shaders/utils.glsl");
 
-        // const fontLoader = new THREE.FontLoader();
-        // const font = await fontLoader.parse( HelvetikerFont );
-        // const textGeometry = new THREE.TextGeometry( 'Hello three.js!', {
-        //     font,
-        // size: 10,
-        // height: 10,
-        // curveSegments: 12,
-        // bevelEnabled: true,
-        // bevelThickness: 2,
-        // bevelSize: 2,
-        // bevelOffset: 0,
-        // bevelSegments: 5
-        // });
-        // const textMaterial = new THREE.MeshBasicMaterial( { color: white } );
-        // const text = new THREE.Mesh( textGeometry, textMaterial );
-
         // Shader chunks
         THREE.ShaderChunk["utils"] = utils;
 
@@ -81,7 +64,7 @@
         const light = [0.25, 0.75, -0.2];
 
         // Create mouse Controls
-        const controls = new OrbitControls(camera, canvas);
+        // const controls = new OrbitControls(camera, canvas);
 
         // Ray caster
         const raycaster = new THREE.Raycaster();
@@ -342,6 +325,7 @@
                                 water: { value: null },
                                 causticTex: { value: null },
                                 underwater: { value: false },
+                                offset: { value: 0.0 },
                             },
                             vertexShader: vertexShader,
                             fragmentShader: fragmentShader,
@@ -357,12 +341,13 @@
 
             adjustYPositionShaders(yOffset) {
                 const roundedOffset = -yOffset.toFixed(3);
-                this.mesh.material.vertexShader =
-                    this.mesh.material.vertexShader.replace(
-                        /pos.y \+= info\.r.*;/,
-                        `pos.y += info.r - ${roundedOffset};`
-                    );
-                // console.log(this.material.vertexShader);
+                this.mesh.material.uniforms["offset"].value = roundedOffset;
+                this.mesh.geometry.verticesNeedUpdate = true;
+                // this.mesh.material.vertexShader =
+                //     this.mesh.material.vertexShader.replace(
+                //         /pos.y \+= info\.r.*;/,
+                //         `pos.y += info.r - ${roundedOffset};`
+                //     );
             }
 
             adjustYPositionVertices(yPosition) {
@@ -486,7 +471,7 @@
 
             // renderer.render(text, camera);
 
-            controls.update();
+            // controls.update();
 
             window.requestAnimationFrame(animate);
         };
@@ -514,7 +499,7 @@
         ];
 
         Promise.all(loaded).then(() => {
-            canvas.addEventListener("mousemove", { handleEvent: onMouseMove });
+            // canvas.addEventListener("mousemove", { handleEvent: onMouseMove });
 
             for (var i = 0; i < 4; i++) {
                 waterSimulation.addDrop(
@@ -531,14 +516,18 @@
     });
 
     const chartHeight = 50;
-    const margin = ({ left: 10, right: 10 });
+    const margin = { left: 10, right: 10 };
 
     $: x = d3
         .scaleLinear()
         .domain(d3.extent(flowrates, (d, i) => i))
-        .range([margin.left, (width - margin.right)]);
+        .range([margin.left, width - margin.right]);
 
-    $: y = d3.scaleLinear().domain([0, maxFlowrate]).nice().range([chartHeight, 0]);
+    $: y = d3
+        .scaleLinear()
+        .domain([0, maxFlowrate])
+        .nice()
+        .range([chartHeight, 0]);
 
     $: area = d3
         .area()
@@ -546,34 +535,33 @@
         .x((d, i) => x(i))
         .y0(y(0))
         .y1((d) => y(d));
-
-    // $: yAxis = g => g
-    //     .attr("transform", `translate(${margin.left}, 0)`)
-    //     .call(d3.axisLeft(y))
-    //     .call(g => g.select(".domain").remove())
-    //     .call(g => g.select(".tick:last-of-type text").clone()
-    //         .attr("x", 3)
-    //         .attr("text-anchor", "start")
-    //         .attr("font-weight", "bold")
-    //         .text("Annual Flowrate"))
-
-    // $: d3.select("y-axis").call(yAxis);
-
 </script>
 
 <!-- <svelte:window on:keydown={handleKeydown}/> -->
 <div
     class="container"
     style="
-        z-index: {(vizState === 'running' && activeFeatureIndex > 0) || vizState === 'overview' ? 100 : -10};
-        opacity: {(vizState === 'running' && activeFeatureIndex > 0) || vizState === 'overview' ? 1.0 : 0.0};
+        z-index: {(vizState === 'running' && activeFeatureIndex > 0) ||
+    vizState === 'overview'
+        ? 100
+        : -10};
+        opacity: {(vizState === 'running' && activeFeatureIndex > 0) ||
+    vizState === 'overview'
+        ? 1.0
+        : 0.0};
     "
     bind:this={container}
 >
-    <svg class="flowrate-chart-svg" width={width} height={chartHeight} >
+    <svg class="flowrate-chart-svg" {width} height={chartHeight}>
         <path class="flowrate-area" d={area(flowrates)} fill={"steelblue"} />
-        <line x1={x(currentFlowrate.index)} x2={x(currentFlowrate.index)} y1={chartHeight} y2={0} stroke={"rgba(255,0,0,0.7)"} stroke-width={2} />
-        <!-- <g class="y-axis" /> -->
+        <line
+            x1={x(currentFlowrate.index)}
+            x2={x(currentFlowrate.index)}
+            y1={chartHeight}
+            y2={0}
+            stroke={"rgba(255,0,0,0.7)"}
+            stroke-width={2}
+        />
     </svg>
     <canvas
         class="three-canvas"
