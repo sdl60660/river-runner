@@ -30,5 +30,7 @@ If you'd like to run this locally and play around with it, just run the followin
 
 ## Thank You
 
-Thank you to Mapbox for sponsoring this project! ![mapbox-logo-black](https://user-images.githubusercontent.com/12772904/129089126-5c528d47-961f-427f-820f-df58974d15c3.png)
+Thank you to Mapbox for sponsoring this project!
+
+<img src="https://user-images.githubusercontent.com/12772904/129089126-5c528d47-961f-427f-820f-df58974d15c3.png" alt="mapbox-logo-black" width="300"/>
 
