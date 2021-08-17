@@ -24,6 +24,7 @@ jobs:
         run: |
           git config --global user.name 'Sam Learner'
           git config --global user.email 'sdl60660@users.noreply.github.com'
+          git remote set-url origin git@github.com/sdl60660/iow-river-runner.git
           git add public/data/active_nwis_sites.json
           git commit -m "NWIS Site data update"
           git push
