@@ -221,7 +221,7 @@
                 this._geometry = lightFrontGeometry;
 
                 this.texture = new THREE.WebGLRenderTarget(1024, 1024, {
-                    type: THREE.UNSIGNED_BYTE,
+                    type: THREE.UnsignedByteType,
                 });
 
                 const shadersPromises = [
@@ -555,8 +555,8 @@
     <svg class="flowrate-chart-svg" {width} height={chartHeight}>
         <path class="flowrate-area" d={area(flowrates)} fill={"steelblue"} />
         <line
-            x1={x(currentFlowrate.index)}
-            x2={x(currentFlowrate.index)}
+            x1={x(currentFlowrate?.index) || 0}
+            x2={x(currentFlowrate?.index) || 0}
             y1={chartHeight}
             y2={0}
             stroke={"rgba(255,0,0,0.7)"}
