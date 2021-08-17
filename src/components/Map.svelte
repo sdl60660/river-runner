@@ -79,7 +79,8 @@
 	let phaseJump;
 
 	// Zoom level won't be adjustable on mobile, but it will be set slightly higher to avoid jiterriness
-	let altitudeMultiplier = window.innerWidth > 600 ? 0.7 : 1.0;
+	const defaultAltitudeMultiplier = window.innerWidth > 600 ? 0.8 : 1.1;
+	let altitudeMultiplier = defaultAltitudeMultiplier;
 	let altitudeChange = false;
 	let paused = false;
 	let playbackSpeed = 1;
@@ -303,9 +304,9 @@
 						: weblinkData[i].properties.weblink;
 			});
 
-			caGageData.features = caGageData.features.slice().filter(
-				(d) => d.properties.weblink !== null
-			);
+			caGageData.features = caGageData.features
+				.slice()
+				.filter((d) => d.properties.weblink !== null);
 		}
 
 		// For each site type that exists on a given run, plot it the points and add them to a data array for the legend to use
@@ -402,8 +403,9 @@
 		// The multiplier is necessary for higher elevations since they tend to be mountainous areas, as well, requiring additional height for the camera
 		const initialElevation =
 			cameraBaseAltitude +
-			(altitudeMultiplier *
-				terrainElevationMultiplier * Math.round(elevations[0]));
+			altitudeMultiplier *
+				terrainElevationMultiplier *
+				Math.round(elevations[0]);
 
 		const targetPitch = 69;
 		const distanceGap =
@@ -492,7 +494,7 @@
 	}) => {
 		map.scrollZoom.disable();
 
-		altitudeMultiplier = 1.0;
+		altitudeMultiplier = defaultAltitudeMultiplier;
 		paused = false;
 		playbackSpeed = 1;
 
@@ -1061,9 +1063,10 @@
 				elevationLast +
 				(elevationNext - elevationLast) * elevationStepProgress;
 			const tickElevation =
+				cameraBaseAltitude +
 				altitudeMultiplier *
-				(cameraBaseAltitude +
-					terrainElevationMultiplier * Math.round(elevationEstimate));
+					terrainElevationMultiplier *
+					Math.round(elevationEstimate);
 
 			let alongTarget = along(
 				lineString(route),
