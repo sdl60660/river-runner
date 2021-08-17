@@ -69,7 +69,7 @@
 	let phaseJump;
 
 	// Zoom level won't be adjustable on mobile, but it will be set slightly higher to avoid jiterriness
-	let altitudeMultiplier = window.innerWidth > 600 ? 0.7 : 1.1;
+	let altitudeMultiplier = window.innerWidth > 600 ? 0.7 : 1;
 	let altitudeChange = false;
 	let paused = false;
 	let playbackSpeed = 1;
@@ -427,7 +427,7 @@
 		// Hide geocoder if still visible (share link)
 		d3.select(".mapboxgl-ctrl-geocoder").style("display", "none");
 
-		// Pre-calculate initial camera center/zoom based on starting coordinates, so that flyTo fucntion can end in correct place
+		// Pre-calculate initial camera center/zoom based on starting coordinates, so that flyTo function can end in correct place
 		const { zoom, center } = precalculateInitialCamera({
 			map,
 			cameraStart,

@@ -13,8 +13,90 @@
 
     export let altitudeMultiplier;
     export let setAltitudeMultipier;
-
 </script>
+
+<div
+    class="wrapper"
+    style="display: {activeFeatureIndex >= 0 && vizState === 'running'
+        ? 'grid'
+        : 'none'};"
+>
+    <div class="button-wrapper">
+        <button
+            class="control-button skip-back-button"
+            class:button-active={false}
+            on:click={() => {
+                jumpIndex("backward");
+            }}
+            disabled={activeFeatureIndex <= 0}
+            ><img
+                class="svg-icon-img"
+                src="/images/skip-back.svg"
+                alt="skip back button"
+            /></button
+        >
+        <button
+            class="control-button rewind-button"
+            class:button-active={playbackSpeed === -1}
+            on:click={() => setPlaybackSpeed(-1)}
+            ><img
+                class="svg-icon-img"
+                src="/images/rewind.svg"
+                alt="rewind button"
+            /></button
+        >
+        <button class="control-button pause-button" on:click={togglePause}
+            ><img
+                class="svg-icon-img"
+                src={paused || playbackSpeed !== 1
+                    ? "/images/play.svg"
+                    : "images/pause.svg"}
+                alt={paused || playbackSpeed !== 1
+                    ? "play button"
+                    : "pause button"}
+            /></button
+        >
+        <!-- <button class="control-button slow-button" class:button-active={playbackSpeed === 0.5} on:click={() => { console.log("slow motion") }}><img class="svg-icon-img" src="/images/slow-motion.svg" alt={"slow motion button"} /></button> -->
+        <button
+            class="control-button fastforward-button"
+            class:button-active={playbackSpeed === 2}
+            on:click={() => setPlaybackSpeed(2)}
+            ><img
+                class="svg-icon-img"
+                src="/images/fast-forward.svg"
+                alt="fast-forward button"
+            /></button
+        >
+        <button
+            class="control-button skip-forward-button"
+            class:button-active={false}
+            on:click={() => {
+                jumpIndex("forward");
+            }}
+            disabled={activeFeatureIndex >= featureGroupLength - 1}
+            ><img
+                class="svg-icon-img"
+                src="/images/skip-forward.svg"
+                alt="skip forward button"
+            /></button
+        >
+    </div>
+
+    <div class="detail-speed-slider">
+        <input
+            type="range"
+            id="altitude"
+            name="altitude"
+            min="0.6"
+            max="5"
+            step="0.01"
+            value={altitudeMultiplier}
+            on:input={(e) => setAltitudeMultipier(e)}
+        />
+        <div class="slider-label slider-label-left">More Detail</div>
+        <div class="slider-label slider-label-right">Faster</div>
+    </div>
+</div>
 
 <style>
     .wrapper {
@@ -31,7 +113,6 @@
         grid-template-columns: 1fr;
         justify-items: center;
         align-items: center;
-
     }
 
     .detail-speed-slider {
@@ -91,7 +172,8 @@
         position: absolute;
     }
 
-    .skip-back-button, .skip-forward-button {
+    .skip-back-button,
+    .skip-forward-button {
         display: none;
     }
 
@@ -137,11 +219,13 @@
             margin: auto;
         }
 
-        .skip-back-button, .skip-forward-button {
+        .skip-back-button,
+        .skip-forward-button {
             display: block;
         }
 
-        .skip-back-button img, .skip-forward-button img {
+        .skip-back-button img,
+        .skip-forward-button img {
             height: 80%;
         }
     }
@@ -152,24 +236,4 @@
             margin-top: auto;
         }
     }
-
 </style>
-
-<div class="wrapper" style="display: {activeFeatureIndex >= 0 && vizState === "running" ? "grid" : "none"};">
-
-    <div class="button-wrapper">
-        <button class="control-button skip-back-button" class:button-active={false} on:click={() => { jumpIndex("backward"); }} disabled={activeFeatureIndex <= 0}><img class="svg-icon-img" src="/images/skip-back.svg" alt="skip back button"/></button>
-        <button class="control-button rewind-button" class:button-active={playbackSpeed === -1} on:click={() => setPlaybackSpeed(-1)}><img class="svg-icon-img" src="/images/rewind.svg" alt="rewind button"/></button>
-        <button class="control-button pause-button" on:click={togglePause}><img class="svg-icon-img" src="{(paused || playbackSpeed !== 1) ? "/images/play.svg" : "images/pause.svg"}" alt={(paused || playbackSpeed !== 1) ? "play button" : "pause button"} /></button>
-        <!-- <button class="control-button slow-button" class:button-active={playbackSpeed === 0.5} on:click={() => { console.log("slow motion") }}><img class="svg-icon-img" src="/images/slow-motion.svg" alt={"slow motion button"} /></button> -->
-        <button class="control-button fastforward-button" class:button-active={playbackSpeed === 2} on:click={() => setPlaybackSpeed(2)}><img class="svg-icon-img" src="/images/fast-forward.svg" alt="fast-forward button"/></button>
-        <button class="control-button skip-forward-button" class:button-active={false} on:click={() => { jumpIndex("forward"); }} disabled={activeFeatureIndex >= featureGroupLength-1}><img class="svg-icon-img" src="/images/skip-forward.svg" alt="skip forward button"/></button>
-    </div>
-
-    <div class="detail-speed-slider">
-        <input type="range" id="altitude" name="altitude" min="0.6" max="5" step="0.01" value={altitudeMultiplier} on:input={(e) => setAltitudeMultipier(e)}>
-        <div class="slider-label slider-label-left">More Detail</div>
-        <div class="slider-label slider-label-right">Faster</div>
-    </div>
-
-</div>
