@@ -5,23 +5,10 @@
 	import * as d3 from "d3";
 
 	import along from "@turf/along";
-	import {
-		feature,
-		featureCollection,
-		lineString,
-		point,
-	} from "@turf/helpers";
-	import lineDistance from "@turf/line-distance";
+	import { lineString } from "@turf/helpers";
 	import distance from "@turf/distance";
-	import destination from "@turf/destination";
-	import circle from "@turf/circle";
 
-	import {
-		bearingBetween,
-		distanceToPolygon,
-		getDataBounds,
-		formatPopupTitleCase,
-	} from "../utils";
+	import { distanceToPolygon, getDataBounds } from "../utils";
 	import { coordinates, stoppingFeature } from "../state";
 
 	import Prompt from "./Prompt.svelte";
@@ -32,6 +19,29 @@
 	import Legend from "./Legend.svelte";
 	import WaterLevelDisplay from "./WaterLevelDisplay.svelte";
 	import BottomLogos from "./BottomLogos.svelte";
+
+	import {
+		nwisPopupFormat,
+		wqpPopupFormat,
+		caGagePopupFormat,
+		wadePopupFormat,
+	} from "./utils/popupFormats";
+	import {
+		getElevations,
+		getElevationsMapQuery,
+		addFeatureExtrusions,
+		addTopoLayer,
+		clearRiverLines,
+		drawFlowPath,
+		addRivers,
+	} from "./utils/mapboxUtils";
+	import {
+		bearingBetween,
+		pathSmoother,
+		calculatePitch,
+		pathDistance,
+		findArtificialCameraPoint,
+	} from "./utils/geoUtils";
 
 	export let bounds;
 	export let stateBoundaries;
@@ -192,7 +202,7 @@
 	});
 
 	const initGeocoder = ({ map }) => {
-		const geocoder = new MapboxGeocoder({
+		geocoder = new MapboxGeocoder({
 			accessToken: mapboxAccessToken,
 			countries: "us",
 			bbox: bounds.flat(),
@@ -230,7 +240,7 @@
 		// Turn off map interactivity
 		map.interactive = false;
 		map.scrollZoom.disable();
-		d3.select(".mapboxgl-ctrl-geocoder").style("display", "none");
+		d3.selectAll(".mapboxgl-ctrl-geocoder").style("display", "none");
 		d3.select(".mapboxgl-ctrl-top-left").style("display", "none");
 
 		currentLocation = e.lngLat;
@@ -281,12 +291,16 @@
 			);
 
 			const weblinkData = await Promise.all(
-				weblinkResponses.map((a) => a.status === 200 ? a.json() : null)
+				weblinkResponses.map((a) =>
+					a.status === 200 ? a.json() : null
+				)
 			);
 
-			caGageData.features.filter(a => a !== null).forEach((d, i) => {
-				d.properties.weblink = weblinkData[i].properties.weblink;
-			});
+			caGageData.features
+				.filter((a) => a !== null)
+				.forEach((d, i) => {
+					d.properties.weblink = weblinkData[i].properties.weblink;
+				});
 		}
 
 		// For each site type that exists on a given run, plot it the points and add them to a data array for the legend to use
@@ -367,6 +381,7 @@
 		// const elevations = await getElevations(coordinatePath, elevationArrayStep);
 		let elevations = getElevationsMapQuery(
 			coordinatePath,
+			map,
 			elevationArrayStep
 		);
 		if (elevations.includes(null)) {
@@ -425,7 +440,7 @@
 		);
 
 		// Hide geocoder if still visible (share link)
-		d3.select(".mapboxgl-ctrl-geocoder").style("display", "none");
+		d3.selectAll(".mapboxgl-ctrl-geocoder").style("display", "none");
 
 		// Pre-calculate initial camera center/zoom based on starting coordinates, so that flyTo function can end in correct place
 		const { zoom, center } = precalculateInitialCamera({
@@ -490,7 +505,6 @@
 		});
 
 		vizState = "running";
-		// const locationTracerPoint = addLocationMarker({ map, origin: coordinatePath[0] });
 
 		// Maintain a consistent speed using the route distance. The higher the speed coefficient, the slower the runner will move.
 		const speedCoefficient =
@@ -758,142 +772,6 @@
 		return riverFeatures;
 	};
 
-	const addFeatureExtrusions = ({
-		map,
-		formatterFunction,
-		featureSet,
-		layerID,
-		color,
-		markerRadius,
-		markerHeight = 50,
-	}) => {
-		if (featureSet === null) {
-			return;
-		}
-
-		if (map.getLayer(layerID)) {
-			map.removeLayer(layerID);
-		}
-
-		if (map.getSource(layerID)) {
-			map.removeSource(layerID);
-		}
-
-		featureSet.features.forEach((d) => {
-			d.properties.original_center = d.geometry.coordinates;
-			d.geometry = circle(d.geometry.coordinates, markerRadius, {
-				steps: 30,
-			}).geometry;
-		});
-
-		map.addSource(layerID, {
-			type: "geojson",
-			data: featureSet,
-		});
-
-		map.addLayer({
-			id: layerID,
-			source: layerID,
-			type: "fill-extrusion",
-			paint: {
-				"fill-extrusion-color": color,
-				"fill-extrusion-opacity": 0.8,
-				"fill-extrusion-height": markerHeight,
-				"fill-extrusion-base": 0,
-			},
-		});
-
-		map.on("click", layerID, (e) => {
-			if (
-				(layerID === "wqp-points" ||
-					layerID === "wade-points" ||
-					layerID === "ca-gage-points") &&
-				map
-					.queryRenderedFeatures(e.point)
-					.some((feature) => feature.source === "nwis-points")
-			) {
-				return;
-			}
-
-			if (e.features.length > 0) {
-				new mapbox.Popup({
-					closeButton: false,
-					closeOnClick: true,
-					maxWidth: 400,
-				})
-					.setLngLat(e.lngLat)
-					.setHTML(formatterFunction({ feature: e.features[0] }))
-					.addTo(map);
-			}
-		});
-
-		return;
-	};
-
-	const nwisPopupFormat = ({ feature }) => {
-		const siteNumber = feature.properties.identifier.slice(5);
-		const formattedFeatureName = formatPopupTitleCase(
-			feature.properties.name
-		);
-
-		return feature.properties.display_image
-			? `
-			<div style="text-align: center; height: 440px; width: 576px;">
-				<h3>${formattedFeatureName} (<a target="_blank" href="https://geoconnex.us/usgs/monitoring-location/${siteNumber}">${siteNumber}</a>)</h3>
-				<div style="position: relative; min-height: 40px;">
-					<div style="position: absolute; top: 50%; left: 50%; transform: translateX(-50%); z-index: 10;">
-						<div class="lds-ring"><div></div><div></div><div></div><div></div></div>
-					</div>
-					<img style="position: absolute; top: 0; left: 0; z-index: 20;" src="https://waterdata.usgs.gov/nwisweb/graph?agency_cd=USGS&site_no=${siteNumber}&parm_cd=00065&period=7" alt="NWIS streamgage data for site ${siteNumber}" />
-				</div>
-			</div>
-		`
-			: `
-			<div style="text-align: center">
-				<h3>${formattedFeatureName} (<a target="_blank" href="https://geoconnex.us/usgs/monitoring-location/${siteNumber}">${siteNumber}</a>)</h3>
-				<em>[No chart data available]</em>
-			</div>
-		`;
-	};
-
-	const wqpPopupFormat = ({ feature }) => {
-		const identifier = feature.properties.identifier;
-		const portalLink = feature.properties.uri.replace(
-			"https://www.waterqualitydata.us/data/provider/",
-			"https://geoconnex.us/wqp/"
-		);
-		const dataLink = `https://www.waterqualitydata.us/data/Result/search?siteid=${identifier}`;
-
-		const formattedName = feature.properties.name.includes(" ")
-			? formatPopupTitleCase(feature.properties.name)
-			: feature.properties.name;
-
-		return `
-			<div style="padding: 0 1rem; display: flex; flex-direction: column;">
-				<h3 style="margin: 0.5rem 0; justify-self: center;">Water Quality Portal Site (${formattedName})</h3>
-				<a target="_blank" href="${portalLink}">Portal Site Metadata</a></li>
-				<a target="_blank" href="${dataLink}">Water Quality Sample Data</a>
-			</div>
-		`;
-	};
-
-	const caGagePopupFormat = ({ feature }) => {
-		return `
-			<div style="padding: 0 1rem; display: flex; flex-direction: column;">
-				<h3 style="margin: 0.5rem 0; justify-self: center;">Stream Gage: ${formatPopupTitleCase(
-					feature.properties.name
-				)} (${feature.properties.identifier})</h3>
-				<a target="_blank" href="${
-					feature.properties.weblink
-				}">Station Metadata</a></li>
-			</div>
-		`;
-	};
-
-	const wadePopupFormat = ({ feature }) => {
-		return `<span>Water Data Exchange Water Point of Diversion: <a target="_blank" href="${feature.properties.uri}">${feature.properties.identifier}</a></span>`;
-	};
-
 	const getFeatureVAA = async (feature, index, thinningIndex) => {
 		if (index > 50 && index % thinningIndex !== 0) {
 			return feature;
@@ -1050,62 +928,6 @@
 
 		// Return zoom and center so that we can fly to the exact start point and it won't be jarring when the run starts
 		return { zoom, center };
-	};
-
-	const pathDistance = (coordinateSet) =>
-		lineDistance(lineString(coordinateSet));
-
-	const pathSmoother = (coordinateSet, smoothingCoefficient = 1) => {
-		const setLength = coordinateSet.length;
-		const smoothedCoordinatePath = coordinateSet.map(
-			(coordinate, index) => {
-				const coordinateGroup = coordinateSet.slice(
-					Math.max(0, index - smoothingCoefficient),
-					index + 1 + smoothingCoefficient
-				);
-				const lng =
-					coordinateGroup
-						.map((d) => d[0])
-						.reduce((a, b) => a + b, 0) / coordinateGroup.length;
-				const lat =
-					coordinateGroup
-						.map((d) => d[1])
-						.reduce((a, b) => a + b, 0) / coordinateGroup.length;
-
-				return [lng, lat];
-			}
-		);
-
-		return smoothedCoordinatePath;
-	};
-
-	const projectDistance = (fromCoordinate, toCoordinate, distance) => {
-		const bearing = bearingBetween(fromCoordinate, toCoordinate);
-		return destination(fromCoordinate, distance, bearing).geometry
-			.coordinates;
-	};
-
-	const calculatePitch = (elevation, distance) =>
-		90 - Math.atan(elevation / distance) * (180 / Math.PI);
-
-	const calculateCameraPath = (
-		coordinatePath,
-		cameraTargetDistance,
-		routeDistance
-	) => {
-		const cameraPathCoordinates = coordinatePath.slice(
-			0,
-			-cameraTargetDistance
-		);
-		const distanceGap = routeDistance - pathDistance(cameraPathCoordinates);
-
-		return cameraPathCoordinates.map((coordinate, index) => {
-			return projectDistance(
-				coordinatePath[index + cameraTargetDistance],
-				coordinate,
-				distanceGap
-			);
-		});
 	};
 
 	const runRiver = ({
@@ -1315,16 +1137,6 @@
 		});
 	};
 
-	const findArtificialCameraPoint = ({
-		distanceGap,
-		originPoint,
-		targetPoint,
-	}) => {
-		const bearing = bearingBetween(targetPoint, originPoint);
-		return destination(targetPoint, distanceGap, bearing).geometry
-			.coordinates;
-	};
-
 	const resetMapState = ({ map, error = false }) => {
 		map.interactive = true;
 		map.scrollZoom.enable();
@@ -1347,112 +1159,6 @@
 		d3.select(".mapboxgl-ctrl-top-left").style("display", "block");
 	};
 
-	const getElevationsMapQuery = (coordinatePath, arrayStep = 10) => {
-		const elevationCoordinates = coordinatePath.filter((element, index) => {
-			return index % arrayStep === 0;
-		});
-
-		return elevationCoordinates.map((d) =>
-			map.queryTerrainElevation(d, { exaggerated: true })
-		);
-	};
-
-	const getElevations = async (coordinatePath, arrayStep = 10) => {
-		const elevationCoordinates = coordinatePath.filter((element, index) => {
-			return index % arrayStep === 0;
-		});
-
-		const responses = await Promise.all(
-			elevationCoordinates.map(([lng, lat]) =>
-				fetch(
-					`https://api.mapbox.com/v4/mapbox.mapbox-terrain-v2/tilequery/${lng},${lat}.json?&access_token=${mapboxAccessToken}`
-				).then((response) => response.json())
-			)
-		);
-
-		const data = responses
-			.map((res) => res.features.slice(-1)[0].properties.ele)
-			.map((d, i, n) => {
-				if (d) {
-					return d;
-				} else if (i === 0) {
-					return n[i + 1];
-				} else {
-					return n[i - 1];
-				}
-			});
-
-		return data;
-	};
-
-	const clearRiverLines = ({ map, sourceID = "route" }) => {
-		if (map.getLayer(sourceID)) {
-			map.removeLayer(sourceID);
-		}
-
-		if (map.getSource(sourceID)) {
-			map.removeSource(sourceID);
-		}
-	};
-
-	const drawFlowPath = ({
-		map,
-		featureData,
-		lineColor = "steelblue",
-		lineWidth = 2,
-		sourceID = "route",
-	}) => {
-		clearRiverLines({ map, sourceID });
-		addRivers({ map, featureData, lineColor, lineWidth, sourceID });
-	};
-
-	const addRivers = ({
-		map,
-		featureData,
-		lineColor = "steelblue",
-		lineWidth = 1,
-		sourceID = "route",
-	}) => {
-		const features = featureData.map((river) => {
-			// Some rivers in some files have multiple linestrings (such as the Mississippi)...
-			// their coordinates will be a triple-nested array instead of a double-nested
-			const featureType = Array.isArray(river.geometry.coordinates[0][0])
-				? "MultiLineString"
-				: "LineString";
-
-			return {
-				type: "Feature",
-				properties: river.properties,
-				geometry: {
-					type: featureType,
-					coordinates: river.geometry.coordinates,
-				},
-			};
-		});
-
-		map.addSource(sourceID, {
-			type: "geojson",
-			data: {
-				type: "FeatureCollection",
-				features,
-			},
-		});
-
-		map.addLayer({
-			id: sourceID,
-			type: "line",
-			source: sourceID,
-			layout: {
-				"line-join": "round",
-				"line-cap": "round",
-			},
-			paint: {
-				"line-color": lineColor,
-				"line-width": lineWidth,
-			},
-		});
-	};
-
 	const highlightRiverFeature = (featureIndex) => {
 		drawFlowPath({
 			map,
@@ -1465,28 +1171,6 @@
 
 	const resetRiverHighlight = () => {
 		clearRiverLines({ map, sourceID: "highlighted-section" });
-	};
-
-	const addTopoLayer = ({ map }) => {
-		map.addSource("mapbox-dem", {
-			type: "raster-dem",
-			url: "mapbox://mapbox.mapbox-terrain-dem-v1",
-			tileSize: 512,
-			maxzoom: 14,
-		});
-
-		// add the DEM source as a terrain layer with exaggerated height
-		map.setTerrain({ source: "mapbox-dem", exaggeration: 1.7 });
-
-		map.addLayer({
-			id: "sky",
-			type: "sky",
-			paint: {
-				"sky-type": "atmosphere",
-				"sky-atmosphere-sun": [0.0, 0.0],
-				"sky-atmosphere-sun-intensity": 15,
-			},
-		});
 	};
 
 	const handleResize = () => {
