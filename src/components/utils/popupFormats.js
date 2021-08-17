@@ -1,3 +1,5 @@
+import { titleCase } from "title-case";
+
 export const nwisPopupFormat = ({ feature }) => {
     const siteNumber = feature.properties.identifier.slice(5);
     const formattedFeatureName = formatPopupTitleCase(

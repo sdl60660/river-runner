@@ -1,10 +1,8 @@
-import bearing from '@turf/bearing';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import pointToLineDistance from '@turf/point-to-line-distance';
 import polygonToLine from '@turf/polygon-to-line';
 import { point, polygon } from '@turf/helpers';
 
-import { titleCase } from "title-case";
 import * as d3 from 'd3';
 
 

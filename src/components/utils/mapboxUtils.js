@@ -1,3 +1,5 @@
+import { mapbox } from "../../mapbox.js";
+import { mapboxAccessToken } from "../../access_tokens";
 import circle from "@turf/circle";
 
 export const getElevations = async (coordinatePath, arrayStep = 10) => {
