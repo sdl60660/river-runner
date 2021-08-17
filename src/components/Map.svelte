@@ -271,7 +271,6 @@
 		}
 
 		// Gather the true station metadata web links for any CA gages
-		console.log(caGageData);
 		if (caGageData) {
 			const weblinkResponses = await Promise.all(
 				caGageData.features.map((gage) =>
@@ -280,11 +279,12 @@
 					)
 				)
 			);
+
 			const weblinkData = await Promise.all(
-				weblinkResponses.map((a) => a.json())
+				weblinkResponses.map((a) => a.status === 200 ? a.json() : null)
 			);
 
-			caGageData.features.forEach((d, i) => {
+			caGageData.features.filter(a => a !== null).forEach((d, i) => {
 				d.properties.weblink = weblinkData[i].properties.weblink;
 			});
 		}
