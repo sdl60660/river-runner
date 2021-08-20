@@ -79,7 +79,7 @@
   let phaseJump;
 
   // Zoom level won't be adjustable on mobile, but it will be set slightly higher to avoid jiterriness
-  const defaultAltitudeMultiplier = window.innerWidth > 600 ? 0.8 : 1.1;
+  const defaultAltitudeMultiplier = window.innerWidth < 600 ? 1.1 : 0.8;
   let altitudeMultiplier = defaultAltitudeMultiplier;
   let altitudeChange = false;
   let paused = false;
@@ -1039,7 +1039,7 @@
 
       let alongTarget = along(
         lineString(route),
-        routeDistance * (phase === 0 ? 0.00005 : phase)
+        routeDistance * (phase === 0 ? 0.000005 : phase)
       ).geometry.coordinates;
 
       if (alongTarget === route[0]) {
@@ -1074,7 +1074,6 @@
         level: flowrates[Math.floor(flowrates.length * phase)],
         index: Math.floor(flowrates.length * phase),
       };
-      // currentFlowrateIndex = Math.floor(flowrates.length * phase);
 
       // This will update the location of the marker on the locator map
       if (tick % 5 === 0) {
