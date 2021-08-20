@@ -234,33 +234,7 @@
     map.addControl(geocoder, position);
   };
 
-  const initRunner = async ({ map, e }) => {
-    // If a click is in the middle of processing, just return
-    if (map.interactive === false) {
-      return;
-    }
-
-    // Turn off map interactivity
-    map.interactive = false;
-    map.scrollZoom.disable();
-    d3.selectAll(".mapboxgl-ctrl-geocoder").style("display", "none");
-    d3.select(".mapboxgl-ctrl-top-left").style("display", "none");
-
-    currentLocation = e.lngLat;
-    startCoordinates = e.lngLat;
-
-    // Use the NLDI API to find the closest flowline coordinate to the click
-    const closestFeature = await findClosestFeature(e);
-
-    // If no feature can be found, even after rounding coordinates off, send error message and reset
-    if (!closestFeature) {
-      vizState = "error";
-      resetMapState({ map, error: true });
-      return;
-    }
-
-    // Get downstream flowline path from origin point, as well as NWIS Sites, Reference Gages, WQP Sites, WaDE Sites
-    const featureTypes = ["flowlines", "nwissite", "ca_gages", "wqp", "wade"];
+  const fetchNLDI = async (closestFeature, featureTypes) => {
     let [flowlinesData, nwisData, caGageData, wqpData, wadeData] =
       await Promise.all(
         featureTypes.map((siteType) => getSiteData(closestFeature, siteType))
@@ -310,7 +284,7 @@
     // For each site type that exists on a given run, plot it the points and add them to a data array for the legend to use
     siteTypes = [];
     [nwisData, wqpData, wadeData, caGageData].forEach((featureSet) => {
-      if (featureSet !== null && featureSet.features.length > 0) {
+      if (featureSet && featureSet?.features?.length > 0) {
         const sourceName = featureSet.features[0].properties.sourceName;
 
         siteTypes.push(sourceName);
@@ -319,6 +293,39 @@
         addFeatureExtrusions({ map, featureSet, ...siteData });
       }
     });
+
+    return flowlinesData;
+  };
+
+  const initRunner = async ({ map, e }) => {
+    // If a click is in the middle of processing, just return
+    if (map.interactive === false) {
+      return;
+    }
+
+    // Turn off map interactivity
+    map.interactive = false;
+    map.scrollZoom.disable();
+    d3.selectAll(".mapboxgl-ctrl-geocoder").style("display", "none");
+    d3.select(".mapboxgl-ctrl-top-left").style("display", "none");
+
+    currentLocation = e.lngLat;
+    startCoordinates = e.lngLat;
+
+    // Use the NLDI API to find the closest flowline coordinate to the click
+    const closestFeature = await findClosestFeature(e);
+
+    // If no feature can be found, even after rounding coordinates off, send error message and reset
+    if (!closestFeature) {
+      vizState = "error";
+      resetMapState({ map, error: true });
+      return;
+    }
+
+    // Get downstream flowline path from origin point, as well as any data on NWIS Sites, Reference Gages, WQP Sites, WaDE Sites
+    // const featureTypes = ["flowlines"];
+    const featureTypes = ["flowlines", "nwissite", "ca_gages", "wqp", "wade"];
+    const flowlinesData = await fetchNLDI(closestFeature, featureTypes);
 
     // Append VAA data/flowrate data from firebase to flowline data
     flowlinesData.features = await addVAAData(flowlinesData.features);
@@ -1293,13 +1300,16 @@
     {vizState}
     featureGroupLength={featureGroups.length}
   />
-  <Legend
-    {vizState}
-    {activeFeatureIndex}
-    {siteTypeData}
-    {siteTypes}
-    {toggleSiteLayer}
-  />
+
+  {#if siteTypes.length > 0}
+    <Legend
+      {vizState}
+      {activeFeatureIndex}
+      {siteTypeData}
+      {siteTypes}
+      {toggleSiteLayer}
+    />
+  {/if}
 </div>
 
 <style>

@@ -13,7 +13,7 @@
         position: absolute;
         z-index: 30;
         font-size: .9rem;
-        bottom: 1rem;
+        bottom: 1.5rem;
         right: 1rem;
         max-width: 32rem;
 
