@@ -1,12 +1,12 @@
 <script>
-	import * as d3 from 'd3';
+	import * as d3 from "d3";
 	import * as topojson from "topojson-client";
 
-	import Map from './components/Map.svelte';
-	import Loader from './components/Loader.svelte';
+	import Map from "./components/Map.svelte";
+	import Loader from "./components/Loader.svelte";
 
 	// import { stateAbbreviations } from './utils';
-	import SplashBanner from './components/SplashBanner.svelte';
+	import SplashBanner from "./components/SplashBanner.svelte";
 
 	let bannerVisible = true;
 
@@ -24,32 +24,38 @@
 		d3.json("data/active_nwis_sites.json"),
 		// d3.csv("data/compressed_flowrate.csv")
 		// ...stateAbbreviations.map(state => getActiveNWISSites(state.toLowerCase()))
-	]
+	];
 
-	const dataLoad = Promise.all(dataFilePromises).then( async (data) => {
-		const states = topojson.feature(data[0], data[0].objects.states).features;
-		const stoppingFeatures = topojson.feature(data[1], data[1].objects.stopping_features).features;
+	const dataLoad = Promise.all(dataFilePromises).then(async (data) => {
+		const states = topojson.feature(
+			data[0],
+			data[0].objects.states
+		).features;
+		const stoppingFeatures = topojson.feature(
+			data[1],
+			data[1].objects.stopping_features
+		).features;
 
 		const activeNWISSites = data[2].sites;
 		// const activeNWISSites = data.slice(2).flat();
-		
+
 		return [states, stoppingFeatures, activeNWISSites];
-	})
+	});
 
 	const closeBanner = () => {
 		bannerVisible = false;
-	}
+	};
 </script>
 
 {#await dataLoad}
-    <Loader />
-{:then data }
-	<SplashBanner
-		{bannerVisible}
-		on:close-banner={closeBanner}
-	/>
+	<Loader />
+{:then data}
+	<SplashBanner {bannerVisible} on:close-banner={closeBanner} />
 	<Map
-		bounds={[[-125, 24], [-66, 51]]}
+		bounds={[
+			[-125, 24],
+			[-66, 51],
+		]}
 		stateBoundaries={data[0]}
 		stoppingFeatures={data[1]}
 		activeNWISSites={data[2]}
