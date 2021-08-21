@@ -18,7 +18,6 @@
   import Controls from "./Controls.svelte";
   import Legend from "./Legend.svelte";
   import WaterLevelDisplay from "./WaterLevelDisplay.svelte";
-  import BottomLogos from "./BottomLogos.svelte";
 
   import {
     nwisPopupFormat,
@@ -51,9 +50,6 @@
   export let visibleIndex;
   export let mapStyle;
   export let addTopo;
-
-  export let bannerVisible;
-  export let closeBanner;
 
   const urlParams = new URLSearchParams(window.location.search);
   let startingSearch = urlParams.has("lat")
@@ -125,9 +121,7 @@
         }
 
         // Add geocoder search bar to search for location/address instead of clicking
-        if (!bannerVisible) {
-          geocoder = initGeocoder({ map });
-        }
+        geocoder = initGeocoder({ map });
 
         // Initialize and add explicit zoom controls in top-left corner, if not on mobile
         const nav = new mapbox.NavigationControl({
@@ -140,8 +134,6 @@
 
         // If starting coordinates were passed in as a parameter (from a shared link), load starting path
         if (startingSearch) {
-          closeBanner();
-
           initRunner({ map, e: startingSearch });
           startingSearch = null;
         }
@@ -228,10 +220,10 @@
       initRunner({ map, e: result });
     });
 
-    geocoder = geocoderControl;
-
     const position = window.innerWidth > 600 ? "top-right" : "bottom-left";
-    map.addControl(geocoder, position);
+    map.addControl(geocoderControl, position);
+
+    return geocoderControl;
   };
 
   const fetchNLDI = async (closestFeature, featureTypes) => {
@@ -1226,10 +1218,6 @@
       ];
     }
   });
-
-  $: if (!bannerVisible && !geocoder) {
-    geocoder = initGeocoder({ map });
-  }
 </script>
 
 <svelte:window on:resize={handleResize} />
@@ -1244,11 +1232,8 @@
   {/if}
 </div>
 
-<Prompt {vizState} {currentLocation} {bannerVisible} />
+<Prompt {vizState} {currentLocation} />
 <ContactBox {vizState} />
-{#if window.innerWidth > 600}
-  <BottomLogos {vizState} />
-{/if}
 
 <div class="left-column" style="z-index: {vizState === 'running' ? 10 : -10};">
   <LocatorMap
