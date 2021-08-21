@@ -50,6 +50,7 @@
   export let visibleIndex;
   export let mapStyle;
   export let addTopo;
+  export let advancedFeaturesOn;
 
   const urlParams = new URLSearchParams(window.location.search);
   let startingSearch = urlParams.has("lat")
@@ -1246,7 +1247,7 @@
     {activeFeatureIndex}
     {featureGroups}
   />
-  {#if window.innerWidth > 600}
+  {#if window.innerWidth > 600 && advancedFeaturesOn === true}
     <WaterLevelDisplay
       {currentFlowrate}
       {maxFlowrate}

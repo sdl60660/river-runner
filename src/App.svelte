@@ -38,5 +38,6 @@
     visibleIndex={1}
     addTopo={true}
     mapStyle={"mapbox://styles/mapbox-map-design/ckhqrf2tz0dt119ny6azh975y"}
+    advancedFeaturesOn={false}
   />
 {/await}
