@@ -316,13 +316,18 @@
     }
 
     // Get downstream flowline path from origin point, as well as any data on NWIS Sites, Reference Gages, WQP Sites, WaDE Sites
-    const featureTypes = ["flowlines"];
+    const featureTypes = advancedFeaturesOn
+      ? ["flowlines", "nwissite", "ca_gages", "wqp", "wade"]
+      : ["flowlines"];
     // const featureTypes = ["flowlines", "nwissite", "ca_gages", "wqp", "wade"];
     const flowlinesData = await fetchNLDI(closestFeature, featureTypes);
 
     // Append VAA data/flowrate data from firebase to flowline data
     flowlinesData.features = await addVAAData(flowlinesData.features);
-    flowlinesData.features = await getFlowrateData(flowlinesData.features);
+
+    if (advancedFeaturesOn === true) {
+      flowlinesData.features = await getFlowrateData(flowlinesData.features);
+    }
     flowrates = flowlinesData.features.map((d) => d.properties.flowrate);
 
     // Set max flowrate for gauge. Max defaults to 20,000 cubic feet/second, but will go up if there's a higher value in the current path's set
