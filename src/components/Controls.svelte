@@ -192,7 +192,7 @@
       z-index: 30;
       position: absolute;
       left: 50%;
-      bottom: 6vh;
+      bottom: 7vh;
       transform: translate(-50%, 50%);
       gap: 1.5rem;
       /* display: none; */
