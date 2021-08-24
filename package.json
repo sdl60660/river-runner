@@ -1,6 +1,6 @@
 {
-  "name": "iow-river-runner",
-  "version": "1.0.0",
+  "name": "river-runner",
+  "version": "1.6.0",
   "private": true,
   "scripts": {
     "build": "rollup -c",
