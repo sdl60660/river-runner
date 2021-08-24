@@ -65,6 +65,8 @@
 
   let aborted = false;
   let vizState = "uninitialized";
+  let postRun = false;
+  let runTimeout;
 
   let riverPath;
   let currentLocation;
@@ -472,7 +474,20 @@
       riverFeatures,
       flowrates,
     };
-    startRun({ map, ...runSettings });
+
+    // When using the vizState change/return instead of startRun, it displays the overview before automatically starting the run
+    // We'll do this with a countdown timer on desktop, and just right into it on mobile
+    if (window.innerWidth > 600) {
+      vizState = "overview";
+      map.scrollZoom.enable();
+
+      postRun = false;
+      runTimeout = setTimeout(() => {
+        startRun({ map, ...runSettings });
+      }, 5100);
+    } else {
+      startRun({ map, ...runSettings });
+    }
   };
 
   const startRun = ({
@@ -1112,6 +1127,7 @@
 
     map.once("moveend", () => {
       vizState = "overview";
+      postRun = true;
       // map.interactive = true;
       map.scrollZoom.enable();
       // resetMapState({ map });
@@ -1278,6 +1294,8 @@
     {featureGroups}
     {totalLength}
     {startCoordinates}
+    {postRun}
+    {runTimeout}
   />
   <Controls
     {setAltitudeMultipier}
