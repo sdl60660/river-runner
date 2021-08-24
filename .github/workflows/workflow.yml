@@ -1,0 +1,27 @@
+name: NWIS Sites Data Update
+on:
+  # push:
+  #   branches:
+  #     - main
+  schedule:
+    - cron: "0 0 * * 0" # runs at 00:00 UTC, once weekly
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "16.x"
+      - name: Install npm packages
+        run: npm install dateformat axios fast-xml-parser
+      - name: Run NWIS Site data update
+        run: npm run update-nwis
+      - name: Commit data
+        run: |
+          git config --global user.name 'Sam Learner'
+          git config --global user.email 'sdl60660@users.noreply.github.com'
+          git add public/data/active_nwis_sites.json
+          git commit -m "NWIS Site data update"
+          git push

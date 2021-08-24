@@ -4,6 +4,7 @@
 
     export let currentLocation;
     export let vizState;
+    export let bannerVisible;
 
     let loading = false;
     let eventActionName = window.innerWidth > 600 ? "Click" : "Tap"
@@ -151,7 +152,7 @@
 
 </style>
 
-<div class="wrapper">
+<div class="wrapper" style="display: {bannerVisible ? "none" : "block"};">
     <div style={`display: ${message === "" ? "none" : "flex"};`} class="message-box">
         <div class="message-text">{message}</div>
         <span class="spinner" style={`display: ${ loading ? "block" : "none"};`}>

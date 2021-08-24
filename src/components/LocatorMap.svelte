@@ -182,11 +182,11 @@
 
 <style>
 	.map {
-		position: absolute;
+		/* position: absolute; */
 		width: 26rem;
 		height: 14rem;
-        top: 2rem;
-        left: 2rem;
+        /* top: 2rem;
+        left: 2rem; */
         /* z-index: 10; */
         border-radius: 3px;
         opacity: 0.9;
@@ -204,6 +204,7 @@
 	/* Mobile */
 	@media only screen and (max-width: 600px) {
 		.map {
+			position: absolute;
 			width: 100%;
 			height: 20vh;
 			top: 0;
@@ -240,4 +241,4 @@
 	{/if}
 </div>
 
-<div class="marker" bind:this={markerEl}></div>
+<div class="marker" style="z-index: {visibleIndex ? 10 : -10}; opacity: {!visibleIndex ? 0.0 : width > 600 ? 0.9 : 1.0};" bind:this={markerEl}></div>
