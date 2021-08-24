@@ -1,17 +1,9 @@
-import bearing from '@turf/bearing';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import pointToLineDistance from '@turf/point-to-line-distance';
 import polygonToLine from '@turf/polygon-to-line';
-
 import { point, polygon } from '@turf/helpers';
+
 import * as d3 from 'd3';
-
-const bearingBetween = (coordinate1, coordinate2) => { 
-    const point1 = point(coordinate1);
-    const point2 = point(coordinate2);
-
-    return bearing(point1, point2);
-}
 
 
 const contructCoordinateQuadtree = (coordinateSet) => {
@@ -128,5 +120,7 @@ const copyTextToClipboard = (text) => {
   });
 }
 
+const stateAbbreviations = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'];
 
-export { bearingBetween, contructCoordinateQuadtree, roundToDigits, getDataBounds, distanceToPolygon, copyTextToClipboard };
+
+export { contructCoordinateQuadtree, roundToDigits, getDataBounds, distanceToPolygon, copyTextToClipboard, stateAbbreviations };
