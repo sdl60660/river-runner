@@ -457,6 +457,9 @@
       initialElevation,
       initialBearing,
       cameraPitch,
+      smoothedPath,
+      distanceGap,
+      routeDistance,
     });
 
     runSettings = {
@@ -898,6 +901,9 @@
     initialElevation,
     initialBearing,
     cameraPitch,
+    smoothedPath,
+    distanceGap,
+    routeDistance,
   }) => {
     // Store current camera info
     const currentZoom = map.getZoom();
@@ -905,12 +911,27 @@
     const currentBearing = map.getBearing();
     const currentPitch = map.getPitch();
 
+    let alongTarget = along(lineString(smoothedPath), routeDistance * 0.000005)
+      .geometry.coordinates;
+
+    if (alongTarget === smoothedPath[0]) {
+      alongTarget = smoothedPath[1];
+    }
+
+    const alongCamera = findArtificialCameraPoint({
+      distanceGap: altitudeMultiplier * distanceGap,
+      originPoint: smoothedPath[0],
+      targetPoint: alongTarget,
+    });
+
+    const bearing = bearingBetween(alongCamera, alongTarget);
+
     // Position the camera how it will be positioned on the first tick of the run
     positionCamera({
       map,
-      cameraCoordinates: cameraStart,
+      cameraCoordinates: alongCamera,
       elevation: initialElevation,
-      bearing: initialBearing,
+      bearing,
       pitch: cameraPitch,
     });
 
