@@ -639,6 +639,7 @@
 
       // Gulf of Mexico: lng < -82 && lat < 31
       // Chesapeake Bay: -75.6 > lng > -77.68 && 39.61 > lat > 37.79
+      // Delaware Bay: -74.87 > lng > -75.54 && 39.53 > lat > 38.77
       // Otherwise split by Texas, basically, between Atlantic/Pacific
       return destinationPoint[0] < -82 && destinationPoint[1] < 31
         ? "Gulf of Mexico"
@@ -647,6 +648,11 @@
           destinationPoint[1] > 37.793247 &&
           destinationPoint[1] < 39.61332
         ? "Chesapeake Bay"
+        : destinationPoint[0] < -74.872 &&
+          destinationPoint[0] > -75.542 &&
+          destinationPoint[1] > 38.771 &&
+          destinationPoint[1] < 39.525
+        ? "Delaware Bay"
         : destinationPoint[0] > -100
         ? "Atlantic Ocean"
         : "Pacific Ocean";
