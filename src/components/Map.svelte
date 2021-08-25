@@ -636,6 +636,9 @@
       if (closestFeature.properties.stop_feature_name === "San Francisco Bay") {
         return "San Francisco Bay";
       }
+	  else if (closestFeature.properties.stop_feature_name === "Delaware Bay") {
+		return "Delaware Bay";
+	  }
 
       // Gulf of Mexico: lng < -82 && lat < 31
       // Chesapeake Bay: -75.6 > lng > -77.68 && 39.61 > lat > 37.79

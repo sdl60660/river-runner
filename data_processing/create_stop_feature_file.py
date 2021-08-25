@@ -65,7 +65,7 @@ with open('data/delaware_bay.geojson', 'r') as f:
     bay_features.append(bay_feature)
 
 all_features = canada['features'] + mexico['features'] + \
-    [ocean_feature] + [bay_features] + sorted_features
+    [ocean_feature] + bay_features + sorted_features
 
 # Output as a GeoJSON file for now (~7MB), but then use mapshaper.org to compress to a TopoJSON (~2MB)
 output_data = {"type": "FeatureCollection", "features": all_features}
