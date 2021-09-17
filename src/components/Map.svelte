@@ -78,11 +78,12 @@
   let phaseJump;
 
   // Zoom level won't be adjustable on mobile, but it will be set slightly higher to avoid jiterriness
-  const defaultAltitudeMultiplier = window.innerWidth < 600 ? 1.1 : 0.8;
+  const defaultAltitudeMultiplier = window.innerWidth < 600 ? 1.1 : 0.9;
   let altitudeMultiplier = defaultAltitudeMultiplier;
   let altitudeChange = false;
   let paused = false;
   let playbackSpeed = 1;
+  const smoothingCoefficient = 4;
 
   // let currentFlowrateIndex = 0;
   let currentFlowrate = { level: 10000, index: 0 };
@@ -109,7 +110,7 @@
       });
 
       map.fitBounds(bounds, { animate: false, padding: 30 });
-      map.setMaxBounds(map.getBounds());
+      // map.setMaxBounds(map.getBounds());
       mapBounds = map.getBounds();
 
       map.on("load", () => {
@@ -307,40 +308,31 @@
     currentLocation = e.lngLat;
     startCoordinates = e.lngLat;
 
-    // Use the NLDI API to find the closest flowline coordinate to the click
-    const closestFeature = await findClosestFeature(e);
-
-    // If no feature can be found, even after rounding coordinates off, send error message and reset
-    if (!closestFeature) {
-      vizState = "error";
-      resetMapState({ map, error: true });
-      return;
-    }
-
-    // Get downstream flowline path from origin point, as well as any data on NWIS Sites, Reference Gages, WQP Sites, WaDE Sites
-    const featureTypes = advancedFeaturesOn
-      ? ["flowlines", "nwissite", "ca_gages", "wqp", "wade"]
-      : ["flowlines"];
-    // const featureTypes = ["flowlines", "nwissite", "ca_gages", "wqp", "wade"];
-    const flowlinesData = await fetchNLDI(closestFeature, featureTypes);
-
-    // Append VAA data/flowrate data from firebase to flowline data
-    flowlinesData.features = await addVAAData(flowlinesData.features);
+    const iowURL = `https://merit.internetofwater.dev/processes/river-runner/execution?lng=${e.lngLat.lng}&lat=${e.lngLat.lat}`;
+    const flowlinesResponse = await fetch(iowURL);
+    const flowlinesData = (await flowlinesResponse.json()).value;
+    flowlinesData.features = flowlinesData.features.sort(
+      (a, b) => b.properties.hydroseq - a.properties.hydroseq
+    );
+    flowlinesData.features.forEach((feature) => {
+      feature.properties.feature_name = feature.properties.nameid;
+      feature.properties.feature_id = feature.properties.riverid;
+    });
 
     if (advancedFeaturesOn === true) {
       flowlinesData.features = await getFlowrateData(flowlinesData.features);
+      flowrates = flowlinesData.features.map((d) => d.properties.flowrate);
+      // Set max flowrate for gauge. Max defaults to 20,000 cubic feet/second, but will go up if there's a higher value in the current path's set
+      maxFlowrate = Math.max(...flowrates, 20000);
+      // currentFlowrateIndex = 0;
     }
-    flowrates = flowlinesData.features.map((d) => d.properties.flowrate);
-
-    // Set max flowrate for gauge. Max defaults to 20,000 cubic feet/second, but will go up if there's a higher value in the current path's set
-    maxFlowrate = Math.max(...flowrates, 20000);
-    // currentFlowrateIndex = 0;
 
     // Find the parent features of flowlines along the path
     totalLength =
       flowlinesData.features[0].properties.pathlength > 0
         ? flowlinesData.features[0].properties.pathlength
         : undefined;
+
     const riverFeatures = getFeatureGroups(flowlinesData);
     featureGroups = riverFeatures;
 
@@ -384,7 +376,7 @@
       .flat();
     drawFlowPath({ map, featureData: [combinedFlowlines], lineWidth: 3 });
 
-    let terrainElevationMultiplier = 1;
+    let terrainElevationMultiplier = 1.1;
     let cameraBaseAltitude = 3600;
     const elevationArrayStep = Math.min(coordinatePath.length / 2 - 1, 100);
 
@@ -397,7 +389,7 @@
     if (elevations.includes(null)) {
       elevations = await getElevations(coordinatePath, elevationArrayStep);
       cameraBaseAltitude = 4300;
-      terrainElevationMultiplier = 1.25;
+      terrainElevationMultiplier = 1.3;
     }
 
     // Take base altitude and then adjust up based on the elevation of the first coordinate
@@ -417,7 +409,7 @@
     const smoothedPath = pathSmoother(
       coordinatePath,
       Math.min(
-        Math.floor(9 * altitudeMultiplier),
+        Math.floor(smoothingCoefficient * altitudeMultiplier),
         Math.floor(coordinatePath.length / 2)
       )
     );
@@ -635,10 +627,11 @@
     ) {
       if (closestFeature.properties.stop_feature_name === "San Francisco Bay") {
         return "San Francisco Bay";
+      } else if (
+        closestFeature.properties.stop_feature_name === "Delaware Bay"
+      ) {
+        return "Delaware Bay";
       }
-	  else if (closestFeature.properties.stop_feature_name === "Delaware Bay") {
-		return "Delaware Bay";
-	  }
 
       // Gulf of Mexico: lng < -82 && lat < 31
       // Chesapeake Bay: -75.6 > lng > -77.68 && 39.61 > lat > 37.79
@@ -693,19 +686,20 @@
 
         const sandwichOccurence = featurePoints
           .slice(firstOccurence)
-          .findIndex(
-            (point) => point.properties.feature_id === uniqueFeatureNames[i - 1]
+          .findIndex((point) =>
+            uniqueFeatureNames.slice(0, i).includes(point.properties.feature_id)
           );
+
         const surroundingFeatureData = featurePoints
           .slice(firstOccurence)
-          .find(
-            (point) => point.properties.feature_id === uniqueFeatureNames[i - 1]
+          .find((point) =>
+            uniqueFeatureNames.slice(0, i).includes(point.properties.feature_id)
           );
 
         if (
           sandwichOccurence > 0 &&
-          surroundingFeatureData.properties.streamlvl ===
-            featureData.properties.streamlvl
+          surroundingFeatureData.properties.streamlev ===
+            featureData.properties.streamlev
         ) {
           return false;
         } else {
@@ -734,7 +728,7 @@
             ? 0
             : featureData.properties.pathlength,
         index,
-        stream_level: featureData.properties.streamlvl,
+        stream_level: featureData.properties.streamlev,
         active: false,
       };
     });
@@ -790,37 +784,6 @@
     });
 
     return riverFeatures;
-  };
-
-  const getFeatureVAA = async (feature, index, thinningIndex) => {
-    if (index > 50 && index % thinningIndex !== 0) {
-      return feature;
-    }
-
-    const baseUrl = "https://river-runner-20db3-default-rtdb.firebaseio.com/";
-    const response = await fetch(
-      baseUrl + feature.properties.nhdplus_comid + ".json"
-    );
-    const featureData = await response.json();
-
-    feature.properties = {
-      ...feature.properties,
-      ...featureData,
-      // feature_name: featureData.gnis_name || `Unnamed River/Stream (${featureData.levelpathid})`
-      feature_name: featureData.gnis_name || `Unnamed River/Stream`,
-      feature_id: featureData.gnis_name || featureData.levelpathid,
-    };
-
-    return feature;
-  };
-
-  const addVAAData = (flowlineFeatures) => {
-    const thinningIndex = Math.ceil(flowlineFeatures.length / 250);
-    return Promise.all(
-      flowlineFeatures.map(
-        async (feature, i) => await getFeatureVAA(feature, i, thinningIndex)
-      )
-    );
   };
 
   const getFeatureFlowrate = async (
@@ -984,7 +947,7 @@
     let route = pathSmoother(
       coordinatePath,
       Math.min(
-        Math.floor(9 * altitudeMultiplier),
+        Math.floor(smoothingCoefficient * altitudeMultiplier),
         Math.floor(coordinatePath.length / 2)
       )
     );
@@ -1018,7 +981,7 @@
         route = pathSmoother(
           coordinatePath,
           Math.min(
-            Math.floor(9 * altitudeMultiplier),
+            Math.floor(smoothingCoefficient * altitudeMultiplier),
             Math.floor(coordinatePath.length / 2)
           )
         );
