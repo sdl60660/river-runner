@@ -201,8 +201,6 @@
   const initGeocoder = ({ map }) => {
     const geocoderControl = new MapboxGeocoder({
       accessToken: mapboxAccessToken,
-      countries: "us",
-      bbox: bounds.flat(),
       mapboxgl: mapbox,
       placeholder: "Search for any location",
       marker: false,
