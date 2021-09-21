@@ -267,7 +267,14 @@
         title={"Share this path"}
       />
     </button>
-    <button class="control-button exit-button" on:click={exitNavigationPath}
+    <button
+      class="control-button exit-button"
+      on:click={postRun
+        ? exitNavigationPath
+        : () => {
+            disruptAutoplay();
+            exitNavigationPath();
+          }}
       ><img
         class="svg-icon-img"
         src="/images/x.svg"
