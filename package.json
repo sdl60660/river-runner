@@ -25,6 +25,7 @@
   "dependencies": {
     "@rollup/plugin-json": "^4.1.0",
     "@turf/along": "^6.3.0",
+    "@turf/bbox": "^6.5.0",
     "@turf/bearing": "^6.3.0",
     "@turf/boolean-point-in-polygon": "^6.3.0",
     "@turf/buffer": "^6.3.0",
