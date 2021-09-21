@@ -355,6 +355,10 @@
             .flat()
             .filter((d, i) => i % 2 === 0);
 
+    // const coordinatePath = flowlinesData.features
+    //   .map((feature) => feature.geometry.coordinates)
+    //   .flat();
+
     // Update props used by child components
     riverPath = [{ geometry: { coordinates: coordinatePath } }];
     currentLocation = originPoint;
@@ -367,14 +371,14 @@
     });
     stoppingFeature.update(() => pathStoppingFeature);
 
-    // Draw river lines from flowline features. Combining them aboids mapbox simplification on low zoom levels that creates a choppy looking flow path.
+    // Draw river lines from flowline features. Combining them avoids mapbox simplification on low zoom levels that creates a choppy looking flow path.
     const combinedFlowlines = flowlinesData.features[0];
     combinedFlowlines.geometry.coordinates = flowlinesData.features
       .map((a) => a.geometry.coordinates)
       .flat();
     drawFlowPath({ map, featureData: [combinedFlowlines], lineWidth: 3 });
 
-    let terrainElevationMultiplier = 1.1;
+    let terrainElevationMultiplier = 1.5;
     let cameraBaseAltitude = 3600;
     const elevationArrayStep = Math.min(coordinatePath.length / 2 - 1, 100);
 
@@ -387,7 +391,7 @@
     if (elevations.includes(null)) {
       elevations = await getElevations(coordinatePath, elevationArrayStep);
       cameraBaseAltitude = 4300;
-      terrainElevationMultiplier = 1.3;
+      terrainElevationMultiplier = 1.4;
     }
 
     // Take base altitude and then adjust up based on the elevation of the first coordinate
