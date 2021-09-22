@@ -20,6 +20,8 @@
   export let featureGroups;
   export let activeFeatureIndex;
 
+  const maxZoom = 2.8;
+
   let width = 0;
 
   let container;
@@ -41,7 +43,11 @@
   }
   $: if (map && riverPath) {
     const coordinateSet = lineString(riverPath[0].geometry.coordinates);
-    map.fitBounds(bbox(coordinateSet), { animate: false, padding: 10 });
+    map.fitBounds(bbox(coordinateSet), { animate: false, padding: 30 });
+
+    if (map.getZoom() > maxZoom) {
+      map.setZoom(maxZoom);
+    }
   }
 
   $: if (featureGroups.length > 0) {
@@ -102,7 +108,7 @@
         // bearing: 80,
       });
 
-      map.fitBounds(bounds, { animate: false, padding: 10 });
+      map.fitBounds(bounds, { animate: false, padding: 30 });
       //   map.setMaxBounds(map.getBounds());
 
       map.on("load", () => {
