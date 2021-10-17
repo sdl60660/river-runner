@@ -111,7 +111,11 @@
       });
 
       map.fitBounds(bounds, { animate: false, padding: 30 });
-      map.
+      if (startingSearch) {
+        map.jumpTo({
+          center: startingSearch.lngLat
+        });
+      }
       // map.setMaxBounds(map.getBounds());
       mapBounds = map.getBounds();
 
