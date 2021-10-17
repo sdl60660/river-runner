@@ -37,8 +37,10 @@ const distanceToPolygon = ({ startPoint, targetPolygon }) => {
     
     let distance;
 
-    // console.log(targetPolygon);
-    if (targetPolygon.type === "MultiPolygon") {
+    if (targetPolygon.coordinates.length === 0) {
+      return 9999999;
+    }
+    if (targetPolygon.type === "MultiPolygon" || typeof targetPolygon.coordinates[0][0][0] === "object") {
       distance = targetPolygon.coordinates
         .map(coords => distanceToPolygon({ startPoint, targetPolygon: polygon(coords).geometry }))
         .reduce((smallest, current) => (current < smallest ? current : smallest));

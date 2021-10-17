@@ -37,12 +37,6 @@
     );
     const addressData = await response.json();
 
-    // const country = addressData.features.find(d => d.place_type.includes('country'))?.text;
-    // if (country !== "United States") {
-    //     displayCountryError();
-    //     return;
-    // }
-
     const placeName = addressData.features.find((d) =>
       d.place_type.includes("place")
     )?.text;
@@ -52,10 +46,14 @@
     const stateName = addressData.features.find((d) =>
       d.place_type.includes("region")
     )?.text;
+    const countryName = addressData.features.find(d => 
+      d.place_type.includes('country')
+    )?.text;
 
-    const fullLocationString = placeName
-      ? `${placeName}, ${stateName}`
-      : `${countyName}, ${stateName}`;
+    const place = placeName || countyName;
+    const locationStringComponents = [place, stateName, countryName].filter(d => d);
+
+    const fullLocationString = locationStringComponents.join(', ');
 
     startLocation.update(() => fullLocationString);
 

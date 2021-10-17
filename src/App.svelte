@@ -7,7 +7,7 @@
 
   const dataFilePromises = [
     d3.json("data/us_states.json"),
-    d3.json("data/stopping_features.json"),
+    d3.json("data/global_stopping_features.json"),
     d3.json("data/active_nwis_sites.json"),
   ];
 
@@ -15,7 +15,7 @@
     const states = topojson.feature(data[0], data[0].objects.states).features;
     const stoppingFeatures = topojson.feature(
       data[1],
-      data[1].objects.stopping_features
+      data[1].objects.global_stopping_features
     ).features;
 
     const activeNWISSites = data[2].sites;

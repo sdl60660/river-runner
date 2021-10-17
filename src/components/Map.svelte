@@ -83,7 +83,7 @@
   let altitudeChange = false;
   let paused = false;
   let playbackSpeed = 1;
-  const smoothingCoefficient = 4;
+  const smoothingCoefficient = 3;
 
   // let currentFlowrateIndex = 0;
   let currentFlowrate = { level: 10000, index: 0 };
@@ -107,9 +107,11 @@
         style: mapStyle || "mapbox://styles/mapbox/light-v10",
         center: [0, 0],
         zoom: 9,
+        minZoom: 2
       });
 
       map.fitBounds(bounds, { animate: false, padding: 30 });
+      map.
       // map.setMaxBounds(map.getBounds());
       mapBounds = map.getBounds();
 
@@ -306,15 +308,21 @@
     currentLocation = e.lngLat;
     startCoordinates = e.lngLat;
 
-    const iowURL = `https://merit.internetofwater.dev/processes/river-runner/execution?lng=${e.lngLat.lng}&lat=${e.lngLat.lat}`;
-    const flowlinesResponse = await fetch(iowURL);
+    const iowURL = `https://merit.internetofwater.app/processes/river-runner/execution?lng=${e.lngLat.lng}&lat=${e.lngLat.lat}`;
+    const flowlinesResponse = await fetch(iowURL, {
+      method: 'GET',
+      headers: {
+        'Accept-Encoding': 'gzip',
+        'Accept': 'application/json',
+      }
+    });
     const flowlinesData = (await flowlinesResponse.json()).value;
     flowlinesData.features = flowlinesData.features.sort(
       (a, b) => b.properties.hydroseq - a.properties.hydroseq
     );
     flowlinesData.features.forEach((feature) => {
-      feature.properties.feature_name = feature.properties.nameid;
-      feature.properties.feature_id = feature.properties.riverid;
+      feature.properties.feature_name = feature.properties.nameid === "unknown" ? "Unidentified River/Stream" : feature.properties.nameid;
+      feature.properties.feature_id = feature.properties.nameid === "unknown" ? feature.properties.levelpathi : feature.properties.nameid;
     });
 
     if (advancedFeaturesOn === true) {
@@ -620,41 +628,7 @@
     ) {
       return "Inland Water Feature";
     }
-    // Sometimes there's a large inlet/bay that creates artificial distance between the destination point and my imperfect ocean shapefile polygon
-    // It may then think that another feature, like a lake is the "stop feature", (this happens in the Alabama gulf, for example).
-    // We're going to say that if the ocean is within 50km of the stop point, it's very likely the true end point
-    else if (
-      closestFeature.properties.stop_feature_type === "ocean" ||
-      oceanDistance < 50000
-    ) {
-      if (closestFeature.properties.stop_feature_name === "San Francisco Bay") {
-        return "San Francisco Bay";
-      } else if (
-        closestFeature.properties.stop_feature_name === "Delaware Bay"
-      ) {
-        return "Delaware Bay";
-      }
-
-      // Gulf of Mexico: lng < -82 && lat < 31
-      // Chesapeake Bay: -75.6 > lng > -77.68 && 39.61 > lat > 37.79
-      // Delaware Bay: -74.87 > lng > -75.54 && 39.53 > lat > 38.77
-      // Otherwise split by Texas, basically, between Atlantic/Pacific
-      return destinationPoint[0] < -82 && destinationPoint[1] < 31
-        ? "Gulf of Mexico"
-        : destinationPoint[0] < -75.6330075 &&
-          destinationPoint[0] > -77.684621 &&
-          destinationPoint[1] > 37.793247 &&
-          destinationPoint[1] < 39.61332
-        ? "Chesapeake Bay"
-        : destinationPoint[0] < -74.872 &&
-          destinationPoint[0] > -75.542 &&
-          destinationPoint[1] > 38.771 &&
-          destinationPoint[1] < 39.525
-        ? "Delaware Bay"
-        : destinationPoint[0] > -100
-        ? "Atlantic Ocean"
-        : "Pacific Ocean";
-    } else {
+    else {
       return closestFeature.properties.stop_feature_name;
     }
   };
@@ -1195,7 +1169,6 @@
   };
 
   const setAltitudeMultipier = (e) => {
-    // console.log(e.target.value);
     altitudeChange = true;
     altitudeMultiplier = e.target.value;
   };
