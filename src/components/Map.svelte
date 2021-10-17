@@ -521,6 +521,8 @@
     paused = false;
     playbackSpeed = 1;
 
+    resetRiverHighlight();
+
     // Fly to clicked point and pitch camera (initial "raindrop" animation)
     map.flyTo({
       center,
