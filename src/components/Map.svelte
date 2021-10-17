@@ -78,7 +78,7 @@
   let phaseJump;
 
   // Zoom level won't be adjustable on mobile, but it will be set slightly higher to avoid jiterriness
-  const defaultAltitudeMultiplier = window.innerWidth < 600 ? 1.1 : 1;
+  const defaultAltitudeMultiplier = window.innerWidth < 600 ? 1.1 : 0.9;
   let altitudeMultiplier = defaultAltitudeMultiplier;
   let altitudeChange = false;
   let paused = false;
