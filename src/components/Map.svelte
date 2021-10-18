@@ -373,11 +373,10 @@
       .flat();
     drawFlowPath({ map, featureData: [combinedFlowlines], lineWidth: 3 });
 
-    let terrainElevationMultiplier = 1.5;
-    let cameraBaseAltitude = 3600;
+    let terrainElevationMultiplier = 1.7;
+    let cameraBaseAltitude = 4300;
     const elevationArrayStep = Math.min(coordinatePath.length / 2 - 1, 100);
 
-    // const elevations = await getElevations(coordinatePath, elevationArrayStep);
     let elevations = getElevationsMapQuery(
       coordinatePath,
       map,
@@ -385,8 +384,6 @@
     );
     if (elevations.includes(null)) {
       elevations = await getElevations(coordinatePath, elevationArrayStep);
-      cameraBaseAltitude = 4300;
-      terrainElevationMultiplier = 1.4;
     }
 
     // Take base altitude and then adjust up based on the elevation of the first coordinate
@@ -412,7 +409,6 @@
     );
 
     const routeDistance = pathDistance(smoothedPath);
-    const trueRouteDistance = pathDistance(coordinatePath);
 
     let firstBearingPoint = along(
       lineString(smoothedPath),
