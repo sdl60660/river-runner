@@ -55,9 +55,9 @@
     dispatch("remove-highlight");
   };
 
-  const setPhase = (pathProgress, featureIndex) => {
+  const setPhase = (featureIndex, coordinate) => {
     if (activeFeatureIndex >= 0) {
-      dispatch("progress-set", { pathProgress, featureIndex });
+      dispatch("progress-set", { featureIndex, coordinate });
     }
   };
 
@@ -123,7 +123,7 @@
       <div class="feature-listing bounding-location">
         {currentStartLocation}
       </div>
-      {#each featureGroups as { name, length_km, index, progress }, i}
+      {#each featureGroups as { name, length_km, index, first_coordinate }, i}
         <div
           style="font-weight:{index === activeFeatureIndex
             ? 'bold'
@@ -133,7 +133,7 @@
           class:river-feature={activeFeatureIndex >= 0 &&
             vizState === "running"}
           class:hover-feature={vizState === "overview"}
-          on:click={() => setPhase(progress, index)}
+          on:click={() => setPhase(index, first_coordinate)}
           on:mouseenter={() => {
             if (vizState === "overview") {
               highlightFeature(index);

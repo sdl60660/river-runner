@@ -5,8 +5,10 @@
   import * as d3 from "d3";
 
   import along from "@turf/along";
-  import { lineString } from "@turf/helpers";
+  import { lineString, round } from "@turf/helpers";
   import distance from "@turf/distance";
+  import nearestPointOnLine from "@turf/nearest-point-on-line";
+  import lineDistance from "@turf/line-distance";
 
   import { distanceToPolygon, getDataBounds } from "../utils";
   import { coordinates, stoppingFeature } from "../state";
@@ -312,22 +314,7 @@
     currentLocation = e.lngLat;
     startCoordinates = e.lngLat;
 
-    const iowURL = `https://merit.internetofwater.app/processes/river-runner/execution?lng=${e.lngLat.lng}&lat=${e.lngLat.lat}`;
-    const flowlinesResponse = await fetch(iowURL, {
-      method: 'GET',
-      headers: {
-        'Accept-Encoding': 'gzip',
-        'Accept': 'application/json',
-      }
-    });
-    const flowlinesData = (await flowlinesResponse.json()).value;
-    flowlinesData.features = flowlinesData.features.sort(
-      (a, b) => b.properties.hydroseq - a.properties.hydroseq
-    );
-    flowlinesData.features.forEach((feature) => {
-      feature.properties.feature_name = feature.properties.nameid === "unknown" ? "Unidentified River/Stream" : feature.properties.nameid;
-      feature.properties.feature_id = feature.properties.nameid === "unknown" ? feature.properties.levelpathi : feature.properties.nameid;
-    });
+    const flowlinesData = await getFlowlineData(e);
 
     if (advancedFeaturesOn === true) {
       flowlinesData.features = await getFlowrateData(flowlinesData.features);
@@ -366,10 +353,6 @@
             .map((feature) => feature.geometry.coordinates)
             .flat()
             .filter((d, i) => i % 2 === 0);
-
-    // const coordinatePath = flowlinesData.features
-    //   .map((feature) => feature.geometry.coordinates)
-    //   .flat();
 
     // Update props used by child components
     riverPath = [{ geometry: { coordinates: coordinatePath } }];
@@ -433,7 +416,7 @@
 
     let firstBearingPoint = along(
       lineString(smoothedPath),
-      routeDistance * 0.00005
+      routeDistance * 0.0000005
     ).geometry.coordinates;
 
     if (firstBearingPoint === smoothedPath[0]) {
@@ -540,7 +523,7 @@
 
     // Maintain a consistent speed using the route distance. The higher the speed coefficient, the slower the runner will move.
     const speedCoefficient =
-      smoothedPath.length < 50 ? 200 : 185 - 5 * (cameraPitch - 70);
+      smoothedPath.length < 50 ? 200 : 175 - 5 * (cameraPitch - 70);
     const animationDuration = Math.round(speedCoefficient * routeDistance);
 
     map.once("moveend", () => {
@@ -562,6 +545,49 @@
       });
     });
   };
+
+  const getFlowlineData = async (e) => {
+    let flowlinesData;
+    let resultFound = false;
+    let roundingDigits = 6;
+    
+    while (resultFound === false && roundingDigits >= 0) {
+      roundingDigits -= 1;
+      const roundedLng = e.lngLat.lng.toFixed(roundingDigits);
+      const roundedLat = e.lngLat.lat.toFixed(roundingDigits);
+
+      const iowURL = `https://merit.internetofwater.app/processes/river-runner/execution?lng=${roundedLng}&lat=${roundedLat}`;
+
+      try {
+        const flowlinesResponse = await fetch(iowURL, {
+        method: 'GET',
+        headers: {
+            'Accept-Encoding': 'gzip',
+            'Accept': 'application/json',
+          }
+        });
+        
+        flowlinesData = (await flowlinesResponse.json()).value;
+
+        flowlinesData.features = flowlinesData.features.sort(
+          (a, b) => b.properties.hydroseq - a.properties.hydroseq
+        );
+        flowlinesData.features.forEach((feature) => {
+          feature.properties.feature_name = feature.properties.nameid === "unknown" ? "Unidentified River/Stream" : feature.properties.nameid;
+          feature.properties.feature_id = feature.properties.nameid === "unknown" ? feature.properties.levelpathi : feature.properties.nameid;
+        });
+
+        resultFound = flowlinesData.features.length > 0;
+        
+      } catch {
+        console.log(
+          `Error while rounding coordinates to ${roundingDigits} digits. Trying again with less precise coordinates.`
+        );
+      }
+    }
+
+    return flowlinesData;
+  }
 
   const findClosestFeature = async (e) => {
     let closestFeature;
@@ -700,10 +726,7 @@
 
       return {
         feature_data_index: featureIndex,
-        progress:
-          fullDistance === -999
-            ? featureIndex / flowlinesData.features.length
-            : (fullDistance - featureData.properties.pathlength) / fullDistance,
+        first_coordinate: featureData.geometry.coordinates[0],
         name: featureData.properties.feature_name,
         distance_from_destination:
           featureData.properties.pathlength === -9999
@@ -719,18 +742,18 @@
     // that's part of the Mississippi Delta, but isn't technically isn't grouped under the Mississippi river, and it considers it the last step
     // Here, I'm going to treat anyting with streamlevel 1 (which means it's a terminal feature) as the last feature in the sequence, but add an
     // exception case for paths that stop at inland lakes, just in case their last feature isn't encoded as stream level 1
-    let trueStopFeatureIndex = riverFeatures.findIndex(
-      (feature) => feature.stream_level === 1
-    );
-    if (trueStopFeatureIndex === -1) {
-      trueStopFeatureIndex = riverFeatures.length - 1;
+    
+    // This is necessary beacause I'm getting streamlevel = 1 on non-terminal features in the data, otherwise excluding dummy terminal features should be more straightforward
+    if (riverFeatures[riverFeatures.length - 1].name === "Unidentified River/Stream"
+        && riverFeatures[riverFeatures.length - 2].name !== "Unidentified River/Stream"
+        && riverFeatures[riverFeatures.length - 2].stream_level === 1
+    ) {
+      riverFeatures = riverFeatures.slice(0, riverFeatures.length - 1);
     }
-    riverFeatures = riverFeatures.slice(0, trueStopFeatureIndex + 1);
 
     riverFeatures.forEach((feature, i) => {
       if (i === riverFeatures.length - 1) {
         feature.length_km = Math.round(feature.distance_from_destination);
-        feature.stop_point = null;
 
         feature.feature_data = [
           {
@@ -747,7 +770,6 @@
           feature.distance_from_destination -
           riverFeatures[i + 1].distance_from_destination;
         feature.length_km = Math.round(featureLength);
-        feature.stop_point = riverFeatures[i + 1].progress;
 
         feature.feature_data = [
           {
@@ -865,7 +887,7 @@
     const currentBearing = map.getBearing();
     const currentPitch = map.getPitch();
 
-    let alongTarget = along(lineString(smoothedPath), routeDistance * 0.000005)
+    let alongTarget = along(lineString(smoothedPath), routeDistance * 0.0000005)
       .geometry.coordinates;
 
     if (alongTarget === smoothedPath[0]) {
@@ -919,11 +941,7 @@
   }) => {
     let start;
 
-    const startPoints = riverFeatures.map((d) => d.progress);
-    let startPoint = startPoints[0];
-
-    const stopPoints = riverFeatures.map((d) => d.stop_point);
-    let stopPoint = stopPoints[0];
+    const featureIndexes = riverFeatures.map((d) => d.feature_data_index);
     activeFeatureIndex = 0;
 
     let route = pathSmoother(
@@ -944,19 +962,11 @@
     let speedCoefficient =
       1 / Math.pow(1 + 1.1 * Math.log(altitudeMultiplier), 1.25);
 
+    const coordinatePathLineString = lineString(coordinatePath);
+
     const frame = (time) => {
       if (!start) {
         start = lastTime = time;
-      }
-
-      // If a user has clicked one of the features in the navigation box, we'll need to adjust the "phase" to jump to that feature
-      if (phaseJump !== undefined) {
-        phase = phaseJump;
-
-        startPoint = startPoints[activeFeatureIndex];
-        stopPoint = stopPoints[activeFeatureIndex];
-
-        phaseJump = undefined;
       }
 
       if (altitudeChange) {
@@ -976,6 +986,21 @@
           1 / Math.pow(1 + 1.1 * Math.log(altitudeMultiplier), 1.25);
 
         altitudeChange = false;
+      }
+
+      // If a user has clicked one of the features in the navigation box, we'll need to adjust the "phase" to jump to that feature
+      if (phaseJump !== undefined) {
+        const nearestCoordinate = nearestPointOnLine(lineString(route), phaseJump).properties.index;
+        
+        if (nearestCoordinate === 0) {
+          phase = 0;
+        }
+        else {
+          const distanceCovered = lineDistance(lineString(route.slice(0, nearestCoordinate + 1)));
+          phase = distanceCovered / routeDistance;
+        }
+
+        phaseJump = undefined;
       }
 
       // phase determines how far through the animation we are
@@ -1002,20 +1027,6 @@
         return;
       }
 
-      // When you hit next feature group, adjust index
-      if (stopPoint && phase >= stopPoint) {
-        activeFeatureIndex += 1;
-        startPoint = stopPoint;
-        stopPoint = stopPoints[activeFeatureIndex];
-      }
-
-      // If winding in reverse, and encountering a feature group change, do the reverse
-      if (startPoint && phase <= startPoint) {
-        activeFeatureIndex -= 1;
-        stopPoint = startPoint;
-        startPoint = startPoints[activeFeatureIndex];
-      }
-
       // Calculate camera elevation using the base elevation and the elevation at the specific coordinate point
       const elevationLast = elevations[Math.floor(elevations.length * phase)];
       const elevationNext =
@@ -1034,7 +1045,7 @@
 
       let alongTarget = along(
         lineString(route),
-        routeDistance * (phase === 0 ? 0.000005 : phase)
+        routeDistance * (phase === 0 ? 0.0000005 : phase)
       ).geometry.coordinates;
 
       if (alongTarget === route[0]) {
@@ -1064,15 +1075,26 @@
         bearing,
       });
 
-      // Set new flowrate value for water level gauge
-      currentFlowrate = {
-        level: flowrates[Math.floor(flowrates.length * phase)],
-        index: Math.floor(flowrates.length * phase),
-      };
+      if (advancedFeaturesOn === true) {
+        // Set new flowrate value for water level gauge
+        currentFlowrate = {
+          level: flowrates[Math.floor(flowrates.length * phase)],
+          index: Math.floor(flowrates.length * phase),
+        };
+      }
 
-      // This will update the location of the marker on the locator map
       if (tick % 5 === 0) {
+        // This will update the location of the marker on the locator map
         currentLocation = alongTarget;
+
+        // When you hit next feature group, adjust index
+        const closestCoordinatePathIndex = nearestPointOnLine(coordinatePathLineString, alongTarget).properties.index;
+        if (playbackSpeed > 0 && featureIndexes[activeFeatureIndex + 1] && closestCoordinatePathIndex >= featureIndexes[activeFeatureIndex + 1]) {
+          activeFeatureIndex += 1;
+        }
+        else if (playbackSpeed < 0 && featureIndexes[activeFeatureIndex] && closestCoordinatePathIndex < featureIndexes[activeFeatureIndex]) {
+          activeFeatureIndex -= 1;
+        }
       }
       tick += 1;
 
@@ -1155,7 +1177,7 @@
 
   const handleJump = (e) => {
     activeFeatureIndex = e.detail.featureIndex;
-    phaseJump = e.detail.pathProgress;
+    phaseJump = e.detail.coordinate;
   };
 
   const jumpIndex = (direction) => {
@@ -1167,10 +1189,10 @@
         activeFeatureIndex + 1,
         featureGroups.length - 1
       );
-      phaseJump = featureGroups[activeFeatureIndex].progress;
+      phaseJump = featureGroups[activeFeatureIndex].first_coordinate;
     } else if (direction === "backward" && activeFeatureIndex - 1 >= 0) {
       activeFeatureIndex = Math.max(activeFeatureIndex - 1, 0);
-      phaseJump = featureGroups[activeFeatureIndex].progress;
+      phaseJump = featureGroups[activeFeatureIndex].first_coordinate;
     }
   };
 
