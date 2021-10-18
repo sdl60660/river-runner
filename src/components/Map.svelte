@@ -85,7 +85,7 @@
   let altitudeChange = false;
   let paused = false;
   let playbackSpeed = 1;
-  const smoothingCoefficient = 3;
+  const smoothingCoefficient = 4;
 
   // let currentFlowrateIndex = 0;
   let currentFlowrate = { level: 10000, index: 0 };
@@ -399,7 +399,6 @@
       (initialElevation * Math.tan((targetPitch * Math.PI) / 180)) / 1000;
 
     // Create smoothed path by averaging coordinates with their neighbors. This helps reduce horizontal movement with bendy rivers.
-    // const smoothedPath = pathSmoother(coordinatePath, Math.min(9, Math.floor(coordinatePath.length / 2)));
     const smoothedPath = pathSmoother(
       coordinatePath,
       Math.min(
@@ -548,13 +547,11 @@
     let roundingDigits = 6;
     
     while (resultFound === false && roundingDigits >= 0) {
-      roundingDigits -= 1;
-      const roundedLng = e.lngLat.lng.toFixed(roundingDigits);
-      const roundedLat = e.lngLat.lat.toFixed(roundingDigits);
-
-      const iowURL = `https://merit.internetofwater.app/processes/river-runner/execution?lng=${roundedLng}&lat=${roundedLat}`;
-
       try {
+        const roundedLng = e.lngLat.lng.toFixed(roundingDigits);
+        const roundedLat = e.lngLat.lat.toFixed(roundingDigits);
+        const iowURL = `https://merit.internetofwater.app/processes/river-runner/execution?lng=${roundedLng}&lat=${roundedLat}`;
+
         const flowlinesResponse = await fetch(iowURL, {
         method: 'GET',
         headers: {
@@ -580,6 +577,8 @@
           `Error while rounding coordinates to ${roundingDigits} digits. Trying again with less precise coordinates.`
         );
       }
+
+      roundingDigits -= 1;
     }
 
     return flowlinesData;
@@ -740,12 +739,15 @@
     // exception case for paths that stop at inland lakes, just in case their last feature isn't encoded as stream level 1
     
     // This is necessary beacause I'm getting streamlevel = 1 on non-terminal features in the data, otherwise excluding dummy terminal features should be more straightforward
-    if (riverFeatures[riverFeatures.length - 1].name === "Unidentified River/Stream"
+    if ( riverFeatures.length > 1
+        && riverFeatures[riverFeatures.length - 1].name === "Unidentified River/Stream"
         && riverFeatures[riverFeatures.length - 2].name !== "Unidentified River/Stream"
         && riverFeatures[riverFeatures.length - 2].stream_level === 1
     ) {
       riverFeatures = riverFeatures.slice(0, riverFeatures.length - 1);
     }
+
+    console.log({ featureNames, uniqueFeatureNames, riverFeatures });
 
     riverFeatures.forEach((feature, i) => {
       if (i === riverFeatures.length - 1) {
