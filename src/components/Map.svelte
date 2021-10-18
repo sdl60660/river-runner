@@ -315,6 +315,11 @@
     startCoordinates = e.lngLat;
 
     const flowlinesData = await getFlowlineData(e);
+    if (!flowlinesData) {
+      vizState = "error";
+      resetMapState({ map, error: true });
+      return;
+    }
 
     if (advancedFeaturesOn === true) {
       flowlinesData.features = await getFlowrateData(flowlinesData.features);
@@ -542,7 +547,7 @@
   };
 
   const getFlowlineData = async (e) => {
-    let flowlinesData;
+    let flowlinesData = null;
     let resultFound = false;
     let roundingDigits = 6;
     
@@ -559,19 +564,21 @@
             'Accept': 'application/json',
           }
         });
-        
-        flowlinesData = (await flowlinesResponse.json()).value;
 
-        flowlinesData.features = flowlinesData.features.sort(
-          (a, b) => b.properties.hydroseq - a.properties.hydroseq
-        );
-        flowlinesData.features.forEach((feature) => {
-          feature.properties.feature_name = feature.properties.nameid === "unknown" ? "Unidentified River/Stream" : feature.properties.nameid;
-          feature.properties.feature_id = feature.properties.nameid === "unknown" ? feature.properties.levelpathi : feature.properties.nameid;
-        });
+        const responseData = (await flowlinesResponse.json()).value;
+        resultFound = responseData.features.length > 0;
 
-        resultFound = flowlinesData.features.length > 0;
-        
+        if (resultFound) {
+          flowlinesData = responseData;
+
+          flowlinesData.features = flowlinesData.features.sort(
+            (a, b) => b.properties.hydroseq - a.properties.hydroseq
+          );
+          flowlinesData.features.forEach((feature) => {
+            feature.properties.feature_name = feature.properties.nameid === "unknown" ? "Unidentified River/Stream" : feature.properties.nameid;
+            feature.properties.feature_id = feature.properties.nameid === "unknown" ? feature.properties.levelpathi : feature.properties.nameid;
+          });
+        }
       } catch {
         console.log(
           `Error while rounding coordinates to ${roundingDigits} digits. Trying again with less precise coordinates.`
@@ -746,8 +753,6 @@
     ) {
       riverFeatures = riverFeatures.slice(0, riverFeatures.length - 1);
     }
-
-    console.log({ featureNames, uniqueFeatureNames, riverFeatures });
 
     riverFeatures.forEach((feature, i) => {
       if (i === riverFeatures.length - 1) {

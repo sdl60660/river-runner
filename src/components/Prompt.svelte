@@ -53,7 +53,7 @@
     const place = placeName || countyName;
     const locationStringComponents = [place, stateName, countryName].filter(d => d);
 
-    const fullLocationString = locationStringComponents.join(', ');
+    const fullLocationString = locationStringComponents.length > 0 ? locationStringComponents.join(', ') : "Unknown Territory";
 
     startLocation.update(() => fullLocationString);
 
