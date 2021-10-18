@@ -109,7 +109,8 @@
         style: mapStyle || "mapbox://styles/mapbox/light-v10",
         center: [0, 0],
         zoom: 9,
-        minZoom: 2
+        minZoom: 2,
+        maxBounds: [[-500, -65], [500, 85]]
       });
 
       map.fitBounds(bounds, { animate: false, padding: 30 });
@@ -118,7 +119,7 @@
           center: startingSearch.lngLat
         });
       }
-      // map.setMaxBounds(map.getBounds());
+      // map.setMaxBounds([[-300, -65], [300, 89]]);
       mapBounds = map.getBounds();
 
       map.on("load", () => {
@@ -416,7 +417,7 @@
 
     let firstBearingPoint = along(
       lineString(smoothedPath),
-      routeDistance * 0.0000005
+      routeDistance * 0.000005
     ).geometry.coordinates;
 
     if (firstBearingPoint === smoothedPath[0]) {
@@ -890,7 +891,7 @@
     const currentBearing = map.getBearing();
     const currentPitch = map.getPitch();
 
-    let alongTarget = along(lineString(smoothedPath), routeDistance * 0.0000005)
+    let alongTarget = along(lineString(smoothedPath), routeDistance * 0.000005)
       .geometry.coordinates;
 
     if (alongTarget === smoothedPath[0]) {
@@ -1048,7 +1049,7 @@
 
       let alongTarget = along(
         lineString(route),
-        routeDistance * (phase === 0 ? 0.0000005 : phase)
+        routeDistance * (phase === 0 ? 0.000005 : phase)
       ).geometry.coordinates;
 
       if (alongTarget === route[0]) {
@@ -1056,7 +1057,7 @@
       }
 
       const alongCamera =
-        phase - altitudeMultiplier * phaseGap < 0
+        phase - altitudeMultiplier * phaseGap <= 0
           ? findArtificialCameraPoint({
               distanceGap: altitudeMultiplier * distanceGap,
               originPoint: route[0],
