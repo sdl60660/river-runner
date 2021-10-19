@@ -123,7 +123,6 @@
 
       map.dragRotate.disable();
       map.touchZoomRotate.disable();
-      map.pitchWithRotate.disable();
 
       map.on("load", () => {
         // If there's feature data passed in as a prop (doesn't really happen anymore), render rivers on load
