@@ -110,10 +110,7 @@
         center: [0, 0],
         zoom: 9,
         minZoom: 2,
-        maxBounds: [[-500, -65], [500, 85]],
-        pitchWithRotate: false,
-        dragRotate: false,
-        touchZoomRotate: false
+        maxBounds: [[-500, -65], [500, 85]]
       });
 
       map.dragRotate.disable();
