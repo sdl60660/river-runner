@@ -110,7 +110,10 @@
         center: [0, 0],
         zoom: 9,
         minZoom: 2,
-        maxBounds: [[-500, -65], [500, 85]]
+        maxBounds: [[-500, -65], [500, 85]],
+        pitchWithRotate: false,
+        dragRotate: false,
+        touchZoomRotate: false
       });
 
       map.fitBounds(bounds, { animate: false, padding: 30 });
