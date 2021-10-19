@@ -116,6 +116,10 @@
         touchZoomRotate: false
       });
 
+      map.dragRotate.disable();
+      map.touchZoomRotate.disable();
+      map.pitchWithRotate.disable();
+
       map.fitBounds(bounds, { animate: false, padding: 30 });
       if (startingSearch) {
         map.jumpTo({
