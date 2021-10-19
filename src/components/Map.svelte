@@ -113,18 +113,17 @@
         maxBounds: [[-500, -65], [500, 85]]
       });
 
-      map.dragRotate.disable();
-      map.touchZoomRotate.disable();
-      map.pitchWithRotate.disable();
-
       map.fitBounds(bounds, { animate: false, padding: 30 });
       if (startingSearch) {
         map.jumpTo({
           center: startingSearch.lngLat
         });
       }
-      // map.setMaxBounds([[-300, -65], [300, 89]]);
       mapBounds = map.getBounds();
+
+      map.dragRotate.disable();
+      map.touchZoomRotate.disable();
+      map.pitchWithRotate.disable();
 
       map.on("load", () => {
         // If there's feature data passed in as a prop (doesn't really happen anymore), render rivers on load
