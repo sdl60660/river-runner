@@ -80,7 +80,7 @@
   let phaseJump;
 
   // Zoom level won't be adjustable on mobile, but it will be set slightly higher to avoid jiterriness
-  const defaultAltitudeMultiplier = window.innerWidth < 600 ? 1.1 : 0.9;
+  const defaultAltitudeMultiplier = window.innerWidth < 600 ? 1.1 : 0.8;
   let altitudeMultiplier = defaultAltitudeMultiplier;
   let altitudeChange = false;
   let paused = false;
@@ -316,7 +316,26 @@
 
     currentLocation = e.lngLat;
     startCoordinates = e.lngLat;
+    mapBounds = map.getBounds();
 
+    if (!mapBounds.contains(e.lngLat)) {
+      map.flyTo({
+        center: e.lngLat,
+        speed: 0.9
+      });
+
+      map.once("moveend", () => {
+        setTimeout(() => {
+          initializeData({ map, e });
+        }, 300);
+      });
+    }
+    else {
+      initializeData({ map, e });
+    }
+  }
+
+  const initializeData = async ({ map, e }) => {
     const flowlinesData = await getFlowlineData(e);
     if (!flowlinesData) {
       vizState = "error";
@@ -397,10 +416,10 @@
     // Take base altitude and then adjust up based on the elevation of the first coordinate
     // The multiplier is necessary for higher elevations since they tend to be mountainous areas, as well, requiring additional height for the camera
     const initialElevation =
-      cameraBaseAltitude +
       altitudeMultiplier *
+      (cameraBaseAltitude +
         terrainElevationMultiplier *
-        Math.round(elevations[0]);
+        Math.round(elevations[0]));
 
     const targetPitch = 69;
     const distanceGap =
@@ -796,6 +815,34 @@
     return riverFeatures;
   };
 
+  const getFeatureVAA = async (feature, index, thinningIndex) => {
+    if (index > 50 && index % thinningIndex !== 0) {
+      return feature;
+    }
+    const baseUrl = "https://river-runner-20db3-default-rtdb.firebaseio.com/";
+    const response = await fetch(
+      baseUrl + feature.properties.nhdplus_comid + ".json"
+    );
+    const featureData = await response.json();
+    feature.properties = {
+      ...feature.properties,
+      ...featureData,
+      // feature_name: featureData.gnis_name || `Unnamed River/Stream (${featureData.levelpathid})`
+      feature_name: featureData.gnis_name || `Unnamed River/Stream`,
+      feature_id: featureData.gnis_name || featureData.levelpathid,
+    };
+    return feature;
+  };
+  
+  const addVAAData = (flowlineFeatures) => {
+    const thinningIndex = Math.ceil(flowlineFeatures.length / 250);
+    return Promise.all(
+      flowlineFeatures.map(
+        async (feature, i) => await getFeatureVAA(feature, i, thinningIndex)
+      )
+    );
+  };
+
   const getFeatureFlowrate = async (
     feature,
     index,
@@ -1044,10 +1091,10 @@
       const elevationEstimate =
         elevationLast + (elevationNext - elevationLast) * elevationStepProgress;
       const tickElevation =
-        cameraBaseAltitude +
         altitudeMultiplier *
+        (cameraBaseAltitude +
           terrainElevationMultiplier *
-          Math.round(elevationEstimate);
+          Math.round(elevationEstimate));
 
       let alongTarget = along(
         lineString(route),
@@ -1204,7 +1251,7 @@
 
   const setAltitudeMultipier = (e) => {
     altitudeChange = true;
-    altitudeMultiplier = e.target.value;
+    altitudeMultiplier = parseFloat(e.target.value);
   };
 
   const togglePause = () => {
