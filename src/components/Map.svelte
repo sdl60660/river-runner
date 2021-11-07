@@ -85,7 +85,7 @@
   let altitudeChange = false;
   let paused = false;
   let playbackSpeed = 1;
-  const smoothingCoefficient = 4;
+  const smoothingCoefficient = 3;
 
   // let currentFlowrateIndex = 0;
   let currentFlowrate = { level: 10000, index: 0 };
@@ -122,7 +122,7 @@
       mapBounds = map.getBounds();
 
       map.dragRotate.disable();
-      map.touchZoomRotate.disable();
+      // map.touchZoomRotate.disable();
 
       map.on("load", () => {
         // If there's feature data passed in as a prop (doesn't really happen anymore), render rivers on load
@@ -400,7 +400,7 @@
       .flat();
     drawFlowPath({ map, featureData: [combinedFlowlines], lineWidth: 3 });
 
-    let terrainElevationMultiplier = 1.7;
+    let terrainElevationMultiplier = 1.2;
     let cameraBaseAltitude = 4300;
     const elevationArrayStep = Math.min(coordinatePath.length / 2 - 1, 100);
 
@@ -421,7 +421,7 @@
         terrainElevationMultiplier *
         Math.round(elevations[0]));
 
-    const targetPitch = 69;
+    const targetPitch = 70;
     const distanceGap =
       (initialElevation * Math.tan((targetPitch * Math.PI) / 180)) / 1000;
 
@@ -597,7 +597,8 @@
             (a, b) => b.properties.hydroseq - a.properties.hydroseq
           );
           flowlinesData.features.forEach((feature) => {
-            feature.properties.feature_name = feature.properties.nameid === "unknown" ? "Unidentified River/Stream" : feature.properties.nameid;
+            console.log({ feature });
+            feature.properties.feature_name = feature.properties.nameid === "unknown" ? `Unidentified River ${feature.properties.levelpathi}` : feature.properties.nameid;
             feature.properties.feature_id = feature.properties.nameid === "unknown" ? feature.properties.levelpathi : feature.properties.nameid;
           });
         }

@@ -122,7 +122,7 @@ export const addTopoLayer = ({ map }) => {
     });
 
     // add the DEM source as a terrain layer with exaggerated height
-    map.setTerrain({ source: "mapbox-dem", exaggeration: 1.7 });
+    map.setTerrain({ source: "mapbox-dem", exaggeration: 1.2 });
 
     map.addLayer({
         id: "sky",
