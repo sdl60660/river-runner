@@ -597,7 +597,6 @@
             (a, b) => b.properties.hydroseq - a.properties.hydroseq
           );
           flowlinesData.features.forEach((feature) => {
-            console.log({ feature });
             feature.properties.feature_name = feature.properties.nameid === "unknown" ? `Unidentified River ${feature.properties.levelpathi}` : feature.properties.nameid;
             feature.properties.feature_id = feature.properties.nameid === "unknown" ? feature.properties.levelpathi : feature.properties.nameid;
           });
