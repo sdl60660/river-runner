@@ -51,6 +51,7 @@
     "node-html-parser": "^3.3.5",
     "scrollama": "^2.2.2",
     "sirv-cli": "^1.0.0",
+    "svelte-actions-resize": "^0.1.1",
     "svelte-loading-spinners": "^0.1.4",
     "svelte-slider": "^1.0.0",
     "three": "^0.113.0",

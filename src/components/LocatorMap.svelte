@@ -1,4 +1,5 @@
 <script>
+  import resize from 'svelte-actions-resize';
   import { onMount } from "svelte";
   import { mapbox } from "../mapbox.js";
   import { tick } from "svelte";
@@ -29,6 +30,9 @@
 
   let marker = null;
   let markerEl;
+
+  let containerWidth = "26rem";
+  let containerHeight = "14rem";
 
   const mainPathLayerID = "locator-path";
 
@@ -229,18 +233,31 @@
       },
     });
   };
+
+  const handleResize = () => {
+    map.resize();
+    const coordinateSet = lineString(riverPath[0].geometry.coordinates);
+    map.fitBounds(bbox(coordinateSet), { animate: true, padding: 30 });
+  }
 </script>
 
 <svelte:window bind:innerWidth={width} />
 
 <div
   class="map"
-  style="z-index: {visibleIndex ? 10 : -10}; opacity: {!visibleIndex
-    ? 0.0
-    : width > 600
-    ? 0.9
-    : 1.0};"
+  style="
+    z-index: {visibleIndex ? 10 : -10};
+    opacity: {!visibleIndex
+      ? 0.0
+      : width > 600
+      ? 0.9
+      : 1.0};
+    width: {containerWidth};
+    height: {containerHeight};
+    "
   bind:this={container}
+  use:resize
+  on:resize={handleResize}
 >
   {#if map}
     <slot />
@@ -259,14 +276,11 @@
 
 <style>
   .map {
-    /* position: absolute; */
-    width: 26rem;
-    height: 14rem;
-    /* top: 2rem;
-        left: 2rem; */
-    /* z-index: 10; */
+    /* width: 26rem;
+    height: 14rem; */
     border-radius: 3px;
     opacity: 0.9;
+    /* transition: height 1s linear, width 1s linear; */
   }
 
   .marker {
