@@ -55,6 +55,10 @@
     dispatch("remove-highlight");
   };
 
+  const showSuggestionModal = () => {
+    dispatch("show-suggestion-modal")
+  };
+
   const setPhase = (featureIndex, coordinate) => {
     if (activeFeatureIndex >= 0) {
       dispatch("progress-set", { featureIndex, coordinate });
@@ -200,7 +204,6 @@
       {/each}
     {/if}
   </div>
-
   <div
     style="display: {activeFeatureIndex >= 0 && vizState === 'running'
       ? 'block'
@@ -284,6 +287,21 @@
     >
   </div>
 </div>
+<div
+  style="
+    display: {
+      screenWidth > 600 && featureGroups.map(({ name }) => name.toLowerCase().includes("unidentified")).some(d => d)
+        ? 'block'
+        : 'none'};
+    opacity: {vizState === "running" && activeFeatureIndex >= 0 ? 1 : 0};
+    cursor: {vizState === "running" && activeFeatureIndex >= 0 ? "pointer" : "default"};
+    z-index: {vizState === "running" && activeFeatureIndex >= 0 ? "unset" : -10};
+    "
+  class="name-suggestion-tooltip"
+  on:click={vizState === "running" && activeFeatureIndex >= 0 ? showSuggestionModal : () => {}}
+>
+  Know one of these missing river names? Make a suggestion!
+</div>
 
 <style>
   .navbox-wrapper {
@@ -307,6 +325,17 @@
     box-shadow: 3px 2px 2px rgba(56, 56, 56, 0.925);
 
     font-family: "Roboto", "Inter", Arial, Helvetica, sans-serif;
+  }
+
+  .name-suggestion-tooltip {
+    display: block;
+    padding: 7px;
+    background-color: #c2c2a4;
+    border-radius: 3px;
+    margin-top: -14px;
+    color: black;
+    font-size: 0.85rem;
+    /* cursor: pointer; */
   }
 
   .feature-listing {

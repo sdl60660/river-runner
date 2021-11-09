@@ -5,6 +5,8 @@
     const abortRun = () => {
         dispatch('abort-run')
     }
+
+    export let callback = abortRun;
 </script>
 
 <!-- Styling mostly from here: https://svelte.dev/repl/fdbb69a2c3744cfe956a370c824eb4df?version=3.15.0 -->
@@ -91,4 +93,4 @@
 </style>
 
 <!-- style="display: {activeIndex >= 0 ? "block" : "none"};" -->
-<button on:click={abortRun} class="close"></button>
+<button on:click={callback} class="close"></button>

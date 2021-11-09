@@ -96,6 +96,8 @@
   let siteTypes = [];
   let siteTypeData = {};
 
+  let suggestionModalActive = false;
+
   onMount(async () => {
     await tick();
 
@@ -759,6 +761,7 @@
         index,
         stream_level: featureData.properties.streamlev,
         active: false,
+        levelpathi: featureData.properties.levelpathi,
       };
     });
 
@@ -769,8 +772,8 @@
     
     // This is necessary beacause I'm getting streamlevel = 1 on non-terminal features in the data, otherwise excluding dummy terminal features should be more straightforward
     if ( riverFeatures.length > 1
-        && riverFeatures[riverFeatures.length - 1].name === "Unidentified River/Stream"
-        && riverFeatures[riverFeatures.length - 2].name !== "Unidentified River/Stream"
+        && riverFeatures[riverFeatures.length - 1].name.includes("Unidentified River")
+        && !riverFeatures[riverFeatures.length - 2].name.includes("Unidentified River")
         && riverFeatures[riverFeatures.length - 2].stream_level === 1
     ) {
       riverFeatures = riverFeatures.slice(0, riverFeatures.length - 1);
@@ -1281,6 +1284,18 @@
     }
   };
 
+  const showSuggestionModal = () => {
+    playbackSpeed = 0;
+    paused = true;
+    suggestionModalActive = true;
+  }
+
+  const hideSuggestionModal = () => {
+    suggestionModalActive = false;
+    playbackSpeed = 1;
+    paused = false;
+  }
+
   $: coordinates.update(() => {
     if (mapBounds._sw) {
       return [
@@ -1306,7 +1321,7 @@
 <Prompt {vizState} {currentLocation} />
 <ContactBox {vizState} />
 
-<div class="left-column" style="z-index: {vizState === 'running' ? 10 : -10};">
+<div class="left-column" style="z-index: {vizState === 'running' ? (suggestionModalActive ? 25 : 10) : -10};">
   <LocatorMap
     {bounds}
     {stateBoundaries}
@@ -1316,6 +1331,8 @@
     {vizState}
     {activeFeatureIndex}
     {featureGroups}
+    {suggestionModalActive}
+    on:hide-suggestion-modal={hideSuggestionModal}
   />
   {#if window.innerWidth > 600 && advancedFeaturesOn === true}
     <WaterLevelDisplay
@@ -1328,7 +1345,7 @@
   {/if}
 </div>
 
-<div class="right-column">
+<div class="right-column" style="z-index: {suggestionModalActive ? -10 : 20};">
   <NavigationInfo
     on:highlight-feature={(e) => highlightRiverFeature(e.detail.featureIndex)}
     on:remove-highlight={resetRiverHighlight}
@@ -1338,6 +1355,7 @@
     on:exit-path={() => resetMapState({ map })}
     on:abort-run={exitFunction}
     on:progress-set={(e) => handleJump(e)}
+    on:show-suggestion-modal={showSuggestionModal}
     {vizState}
     {activeFeatureIndex}
     {featureGroups}
@@ -1411,7 +1429,7 @@
     .right-column {
       right: 3rem;
       top: 3rem;
-      z-index: 20;
+      /* z-index: 20; */
     }
 
     .left-column {

@@ -1,10 +1,12 @@
 <script>
   import resize from 'svelte-actions-resize';
-  import { onMount } from "svelte";
+  import { onMount, createEventDispatcher } from "svelte";
   import { mapbox } from "../mapbox.js";
   import { tick } from "svelte";
   import bbox from "@turf/bbox";
   import { lineString } from "@turf/helpers";
+
+  import CloseButton from "./CloseButton.svelte";
 
   export let bounds = [
     [-125, 24],
@@ -21,6 +23,8 @@
   export let featureGroups;
   export let activeFeatureIndex;
 
+  export let suggestionModalActive;
+
   const maxZoom = 2.8;
 
   let width = 0;
@@ -35,63 +39,12 @@
   let containerHeight = "14rem";
 
   const mainPathLayerID = "locator-path";
+  const colorPalette = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f"];
 
-  $: visibleIndex = vizState === "running" ? 1 : null;
-  $: if (riverPath && map) {
-    drawFlowPath({ map, featureData: riverPath, sourceID: mainPathLayerID });
-  }
-  $: if (map && currentLocation && currentLocation !== undefined) {
-    plotCurrentLocation({ map, location: currentLocation });
-  } else if (marker) {
-    marker.remove();
-  }
-  $: if (map && riverPath) {
-    const coordinateSet = lineString(riverPath[0].geometry.coordinates);
-    map.fitBounds(bbox(coordinateSet), { animate: false, padding: 30 });
+  const dispatch = createEventDispatcher();
 
-    if (map.getZoom() > maxZoom) {
-      map.setZoom(maxZoom);
-    }
-  }
-
-  $: if (featureGroups.length > 0) {
-    // Remove any possible lingering layers from a previous path
-    [...Array(15).keys()].forEach((index) => {
-      removeLayer(`active-path-${index}`);
-    });
-
-    featureGroups.forEach(({ feature_data, index }) => {
-      drawFlowPath({
-        map,
-        featureData: feature_data,
-        sourceID: `active-path-${index}`,
-        lineColor: "yellow",
-        lineWidth: 2,
-        visible: false,
-      });
-    });
-
-    map.moveLayer(mainPathLayerID);
-  }
-
-  $: if (activeFeatureIndex !== -1 && featureGroups) {
-    // Hide any other indices. Technically we should only need to hide the last one, but we'll do this as a catch-all unless it's too slow or if there's a jump
-    [...Array(featureGroups.length).keys()].forEach((previousIndex) => {
-      map.setLayoutProperty(
-        `active-path-${previousIndex}`,
-        "visibility",
-        "none"
-      );
-    });
-
-    // Make the current section visible, unless we're at the stopping feature
-    if (activeFeatureIndex < featureGroups.length) {
-      map.setLayoutProperty(
-        `active-path-${activeFeatureIndex}`,
-        "visibility",
-        "visible"
-      );
-    }
+  const hideSuggestionModal = () => {
+    dispatch('hide-suggestion-modal');
   }
 
   onMount(async () => {
@@ -235,25 +188,168 @@
   };
 
   const handleResize = () => {
-    map.resize();
+    if (map) {
+      map.setMaxBounds(null);
+      map.resize();
+
+      const coordinateSet = lineString(riverPath[0].geometry.coordinates);
+      map.fitBounds(bbox(coordinateSet), { animate: true, padding: 30 });
+      
+      map.once('moveend', () => {
+        map.setMaxBounds(map.getBounds())
+      });
+
+      if (suggestionModalActive) {
+        map.scrollZoom.enable();
+        map.dragPan.enable();
+
+        map.setLayoutProperty(
+          mainPathLayerID,
+          "visibility",
+          "none"
+        );
+
+        [...Array(featureGroups.length).keys()].forEach((previousIndex) => {
+          map.setLayoutProperty(
+            `active-path-${previousIndex}`,
+            "visibility",
+            "visible"
+          );
+
+          map.setPaintProperty(
+            `active-path-${previousIndex}`,
+            "line-color",
+            colorPalette[previousIndex % colorPalette.length]
+          );
+
+          map.setPaintProperty(
+            `active-path-${previousIndex}`,
+            "line-width",
+            1
+          );
+        });
+      }
+      else {
+        map.scrollZoom.disable();
+        map.dragPan.disable();
+
+        map.setLayoutProperty(
+          mainPathLayerID,
+          "visibility",
+          "visible"
+        );
+
+        [...Array(featureGroups.length).keys()].forEach((previousIndex) => {
+          map.setPaintProperty(
+            `active-path-${previousIndex}`,
+            "line-color",
+            "yellow"
+          );
+
+          map.setPaintProperty(
+            `active-path-${previousIndex}`,
+            "line-width",
+            2
+          );
+
+          map.setLayoutProperty(
+            `active-path-${previousIndex}`,
+            "visibility",
+            "none"
+          );
+        });
+
+        map.setLayoutProperty(
+          `active-path-${activeFeatureIndex}`,
+          "visibility",
+          "visible"
+        );
+      }
+    }
+  }
+
+  const handleKeyDown = (event) => {
+		if (event.key === 'Escape') {
+			hideSuggestionModal();
+		}
+  }
+
+  $: visibleIndex = vizState === "running" ? 1 : null;
+  $: if (riverPath && map) {
+    drawFlowPath({ map, featureData: riverPath, sourceID: mainPathLayerID });
+  }
+  $: if (map && currentLocation && currentLocation !== undefined) {
+    plotCurrentLocation({ map, location: currentLocation });
+  } else if (marker) {
+    marker.remove();
+  }
+  $: if (map && riverPath) {
     const coordinateSet = lineString(riverPath[0].geometry.coordinates);
-    map.fitBounds(bbox(coordinateSet), { animate: true, padding: 30 });
+    map.fitBounds(bbox(coordinateSet), { animate: false, padding: 30 });
+
+    if (map.getZoom() > maxZoom) {
+      map.setZoom(maxZoom);
+    }
+  }
+
+  $: if (featureGroups.length > 0) {
+    // Remove any possible lingering layers from a previous path
+    [...Array(15).keys()].forEach((index) => {
+      removeLayer(`active-path-${index}`);
+    });
+
+    featureGroups.forEach(({ feature_data, index }) => {
+      drawFlowPath({
+        map,
+        featureData: feature_data,
+        sourceID: `active-path-${index}`,
+        lineColor: "yellow",
+        lineWidth: 2,
+        visible: false,
+      });
+    });
+
+    map.moveLayer(mainPathLayerID);
+  }
+
+  $: if (activeFeatureIndex !== -1 && featureGroups) {
+    // Hide any other indices. Technically we should only need to hide the last one, but we'll do this as a catch-all unless it's too slow or if there's a jump
+    [...Array(featureGroups.length).keys()].forEach((previousIndex) => {
+      map.setLayoutProperty(
+        `active-path-${previousIndex}`,
+        "visibility",
+        "none"
+      );
+    });
+
+    // Make the current section visible, unless we're at the stopping feature
+    if (activeFeatureIndex < featureGroups.length) {
+      map.setLayoutProperty(
+        `active-path-${activeFeatureIndex}`,
+        "visibility",
+        "visible"
+      );
+    }
   }
 </script>
 
-<svelte:window bind:innerWidth={width} />
+<svelte:window bind:innerWidth={width} on:keydown={handleKeyDown} />
+
+{#if visibleIndex && suggestionModalActive}
+  <div class="clickable-underlay" on:click={hideSuggestionModal} />
+{/if}
 
 <div
   class="map"
   style="
-    z-index: {visibleIndex ? 10 : -10};
+    z-index: {visibleIndex ? (suggestionModalActive ? 50 : 10) : -10};
     opacity: {!visibleIndex
       ? 0.0
       : width > 600
       ? 0.9
       : 1.0};
-    width: {containerWidth};
-    height: {containerHeight};
+    width: {suggestionModalActive ? "calc(100vw - 4rem)" : containerWidth};
+    height: {suggestionModalActive ? "calc(100vh - 4rem)" : containerHeight};
     "
   bind:this={container}
   use:resize
@@ -261,6 +357,41 @@
 >
   {#if map}
     <slot />
+  {/if}
+
+  {#if visibleIndex && suggestionModalActive}
+    <div
+      class="suggestion-feature-list"
+    >
+      <p class="instructions">A succinct explaination of why we're crowdsourcing and instructions goes here</p>
+      {#each featureGroups as feature, i}
+        <input
+          type="text"
+          value={feature.name}
+          id={feature.levelpathi}
+          class="suggestion-feature"
+          style="
+            border: 3px solid {colorPalette[i % colorPalette.length]} !important;
+          "
+          on:mouseenter={() => {
+            map.setPaintProperty(
+              `active-path-${i}`,
+              "line-width",
+              5
+            );
+          }}
+          on:mouseleave={() => {
+            map.setPaintProperty(
+              `active-path-${i}`,
+              "line-width",
+              1
+            );
+          }}
+        />
+      {/each}
+    </div>
+
+    <CloseButton callback={hideSuggestionModal}/>
   {/if}
 </div>
 
@@ -280,6 +411,7 @@
     height: 14rem; */
     border-radius: 3px;
     opacity: 0.9;
+    overflow: visible !important;
     /* transition: height 1s linear, width 1s linear; */
   }
 
@@ -290,6 +422,44 @@
     height: 5px;
     border-radius: 50%;
     /* cursor: pointer; */
+  }
+
+  .suggestion-feature-list {
+    position: absolute;
+    right: 15px;
+    top: 15px;
+    color: black;
+    /* background-color: white; */
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    z-index: 20;
+  }
+
+  .suggestion-feature {
+    width: 220px;
+    font-size: 0.9rem;
+  }
+
+  .instructions {
+    font-size: 0.9rem;
+    background-color: white;
+    max-width: 204px;
+    padding: 8px;
+    border-radius: 2px;
+    line-height: 1.25;
+  }
+
+  .clickable-underlay {
+    position: absolute;
+
+    height: 100vh;
+    width: 100vw;
+    opacity: 0;
+    z-index: 0;
+
+    margin-top: -2rem;
+    margin-left: -2rem;
   }
 
   /* Mobile */
