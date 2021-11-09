@@ -188,7 +188,7 @@
   };
 
   const handleResize = () => {
-    if (map) {
+    if (map && riverPath) {
       map.setMaxBounds(null);
       map.resize();
 
