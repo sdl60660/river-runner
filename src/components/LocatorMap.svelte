@@ -35,8 +35,8 @@
   let marker = null;
   let markerEl;
 
-  let containerWidth = width > 600 ? "26rem" : "100%";
-  let containerHeight = width > 600 ? "14rem" : "20vh";
+  $: containerWidth = width > 600 ? "26rem" : "100%";
+  $: containerHeight = width > 600 ? "14rem" : "20vh";
 
   const mainPathLayerID = "locator-path";
   const colorPalette = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f"];
