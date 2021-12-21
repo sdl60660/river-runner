@@ -6,7 +6,8 @@
     "build": "rollup -c",
     "dev": "rollup -c -w",
     "start": "sirv public --no-clear",
-    "update-nwis": "node scripts/gatherActiveNWISSites.js"
+    "update-nwis": "node scripts/gatherActiveNWISSites.js",
+    "postinstall": "npm install --prefix name_server"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^17.0.0",

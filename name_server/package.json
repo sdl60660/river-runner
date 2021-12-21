@@ -24,6 +24,7 @@
     "mongoose": "^5.13.13",
     "nodemailer": "^6.3.1",
     "passport": "^0.5.2",
+    "pm2": "^5.1.2",
     "validator": "^13.0.0",
     "winston": "^3.3.3",
     "xss-clean": "^0.1.1"
