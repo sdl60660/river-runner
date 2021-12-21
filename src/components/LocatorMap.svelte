@@ -363,7 +363,7 @@
     <div
       class="suggestion-feature-list"
     >
-      <p class="instructions">A succinct explaination of why we're crowdsourcing and instructions goes here</p>
+      <p class="instructions">The data this tool uses is incomplete! If you know the name(s) of any of the unidentified rivers, you can help by making suggestions in the boxes below.</p>
       {#each featureGroups as feature, i}
         <input
           type="text"
