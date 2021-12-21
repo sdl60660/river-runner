@@ -53,6 +53,22 @@
   const dispatch = createEventDispatcher();
 
   const hideSuggestionModal = () => {
+    fetch(
+      "https://river-runner-name-suggestions.herokuapp.com/api/suggestions",
+      {
+        method: "POST",
+        body: JSON.stringify([
+          {
+            nameid: 123454,
+            suggestioned_name: "Test",
+            route_start: "-92.2121,39.41231",
+            has_existing_name: false,
+            user_email: "learnersd@gmail.com",
+          },
+        ]),
+      }
+    );
+
     dispatch("hide-suggestion-modal");
   };
 
@@ -261,7 +277,10 @@
   };
 
   const handleKeyDown = (event) => {
-    if (event.key === "Escape") {
+    if (
+      (event.key === "Escape" || event.key === "Enter") &&
+      suggestionModalActive
+    ) {
       hideSuggestionModal();
     }
   };
@@ -348,30 +367,45 @@
   {/if}
 
   {#if visibleIndex && suggestionModalActive}
-    <div class="suggestion-feature-list" on:keyup={(e) => console.log(e.key)}>
+    <div class="suggestion-feature-list">
       <p class="instructions">
-        A succinct explaination of why we're crowdsourcing and instructions goes
-        here
+        The data this tool uses is incomplete! If you know the name(s) of any of
+        the unidentified rivers, you can help by making suggestions in the boxes
+        below.
       </p>
-      {#each featureGroups as feature, i}
-        <input
-          type="text"
-          value={feature.name}
-          id={feature.levelpathi}
-          class="suggestion-feature"
-          style="
+      <div class="feature-inputs">
+        {#each featureGroups as feature, i}
+          <input
+            type="text"
+            value={feature.name}
+            id={feature.levelpathi}
+            class="suggestion-feature"
+            style="
             border: 3px solid {colorPalette[
-            i % colorPalette.length
-          ]} !important;
+              i % colorPalette.length
+            ]} !important;
           "
-          on:mouseenter={() => {
-            map.setPaintProperty(`active-path-${i}`, "line-width", 5);
-          }}
-          on:mouseleave={() => {
-            map.setPaintProperty(`active-path-${i}`, "line-width", 1);
-          }}
-        />
-      {/each}
+            on:mouseenter={() => {
+              map.setPaintProperty(`active-path-${i}`, "line-width", 5);
+            }}
+            on:mouseleave={() => {
+              map.setPaintProperty(`active-path-${i}`, "line-width", 1);
+            }}
+          />
+        {/each}
+      </div>
+      <input
+        type="text"
+        placeholder="Your Email (optional)"
+        id={"submitter-email"}
+      />
+      <button
+        class="submit-button"
+        on:click={hideSuggestionModal}
+        on:keydown={handleKeyDown}
+      >
+        Submit
+      </button>
     </div>
 
     <CloseButton callback={hideSuggestionModal} />
@@ -417,21 +451,34 @@
     flex-direction: column;
     gap: 0;
     z-index: 20;
+    max-width: 300px;
   }
 
-  .suggestion-feature {
+  .suggestion-feature-list .submit-button {
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  .suggestion-feature-list input {
     width: 100%;
     box-sizing: border-box;
     font-size: 0.9rem;
   }
 
+  .feature-inputs {
+    margin-bottom: 15px;
+  }
+
   .instructions {
     font-size: 0.9rem;
     background-color: white;
-    max-width: 250px;
-    padding: 8px;
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
     border-radius: 2px;
     line-height: 1.25;
+    font-family: "Roboto", "Inter", Arial, Helvetica, sans-serif;
+    margin: 10px 0 15px;
   }
 
   .clickable-underlay {

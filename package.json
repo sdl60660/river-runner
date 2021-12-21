@@ -42,7 +42,6 @@
     "@turf/nearest-point-on-line": "^6.5.0",
     "@turf/point-to-line-distance": "^6.3.0",
     "@turf/polygon-to-line": "^6.3.0",
-    "axios": "^0.21.1",
     "d3": "^6.7.0",
     "d3-fetch": "^2.0.0",
     "dateformat": "^4.5.1",
