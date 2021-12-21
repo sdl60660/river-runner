@@ -12,7 +12,7 @@ router.get("/test", async (req, res) => {
 });
 
 router.post("/suggestions", async (req, res) => {
-    console.log('request:', req);
+    // console.log('request:', req);
     console.log('request body:', req.body);
     const suggestions = req.body.map(item => ({...item, timestamp: Date.now()}));
 
