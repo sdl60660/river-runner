@@ -101,6 +101,7 @@
         center: [0, 0],
         zoom: 9,
         interactive: false,
+        attributionControl: false,
         // pitch: 85,
         // bearing: 80,
       });
