@@ -46,7 +46,7 @@
     "d3-fetch": "^2.0.0",
     "dateformat": "^4.5.1",
     "fast-xml-parser": "^3.19.0",
-    "mapbox-gl": "2.6",
+    "mapbox-gl": "2.3",
     "node-fetch-polyfill": "^2.0.6",
     "node-html-parser": "^3.3.5",
     "scrollama": "^2.2.2",
@@ -60,6 +60,6 @@
     "topojson-server": "^3.0.1"
   },
   "engines": {
-    "node": "15.11.0"
+    "node": "16.5.0"
   }
 }

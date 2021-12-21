@@ -112,14 +112,17 @@
         center: [0, 0],
         zoom: 9,
         minZoom: 2,
-        maxBounds: [[-500, -65], [500, 85]],
+        maxBounds: [
+          [-500, -65],
+          [500, 85],
+        ],
         // projection: 'naturalEarth'
       });
 
       map.fitBounds(bounds, { animate: false, padding: 30 });
       if (startingSearch) {
         map.jumpTo({
-          center: startingSearch.lngLat
+          center: startingSearch.lngLat,
         });
       }
       mapBounds = map.getBounds();
@@ -324,7 +327,7 @@
     if (!mapBounds.contains(e.lngLat)) {
       map.flyTo({
         center: e.lngLat,
-        speed: 0.9
+        speed: 0.9,
       });
 
       map.once("moveend", () => {
@@ -332,11 +335,10 @@
           initializeData({ map, e });
         }, 300);
       });
-    }
-    else {
+    } else {
       initializeData({ map, e });
     }
-  }
+  };
 
   const initializeData = async ({ map, e }) => {
     const flowlinesData = await getFlowlineData(e);
@@ -405,7 +407,9 @@
 
     let terrainElevationMultiplier = 1.2;
     let cameraBaseAltitude = 4300;
-    const elevationArrayStep = Math.min(coordinatePath.length / 2 - 1, 100);
+    const elevationArrayStep = Math.round(
+      Math.min(coordinatePath.length / 4 - 1, 100)
+    );
 
     let elevations = getElevationsMapQuery(
       coordinatePath,
@@ -421,8 +425,7 @@
     const initialElevation =
       altitudeMultiplier *
       (cameraBaseAltitude +
-        terrainElevationMultiplier *
-        Math.round(elevations[0]));
+        terrainElevationMultiplier * Math.round(elevations[0]));
 
     const targetPitch = 70;
     const distanceGap =
@@ -575,7 +578,7 @@
     let flowlinesData = null;
     let resultFound = false;
     let roundingDigits = 6;
-    
+
     while (resultFound === false && roundingDigits >= 0) {
       try {
         const roundedLng = e.lngLat.lng.toFixed(roundingDigits);
@@ -583,11 +586,11 @@
         const iowURL = `https://merit.internetofwater.app/processes/river-runner/execution?lng=${roundedLng}&lat=${roundedLat}`;
 
         const flowlinesResponse = await fetch(iowURL, {
-        method: 'GET',
-        headers: {
-            'Accept-Encoding': 'gzip',
-            'Accept': 'application/json',
-          }
+          method: "GET",
+          headers: {
+            "Accept-Encoding": "gzip",
+            Accept: "application/json",
+          },
         });
 
         const responseData = (await flowlinesResponse.json()).value;
@@ -600,8 +603,14 @@
             (a, b) => b.properties.hydroseq - a.properties.hydroseq
           );
           flowlinesData.features.forEach((feature) => {
-            feature.properties.feature_name = feature.properties.nameid === "unknown" ? `Unidentified River ${feature.properties.levelpathi}` : feature.properties.nameid;
-            feature.properties.feature_id = feature.properties.nameid === "unknown" ? feature.properties.levelpathi : feature.properties.nameid;
+            feature.properties.feature_name =
+              feature.properties.nameid === "unknown"
+                ? `Unidentified River ${feature.properties.levelpathi}`
+                : feature.properties.nameid;
+            feature.properties.feature_id =
+              feature.properties.nameid === "unknown"
+                ? feature.properties.levelpathi
+                : feature.properties.nameid;
           });
         }
       } catch {
@@ -614,7 +623,7 @@
     }
 
     return flowlinesData;
-  }
+  };
 
   const findClosestFeature = async (e) => {
     let closestFeature;
@@ -686,8 +695,7 @@
       closestFeature.properties.stop_feature_type !== "ocean"
     ) {
       return "Inland Water Feature";
-    }
-    else {
+    } else {
       return closestFeature.properties.stop_feature_name;
     }
   };
@@ -770,12 +778,17 @@
     // that's part of the Mississippi Delta, but isn't technically isn't grouped under the Mississippi river, and it considers it the last step
     // Here, I'm going to treat anyting with streamlevel 1 (which means it's a terminal feature) as the last feature in the sequence, but add an
     // exception case for paths that stop at inland lakes, just in case their last feature isn't encoded as stream level 1
-    
+
     // This is necessary beacause I'm getting streamlevel = 1 on non-terminal features in the data, otherwise excluding dummy terminal features should be more straightforward
-    if ( riverFeatures.length > 1
-        && riverFeatures[riverFeatures.length - 1].name.includes("Unidentified River")
-        && !riverFeatures[riverFeatures.length - 2].name.includes("Unidentified River")
-        && riverFeatures[riverFeatures.length - 2].stream_level === 1
+    if (
+      riverFeatures.length > 1 &&
+      riverFeatures[riverFeatures.length - 1].name.includes(
+        "Unidentified River"
+      ) &&
+      !riverFeatures[riverFeatures.length - 2].name.includes(
+        "Unidentified River"
+      ) &&
+      riverFeatures[riverFeatures.length - 2].stream_level === 1
     ) {
       riverFeatures = riverFeatures.slice(0, riverFeatures.length - 1);
     }
@@ -837,7 +850,7 @@
     };
     return feature;
   };
-  
+
   const addVAAData = (flowlineFeatures) => {
     const thinningIndex = Math.ceil(flowlineFeatures.length / 250);
     return Promise.all(
@@ -1047,13 +1060,17 @@
 
       // If a user has clicked one of the features in the navigation box, we'll need to adjust the "phase" to jump to that feature
       if (phaseJump !== undefined) {
-        const nearestCoordinate = nearestPointOnLine(lineString(route), phaseJump).properties.index;
-        
+        const nearestCoordinate = nearestPointOnLine(
+          lineString(route),
+          phaseJump
+        ).properties.index;
+
         if (nearestCoordinate === 0) {
           phase = 0;
-        }
-        else {
-          const distanceCovered = lineDistance(lineString(route.slice(0, nearestCoordinate + 1)));
+        } else {
+          const distanceCovered = lineDistance(
+            lineString(route.slice(0, nearestCoordinate + 1))
+          );
           phase = distanceCovered / routeDistance;
         }
 
@@ -1097,8 +1114,7 @@
       const tickElevation =
         altitudeMultiplier *
         (cameraBaseAltitude +
-          terrainElevationMultiplier *
-          Math.round(elevationEstimate));
+          terrainElevationMultiplier * Math.round(elevationEstimate));
 
       let alongTarget = along(
         lineString(route),
@@ -1145,11 +1161,21 @@
         currentLocation = alongTarget;
 
         // When you hit next feature group, adjust index
-        const closestCoordinatePathIndex = nearestPointOnLine(coordinatePathLineString, alongTarget).properties.index;
-        if (playbackSpeed > 0 && featureIndexes[activeFeatureIndex + 1] && closestCoordinatePathIndex >= featureIndexes[activeFeatureIndex + 1]) {
+        const closestCoordinatePathIndex = nearestPointOnLine(
+          coordinatePathLineString,
+          alongTarget
+        ).properties.index;
+        if (
+          playbackSpeed > 0 &&
+          featureIndexes[activeFeatureIndex + 1] &&
+          closestCoordinatePathIndex >= featureIndexes[activeFeatureIndex + 1]
+        ) {
           activeFeatureIndex += 1;
-        }
-        else if (playbackSpeed < 0 && featureIndexes[activeFeatureIndex] && closestCoordinatePathIndex < featureIndexes[activeFeatureIndex]) {
+        } else if (
+          playbackSpeed < 0 &&
+          featureIndexes[activeFeatureIndex] &&
+          closestCoordinatePathIndex < featureIndexes[activeFeatureIndex]
+        ) {
           activeFeatureIndex -= 1;
         }
       }
@@ -1289,13 +1315,13 @@
     playbackSpeed = 0;
     paused = true;
     suggestionModalActive = true;
-  }
+  };
 
   const hideSuggestionModal = () => {
     suggestionModalActive = false;
     playbackSpeed = 1;
     paused = false;
-  }
+  };
 
   $: coordinates.update(() => {
     if (mapBounds._sw) {
@@ -1322,7 +1348,14 @@
 <Prompt {vizState} {currentLocation} />
 <ContactBox {vizState} />
 
-<div class="left-column" style="z-index: {vizState === 'running' ? (suggestionModalActive ? 25 : 10) : -10};">
+<div
+  class="left-column"
+  style="z-index: {vizState === 'running'
+    ? suggestionModalActive
+      ? 25
+      : 10
+    : -10};"
+>
   <LocatorMap
     {bounds}
     {stateBoundaries}
