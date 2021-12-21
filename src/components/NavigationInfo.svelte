@@ -56,7 +56,7 @@
   };
 
   const showSuggestionModal = () => {
-    dispatch("show-suggestion-modal")
+    dispatch("show-suggestion-modal");
   };
 
   const setPhase = (featureIndex, coordinate) => {
@@ -204,13 +204,9 @@
       {/each}
     {/if}
   </div>
-  <div
-    style="display: {activeFeatureIndex >= 0 && vizState === 'running'
-      ? 'block'
-      : 'none'};"
-  >
+  {#if activeFeatureIndex >= 0 && vizState === "running"}
     <CloseButton on:abort-run />
-  </div>
+  {/if}
 
   <div
     class="pre-run-controls"
@@ -289,16 +285,25 @@
 </div>
 <div
   style="
-    display: {
-      screenWidth > 600 && featureGroups.map(({ name }) => name.toLowerCase().includes("unidentified")).some(d => d)
-        ? 'block'
-        : 'none'};
-    opacity: {vizState === "running" && activeFeatureIndex >= 0 ? 1 : 0};
-    cursor: {vizState === "running" && activeFeatureIndex >= 0 ? "pointer" : "default"};
-    z-index: {vizState === "running" && activeFeatureIndex >= 0 ? "unset" : -10};
+    display: {screenWidth > 600 &&
+  vizState === 'running' &&
+  featureGroups
+    .map(({ name }) => name.toLowerCase().includes('unidentified'))
+    .some((d) => d)
+    ? 'block'
+    : 'none'};
+    opacity: {vizState === 'running' && activeFeatureIndex >= 0 ? 1 : 0};
+    cursor: {vizState === 'running' && activeFeatureIndex >= 0
+    ? 'pointer'
+    : 'default'};
+    z-index: {vizState === 'running' && activeFeatureIndex >= 0
+    ? 'unset'
+    : -10};
     "
   class="name-suggestion-tooltip"
-  on:click={vizState === "running" && activeFeatureIndex >= 0 ? showSuggestionModal : () => {}}
+  on:click={vizState === "running" && activeFeatureIndex >= 0
+    ? showSuggestionModal
+    : () => {}}
 >
   Know one of these missing river names? Make a suggestion!
 </div>
