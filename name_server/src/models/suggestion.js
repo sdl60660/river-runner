@@ -9,6 +9,10 @@ const suggestionSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  "current_name": {
+    type: String,
+    required: true
+  },
   "timestamp": Number,
   "route_start": String,
   "has_existing_name": Boolean,
