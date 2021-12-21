@@ -21,3 +21,6 @@
 # This raw file is too big for the repo, but is a converted datafile (via mapshaper) to be used for stopping features
 # Original shapefile can be found here: https://hub.arcgis.com/datasets/esri::usa-detailed-water-bodies?geometry=167.943%2C22.299%2C-35.172%2C47.182
 # /data_processing/data/water_bodies.geojson
+
+package-lock.json
+*/package-lock.json
