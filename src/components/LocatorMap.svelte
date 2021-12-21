@@ -22,6 +22,7 @@
 
   export let featureGroups;
   export let activeFeatureIndex;
+  export let startCoordinates;
 
   export let suggestionModalActive;
 
@@ -34,6 +35,9 @@
 
   let marker = null;
   let markerEl;
+
+  let suggestionFormData = {};
+  let userEmail = "";
 
   $: containerWidth = width > 600 ? "26rem" : "100%";
   $: containerHeight = width > 600 ? "14rem" : "20vh";
@@ -53,23 +57,34 @@
   const dispatch = createEventDispatcher();
 
   const hideSuggestionModal = () => {
+    const suggestionData = Object.values(suggestionFormData)
+      .filter((item) => item.suggested_name !== item.current_name)
+      .map((data) => {
+        const suggestion = {
+          ...data,
+          route_start: JSON.stringify(startCoordinates),
+        };
+
+        if (userEmail !== "") {
+          suggestion.user_email = userEmail;
+        }
+
+        return suggestion;
+      });
+
     fetch(
       "https://river-runner-name-suggestions.herokuapp.com/api/suggestions",
       {
         method: "POST",
-        body: JSON.stringify([
-          {
-            nameid: 123454,
-            suggestioned_name: "Test",
-            route_start: "-92.2121,39.41231",
-            has_existing_name: false,
-            user_email: "learnersd@gmail.com",
-          },
-        ]),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(suggestionData),
       }
     );
 
     dispatch("hide-suggestion-modal");
+    suggestionFormData = {};
   };
 
   onMount(async () => {
@@ -285,6 +300,15 @@
     }
   };
 
+  const updateFormData = (event, currentName, nameid) => {
+    suggestionFormData[nameid] = {
+      nameid,
+      suggested_name: event.target.value,
+      current_name: currentName,
+      has_existing_name: !currentName.startsWith("Unidentified River"),
+    };
+  };
+
   $: visibleIndex = vizState === "running" ? 1 : null;
   $: if (riverPath && map) {
     drawFlowPath({ map, featureData: riverPath, sourceID: mainPathLayerID });
@@ -367,7 +391,10 @@
   {/if}
 
   {#if visibleIndex && suggestionModalActive}
-    <div class="suggestion-feature-list">
+    <form
+      class="suggestion-feature-list"
+      on:submit|preventDefault={hideSuggestionModal}
+    >
       <p class="instructions">
         The data this tool uses is incomplete! If you know the name(s) of any of
         the unidentified rivers, you can help by making suggestions in the boxes
@@ -384,13 +411,15 @@
             border: 3px solid {colorPalette[
               i % colorPalette.length
             ]} !important;
-          "
+            "
             on:mouseenter={() => {
               map.setPaintProperty(`active-path-${i}`, "line-width", 5);
             }}
             on:mouseleave={() => {
               map.setPaintProperty(`active-path-${i}`, "line-width", 1);
             }}
+            on:input={(e) =>
+              updateFormData(e, feature.name, feature.levelpathi)}
           />
         {/each}
       </div>
@@ -398,15 +427,17 @@
         type="text"
         placeholder="Your Email (optional)"
         id={"submitter-email"}
+        bind:value={userEmail}
       />
       <button
         class="submit-button"
+        type="submit"
         on:click={hideSuggestionModal}
         on:keydown={handleKeyDown}
       >
         Submit
       </button>
-    </div>
+    </form>
 
     <CloseButton callback={hideSuggestionModal} />
   {/if}

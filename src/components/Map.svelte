@@ -1331,6 +1331,7 @@
     {currentLocation}
     {vizState}
     {activeFeatureIndex}
+    {startCoordinates}
     {featureGroups}
     {suggestionModalActive}
     on:hide-suggestion-modal={hideSuggestionModal}
