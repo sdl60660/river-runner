@@ -1,5 +1,5 @@
 <script>
-  import resize from 'svelte-actions-resize';
+  import resize from "svelte-actions-resize";
   import { onMount, createEventDispatcher } from "svelte";
   import { mapbox } from "../mapbox.js";
   import { tick } from "svelte";
@@ -39,13 +39,22 @@
   $: containerHeight = width > 600 ? "14rem" : "20vh";
 
   const mainPathLayerID = "locator-path";
-  const colorPalette = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f"];
+  const colorPalette = [
+    "#1f77b4",
+    "#ff7f0e",
+    "#2ca02c",
+    "#d62728",
+    "#9467bd",
+    "#8c564b",
+    "#e377c2",
+    "#7f7f7f",
+  ];
 
   const dispatch = createEventDispatcher();
 
   const hideSuggestionModal = () => {
-    dispatch('hide-suggestion-modal');
-  }
+    dispatch("hide-suggestion-modal");
+  };
 
   onMount(async () => {
     await tick();
@@ -194,20 +203,16 @@
 
       const coordinateSet = lineString(riverPath[0].geometry.coordinates);
       map.fitBounds(bbox(coordinateSet), { animate: true, padding: 30 });
-      
-      map.once('moveend', () => {
-        map.setMaxBounds(map.getBounds())
+
+      map.once("moveend", () => {
+        map.setMaxBounds(map.getBounds());
       });
 
       if (suggestionModalActive) {
         map.scrollZoom.enable();
         map.dragPan.enable();
 
-        map.setLayoutProperty(
-          mainPathLayerID,
-          "visibility",
-          "none"
-        );
+        map.setLayoutProperty(mainPathLayerID, "visibility", "none");
 
         [...Array(featureGroups.length).keys()].forEach((previousIndex) => {
           map.setLayoutProperty(
@@ -222,22 +227,13 @@
             colorPalette[previousIndex % colorPalette.length]
           );
 
-          map.setPaintProperty(
-            `active-path-${previousIndex}`,
-            "line-width",
-            1
-          );
+          map.setPaintProperty(`active-path-${previousIndex}`, "line-width", 1);
         });
-      }
-      else {
+      } else {
         map.scrollZoom.disable();
         map.dragPan.disable();
 
-        map.setLayoutProperty(
-          mainPathLayerID,
-          "visibility",
-          "visible"
-        );
+        map.setLayoutProperty(mainPathLayerID, "visibility", "visible");
 
         [...Array(featureGroups.length).keys()].forEach((previousIndex) => {
           map.setPaintProperty(
@@ -246,11 +242,7 @@
             "yellow"
           );
 
-          map.setPaintProperty(
-            `active-path-${previousIndex}`,
-            "line-width",
-            2
-          );
+          map.setPaintProperty(`active-path-${previousIndex}`, "line-width", 2);
 
           map.setLayoutProperty(
             `active-path-${previousIndex}`,
@@ -266,13 +258,13 @@
         );
       }
     }
-  }
+  };
 
   const handleKeyDown = (event) => {
-		if (event.key === 'Escape') {
-			hideSuggestionModal();
-		}
-  }
+    if (event.key === "Escape") {
+      hideSuggestionModal();
+    }
+  };
 
   $: visibleIndex = vizState === "running" ? 1 : null;
   $: if (riverPath && map) {
@@ -343,13 +335,9 @@
   class="map"
   style="
     z-index: {visibleIndex ? (suggestionModalActive ? 50 : 10) : -10};
-    opacity: {!visibleIndex
-      ? 0.0
-      : width > 600
-      ? 0.9
-      : 1.0};
-    width: {suggestionModalActive ? "calc(100vw - 4rem)" : containerWidth};
-    height: {suggestionModalActive ? "calc(100vh - 4rem)" : containerHeight};
+    opacity: {!visibleIndex ? 0.0 : width > 600 ? 0.9 : 1.0};
+    width: {suggestionModalActive ? 'calc(100vw - 4rem)' : containerWidth};
+    height: {suggestionModalActive ? 'calc(100vh - 4rem)' : containerHeight};
     "
   bind:this={container}
   use:resize
@@ -360,10 +348,11 @@
   {/if}
 
   {#if visibleIndex && suggestionModalActive}
-    <div
-      class="suggestion-feature-list"
-    >
-      <p class="instructions">A succinct explaination of why we're crowdsourcing and instructions goes here</p>
+    <div class="suggestion-feature-list" on:keyup={(e) => console.log(e.key)}>
+      <p class="instructions">
+        A succinct explaination of why we're crowdsourcing and instructions goes
+        here
+      </p>
       {#each featureGroups as feature, i}
         <input
           type="text"
@@ -371,27 +360,21 @@
           id={feature.levelpathi}
           class="suggestion-feature"
           style="
-            border: 3px solid {colorPalette[i % colorPalette.length]} !important;
+            border: 3px solid {colorPalette[
+            i % colorPalette.length
+          ]} !important;
           "
           on:mouseenter={() => {
-            map.setPaintProperty(
-              `active-path-${i}`,
-              "line-width",
-              5
-            );
+            map.setPaintProperty(`active-path-${i}`, "line-width", 5);
           }}
           on:mouseleave={() => {
-            map.setPaintProperty(
-              `active-path-${i}`,
-              "line-width",
-              1
-            );
+            map.setPaintProperty(`active-path-${i}`, "line-width", 1);
           }}
         />
       {/each}
     </div>
 
-    <CloseButton callback={hideSuggestionModal}/>
+    <CloseButton callback={hideSuggestionModal} />
   {/if}
 </div>
 
@@ -437,14 +420,15 @@
   }
 
   .suggestion-feature {
-    width: 220px;
+    width: 100%;
+    box-sizing: border-box;
     font-size: 0.9rem;
   }
 
   .instructions {
     font-size: 0.9rem;
     background-color: white;
-    max-width: 204px;
+    max-width: 250px;
     padding: 8px;
     border-radius: 2px;
     line-height: 1.25;
