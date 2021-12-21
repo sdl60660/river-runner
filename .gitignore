@@ -1,4 +1,6 @@
 /node_modules/
+/name_server/node_modules
+/name_server/.env
 /public/build/
 
 .DS_Store
