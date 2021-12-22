@@ -59,7 +59,5 @@
     "topojson-client": "^3.1.0",
     "topojson-server": "^3.0.1"
   },
-  "engines": {
-    "node": "16.5.0"
-  }
+  "engines": { "node": "14.x" }
 }
