@@ -53,6 +53,7 @@
   export let mapStyle;
   export let addTopo;
   export let advancedFeaturesOn;
+  export let nameOverrides;
 
   const urlParams = new URLSearchParams(window.location.search);
   let startingSearch = urlParams.has("lat")
@@ -619,11 +620,14 @@
           flowlinesData.features = flowlinesData.features.sort(
             (a, b) => b.properties.hydroseq - a.properties.hydroseq
           );
+
           flowlinesData.features.forEach((feature) => {
             feature.properties.feature_name =
               feature.properties.nameid === "unknown"
-                ? `Unidentified River ${feature.properties.levelpathi}`
+                ? nameOverrides[feature.properties.levelpathi]?.feature_name ||
+                  `Unidentified River ${feature.properties.levelpathi}`
                 : feature.properties.nameid;
+
             feature.properties.feature_id =
               feature.properties.nameid === "unknown"
                 ? feature.properties.levelpathi

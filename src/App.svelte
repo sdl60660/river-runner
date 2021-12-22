@@ -9,6 +9,7 @@
     d3.json("data/us_states.json"),
     d3.json("data/global_stopping_features.json"),
     d3.json("data/active_nwis_sites.json"),
+    d3.json("data/name_overrides.json"),
   ];
 
   const dataLoad = Promise.all(dataFilePromises).then(async (data) => {
@@ -19,8 +20,9 @@
     ).features;
 
     const activeNWISSites = data[2].sites;
+    const nameOverrides = data[3];
 
-    return [states, stoppingFeatures, activeNWISSites];
+    return [states, stoppingFeatures, activeNWISSites, nameOverrides];
   });
 </script>
 
@@ -35,6 +37,7 @@
     stateBoundaries={data[0]}
     stoppingFeatures={data[1]}
     activeNWISSites={data[2]}
+    nameOverrides={data[3]}
     visibleIndex={1}
     addTopo={true}
     mapStyle={"mapbox://styles/mapbox-map-design/ckhqrf2tz0dt119ny6azh975y"}
