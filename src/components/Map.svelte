@@ -42,6 +42,8 @@
     calculatePitch,
     pathDistance,
     findArtificialCameraPoint,
+    getFeaturesOnRoute,
+    assignParentFeatureNames,
   } from "./utils/geoUtils";
 
   export let bounds;
@@ -621,20 +623,19 @@
             (a, b) => b.properties.hydroseq - a.properties.hydroseq
           );
 
-          flowlinesData.features.forEach((feature) => {
-            feature.properties.feature_name =
-              feature.properties.nameid === "unknown"
-                ? nameOverrides[feature.properties.levelpathi]?.feature_name ||
-                  `Unidentified River ${feature.properties.levelpathi}`
-                : feature.properties.nameid;
+          const inlandFeatures = getFeaturesOnRoute(
+            stoppingFeatures,
+            flowlinesData.features
+          );
 
-            feature.properties.feature_id =
-              feature.properties.nameid === "unknown"
-                ? feature.properties.levelpathi
-                : feature.properties.nameid;
-          });
+          flowlinesData.features = assignParentFeatureNames(
+            flowlinesData.features,
+            nameOverrides,
+            inlandFeatures
+          );
         }
-      } catch {
+      } catch (e) {
+        console.error(e);
         console.log(
           `Error while rounding coordinates to ${roundingDigits} digits. Trying again with less precise coordinates.`
         );
@@ -762,6 +763,7 @@
 
         if (
           sandwichOccurence > 0 &&
+          featureData.properties.sandwich_override !== true &&
           surroundingFeatureData.properties.streamlev ===
             featureData.properties.streamlev
         ) {

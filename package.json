@@ -27,6 +27,7 @@
     "@rollup/plugin-json": "^4.1.0",
     "@turf/along": "^6.3.0",
     "@turf/bbox": "^6.5.0",
+    "@turf/bbox-polygon": "^6.5.0",
     "@turf/bearing": "^6.3.0",
     "@turf/boolean-point-in-polygon": "^6.3.0",
     "@turf/buffer": "^6.3.0",
@@ -35,12 +36,14 @@
     "@turf/destination": "^6.3.0",
     "@turf/distance": "^6.3.0",
     "@turf/helpers": "^6.3.0",
+    "@turf/intersect": "^6.5.0",
     "@turf/length": "^6.3.0",
     "@turf/line-distance": "^4.7.3",
     "@turf/line-offset": "^6.3.0",
     "@turf/line-split": "^6.5.0",
     "@turf/nearest-point-on-line": "^6.5.0",
     "@turf/point-to-line-distance": "^6.3.0",
+    "@turf/points-within-polygon": "^6.5.0",
     "@turf/polygon-to-line": "^6.3.0",
     "d3": "^6.7.0",
     "d3-fetch": "^2.0.0",
@@ -59,5 +62,7 @@
     "topojson-client": "^3.1.0",
     "topojson-server": "^3.0.1"
   },
-  "engines": { "node": "14.x" }
+  "engines": {
+    "node": "14.x"
+  }
 }
