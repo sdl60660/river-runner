@@ -10,7 +10,7 @@
   import nearestPointOnLine from "@turf/nearest-point-on-line";
   import lineDistance from "@turf/line-distance";
 
-  import { distanceToPolygon, getDataBounds } from "../utils";
+  import { distanceToPolygon, getDataBounds, sleep } from "../utils";
   import { coordinates, stoppingFeature } from "../state";
 
   import Prompt from "./Prompt.svelte";
@@ -328,6 +328,7 @@
       map.flyTo({
         center: e.lngLat,
         speed: 0.9,
+        zoom: 4,
       });
 
       map.once("moveend", () => {
@@ -411,11 +412,27 @@
       Math.min(coordinatePath.length / 4 - 1, 100)
     );
 
-    let elevations = getElevationsMapQuery(
-      coordinatePath,
-      map,
-      elevationArrayStep
-    );
+    // Sometimes while 3D tiles are still loading, the queryTerrainElevation method doesn't hit,
+    // so we'll give it a few attempts with a delay in between before falling back on a method that doesn't
+    // account for exaggeration and will lead to some disjointedness
+    let elevations = null;
+    let attempts = 0;
+
+    while (
+      attempts < 10 &&
+      (elevations === null || elevations.every((d) => d === null))
+    ) {
+      await sleep(200);
+
+      elevations = await getElevationsMapQuery(
+        coordinatePath,
+        map,
+        elevationArrayStep
+      );
+
+      attempts += 1;
+    }
+
     if (elevations.includes(null)) {
       elevations = await getElevations(coordinatePath, elevationArrayStep);
     }
