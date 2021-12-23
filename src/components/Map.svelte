@@ -717,6 +717,10 @@
       closestFeature.properties.stop_feature_type !== "ocean"
     ) {
       return "Inland Water Feature";
+    } else if (
+      closestFeature.properties.stop_feature_name === "Saint Lawrence River"
+    ) {
+      return "Gulf of Saint Lawrence";
     } else {
       return closestFeature.properties.stop_feature_name;
     }
@@ -1179,7 +1183,7 @@
         };
       }
 
-      if (tick % 5 === 0) {
+      if (tick % 3 === 0) {
         // This will update the location of the marker on the locator map
         currentLocation = alongTarget;
 
@@ -1202,6 +1206,7 @@
           activeFeatureIndex -= 1;
         }
       }
+
       tick += 1;
 
       window.requestAnimationFrame(frame);
