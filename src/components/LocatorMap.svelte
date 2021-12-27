@@ -107,7 +107,6 @@
       });
 
       map.fitBounds(bounds, { animate: false, padding: 30 });
-      //   map.setMaxBounds(map.getBounds());
 
       map.on("load", () => {
         drawStateBoundaries({ map, stateBoundaries });
@@ -321,11 +320,7 @@
   }
   $: if (map && riverPath) {
     const coordinateSet = lineString(riverPath[0].geometry.coordinates);
-    map.fitBounds(bbox(coordinateSet), { animate: false, padding: 30 });
-
-    if (map.getZoom() > maxZoom) {
-      map.setZoom(maxZoom);
-    }
+    map.fitBounds(bbox(coordinateSet), { animate: false, padding: 30, maxZoom });
   }
 
   $: if (featureGroups.length > 0) {

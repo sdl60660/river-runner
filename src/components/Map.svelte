@@ -603,7 +603,7 @@
       try {
         const roundedLng = e.lngLat.lng.toFixed(roundingDigits);
         const roundedLat = e.lngLat.lat.toFixed(roundingDigits);
-        const iowURL = `https://merit.internetofwater.app/processes/river-runner/execution?lng=${roundedLng}&lat=${roundedLat}`;
+        const iowURL = `https://merit.internetofwater.app/processes/river-runner/execution?lng=${roundedLng}&lat=${roundedLat}&properties=comid,nameid,pathlength,levelpathi,streamlev,riverid,hydroseq`;
 
         const flowlinesResponse = await fetch(iowURL, {
           method: "GET",
