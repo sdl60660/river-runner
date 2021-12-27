@@ -767,7 +767,7 @@
 
         if (
           sandwichOccurence > 0 &&
-          featureData.properties.sandwich_override !== true &&
+          featureData.properties.renamed_inland !== true &&
           surroundingFeatureData.properties.streamlev ===
             featureData.properties.streamlev
         ) {

@@ -138,9 +138,29 @@ export const assignParentFeatureNames = (flowlines, nameOverrides, inlandFeature
 
             correspondingFlowline.properties.feature_name = inlandPolygon.properties.stop_feature_name;
             correspondingFlowline.properties.feature_id = inlandPolygon.properties.stop_feature_name;
-            correspondingFlowline.properties.sandwich_override = true;
+            correspondingFlowline.properties.renamed_inland = true;
         });
     });
 
-    return Object.values(mappedFlowlines).sort((a, b) => b.properties.hydroseq - a.properties.hydroseq);
+    const namedFlowlines = Object.values(mappedFlowlines).sort((a, b) => b.properties.hydroseq - a.properties.hydroseq);
+    
+    // If some, but less than four of the final flowlines have been renamed with the stopping feature,
+    // this is probably a stub at the end (e.g. Gulf of Mexico (0km) on some Louisiana paths) and
+    // we should rename it with the last non-stopping feature
+    const copyFlowline = namedFlowlines[namedFlowlines.length - 4];
+    const finalFlowline = namedFlowlines[namedFlowlines.length - 1];
+    if (
+        finalFlowline.properties.renamed_inland === true
+        && finalFlowline.properties.feature_name !== copyFlowline.properties.feature_name
+    ) {
+        namedFlowlines.slice(-3).forEach((d, i) => {
+            if (d.properties.renamed_inland && d.properties.feature_name === finalFlowline.properties.feature_name) {
+                d.properties.renamed_inland = copyFlowline.properties.renamed_inland;
+                d.properties.feature_id = copyFlowline.properties.feature_id;
+                d.properties.feature_name = copyFlowline.properties.feature_name;
+            }
+        })
+    }
+
+    return namedFlowlines;
 }
