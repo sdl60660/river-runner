@@ -321,12 +321,16 @@
   $: if (map && riverPath) {
     const coordinateSet = lineString(riverPath[0].geometry.coordinates);
     map.setMaxBounds(null);
-    map.fitBounds(bbox(coordinateSet), { animate: false, padding: 30, maxZoom });
+    map.fitBounds(bbox(coordinateSet), {
+      animate: false,
+      padding: 30,
+      maxZoom,
+    });
   }
 
   $: if (featureGroups.length > 0) {
     // Remove any possible lingering layers from a previous path
-    [...Array(15).keys()].forEach((index) => {
+    [...Array(20).keys()].forEach((index) => {
       removeLayer(`active-path-${index}`);
     });
 
