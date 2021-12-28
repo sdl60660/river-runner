@@ -164,11 +164,11 @@
     margin: auto;
   }
 
-  .slow-button {
+  /* .slow-button {
     height: 1rem;
     width: 1rem;
     position: absolute;
-  }
+  } */
 
   .skip-back-button,
   .skip-forward-button {
@@ -176,9 +176,9 @@
   }
 
   @media only screen and (max-width: 600px) {
-    .slow-button {
+    /* .slow-button {
       display: none;
-    }
+    } */
 
     .detail-speed-slider {
       display: none;
