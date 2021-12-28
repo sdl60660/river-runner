@@ -137,20 +137,18 @@ export const assignParentFeatureNames = (flowlines, nameOverrides, inlandFeature
         const { nameid, levelpathi } = feature.properties;
 
         if (nameid === "unknown") {
-            const overrideEntry = nameOverrides[levelpathi];
-
-            if (overrideEntry) {
-                feature.properties.feature_name = overrideEntry.feature_name;
-                feature.properties.feature_id = overrideEntry.feature_name; 
-            }
-            else {
-                feature.properties.feature_name = `Unidentified River ${feature.properties.levelpathi}`;
-                feature.properties.feature_id = levelpathi;
-            }
+            feature.properties.feature_name = `Unidentified River ${feature.properties.levelpathi}`;
+            feature.properties.feature_id = levelpathi;
         }
         else {
             feature.properties.feature_name = nameid
             feature.properties.feature_id = nameid;
+        }
+
+        const overrideEntry = nameOverrides[levelpathi];
+        if (overrideEntry) {
+            feature.properties.feature_name = overrideEntry.feature_name;
+            feature.properties.feature_id = overrideEntry.feature_name; 
         }
     });
 
