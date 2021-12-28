@@ -109,8 +109,10 @@ export const getFeaturesOnRoute = (stoppingFeatures, flowlines) => {
 
 const correctInterruptingLakes = (namedFlowlines) => {
     // Take a dynamic programming approach, instead of a functional one to save an extra layer of iterations
-    let lastFeature = null;
+    let lastFeatureId = null;
+    let lastFeatureName = null;
     let currentFeature = null;
+    
     namedFlowlines.forEach((flowline, i) => {
         const lastFlowline = namedFlowlines[i-1];
 
@@ -118,14 +120,15 @@ const correctInterruptingLakes = (namedFlowlines) => {
             && lastFlowline
             && lastFlowline.properties.renamed_inland !== true
         ) {
-            lastFeature = lastFlowline.properties.feature_id;
+            lastFeatureId = lastFlowline.properties.feature_id;
+            lastFeatureName = lastFlowline.properties.feature_name;
         }
         else if (flowline.properties.renamed_inland !== true
-            && flowline.properties.feature_id === lastFeature
+            && flowline.properties.feature_name === lastFeatureName
             && ((lastFlowline && lastFlowline.properties.renamed_inland === true) || flowline.properties.feature_id === currentFeature)
         ) {
             currentFeature = flowline.properties.feature_id;
-            flowline.properties.feature_id = flowline.properties.feature_id + '-copy';
+            flowline.properties.feature_id = lastFeatureId + '-copy';
         }
     })
 
