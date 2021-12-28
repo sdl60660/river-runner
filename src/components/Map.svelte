@@ -733,9 +733,11 @@
     const featureNames = featurePoints.map(
       (feature) => feature.properties.feature_id
     );
+
     let uniqueFeatureNames = featureNames.filter(
       (item, i, ar) => ar.indexOf(item) === i
     );
+
     const fullDistance = flowlinesData.features[0].properties.pathlength;
 
     // This fixes a rare, but frustrating bug, where because I don't sample each flowline for VAA data, and because...

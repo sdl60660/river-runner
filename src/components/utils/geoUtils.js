@@ -107,6 +107,31 @@ export const getFeaturesOnRoute = (stoppingFeatures, flowlines) => {
     });
 }
 
+const correctInterruptingLakes = (namedFlowlines) => {
+    // Take a dynamic programming approach, instead of a functional one to save an extra layer of iterations
+    let lastFeature = null;
+    let currentFeature = null;
+    namedFlowlines.forEach((flowline, i) => {
+        const lastFlowline = namedFlowlines[i-1];
+
+        if (flowline.properties.renamed_inland === true
+            && lastFlowline
+            && lastFlowline.properties.renamed_inland !== true
+        ) {
+            lastFeature = lastFlowline.properties.feature_id;
+        }
+        else if (flowline.properties.renamed_inland !== true
+            && flowline.properties.feature_id === lastFeature
+            && ((lastFlowline && lastFlowline.properties.renamed_inland === true) || flowline.properties.feature_id === currentFeature)
+        ) {
+            currentFeature = flowline.properties.feature_id;
+            flowline.properties.feature_id = flowline.properties.feature_id + '-copy';
+        }
+    })
+
+    return namedFlowlines;
+}
+
 export const assignParentFeatureNames = (flowlines, nameOverrides, inlandFeatures) => {
     flowlines.forEach((feature) => {
         const { nameid, levelpathi } = feature.properties;
@@ -160,7 +185,11 @@ export const assignParentFeatureNames = (flowlines, nameOverrides, inlandFeature
                 d.properties.feature_name = copyFlowline.properties.feature_name;
             }
         })
-    }
+    };
 
-    return namedFlowlines;
+    // This corrects for instances of river1 -> lake -> river1, by assigning a new, unique "copy" id
+    // to the next instance of a river so that it will be represented in the unique features array later on
+    const correctedNamedFlowlines = correctInterruptingLakes(namedFlowlines);
+
+    return correctedNamedFlowlines;
 }
