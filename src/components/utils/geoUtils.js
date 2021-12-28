@@ -180,7 +180,7 @@ export const assignParentFeatureNames = (flowlines, nameOverrides, inlandFeature
     // If some, but less than four of the final flowlines have been renamed with the stopping feature,
     // this is probably a stub at the end (e.g. Gulf of Mexico (0km) on some Louisiana paths) and
     // we should rename it with the last non-stopping feature
-    const copyFlowline = namedFlowlines[namedFlowlines.length - 4];
+    const copyFlowline = namedFlowlines.slice(-4)[0];
     const finalFlowline = namedFlowlines[namedFlowlines.length - 1];
     if (
         finalFlowline.properties.renamed_inland === true

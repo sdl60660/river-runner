@@ -738,6 +738,8 @@
       (item, i, ar) => ar.indexOf(item) === i
     );
 
+    console.log({ featureNames, uniqueFeatureNames });
+
     const fullDistance = flowlinesData.features[0].properties.pathlength;
 
     // This fixes a rare, but frustrating bug, where because I don't sample each flowline for VAA data, and because...

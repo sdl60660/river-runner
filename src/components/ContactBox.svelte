@@ -44,29 +44,39 @@
         >here</a
       >.
     </p>
+    <p>
+      This version of the app is in beta. Report any issues you experience <a
+        rel="noreferrer"
+        target="_blank"
+        href="https://forms.gle/p67Z2fSSZp7GbVr6A">here</a
+      >.
+    </p>
   {:else}
     <strong
-      >Visualization by <a
+      >Project by <a
         target="_blank"
-        href="https://bit.ly/main-project-site">Sam Learner</a
-      ></strong
-    >
-    |
-    <a target="_blank" href="https://twitter.com/sam_learner"
-      ><img class="icon-img" src="/images/twitter.svg" alt="twitter link" /></a
-    >
-    |
-    <a target="_blank" href="mailto:learnersd@gmail.com"
-      ><img class="icon-img" src="/images/email.svg" alt="email link" /></a
-    >
-    |
-    <a target="_blank" href="https://github.com/sdl60660"
-      ><img class="icon-img" src="/images/github.svg" alt="github link" /></a
+        href="https://bit.ly/main-project-site"
+        rel="noreferrer"
+      >
+        Sam Learner
+      </a></strong
     >
     | Data:
-    <a href="https://ksonda.github.io/global-river-runner/" target="_blank"
-      >USGS/IoW</a
-    >.
+    <a
+      href="https://ksonda.github.io/global-river-runner/"
+      target="_blank"
+      rel="noreferrer"
+    >
+      USGS/IoW
+    </a>
+    |
+    <a
+      rel="noreferrer"
+      target="_blank"
+      href="https://forms.gle/p67Z2fSSZp7GbVr6A"
+    >
+      Report Issues
+    </a>
   {/if}
 </div>
 
