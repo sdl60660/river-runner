@@ -320,6 +320,7 @@
   }
   $: if (map && riverPath) {
     const coordinateSet = lineString(riverPath[0].geometry.coordinates);
+    map.setMaxBounds(null);
     map.fitBounds(bbox(coordinateSet), { animate: false, padding: 30, maxZoom });
   }
 
