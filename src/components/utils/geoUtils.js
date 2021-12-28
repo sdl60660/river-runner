@@ -145,7 +145,7 @@ export const assignParentFeatureNames = (flowlines, nameOverrides, inlandFeature
             feature.properties.feature_id = nameid;
         }
 
-        const overrideEntry = nameOverrides[levelpathi.toString()];
+        const overrideEntry = nameOverrides[levelpathi];
         if (overrideEntry) {
             feature.properties.feature_name = overrideEntry.feature_name;
             feature.properties.feature_id = overrideEntry.feature_name; 
