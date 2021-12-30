@@ -175,7 +175,7 @@
     display: none;
   }
 
-  @media only screen and (max-width: 600px) {
+  @media only screen and (max-width: 700px) {
     /* .slow-button {
       display: none;
     } */
@@ -229,7 +229,7 @@
   }
 
   /* Tablet */
-  @media only screen and (min-width: 601px) and (max-width: 1100px) {
+  @media only screen and (min-width: 701px) and (max-width: 1100px) {
     .wrapper {
       margin-top: auto;
     }

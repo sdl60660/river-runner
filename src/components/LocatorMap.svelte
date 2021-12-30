@@ -39,8 +39,8 @@
   let suggestionFormData = {};
   let userEmail = "";
 
-  $: containerWidth = width > 600 ? "26rem" : "100%";
-  $: containerHeight = width > 600 ? "14rem" : "20vh";
+  $: containerWidth = width > 700 ? "26rem" : "100%";
+  $: containerHeight = width > 700 ? "14rem" : "20vh";
 
   const mainPathLayerID = "locator-path";
   const colorPalette = [
@@ -379,7 +379,7 @@
   class="map"
   style="
     z-index: {visibleIndex ? (suggestionModalActive ? 50 : 10) : -10};
-    opacity: {!visibleIndex ? 0.0 : width > 600 ? 0.9 : 1.0};
+    opacity: {!visibleIndex ? 0.0 : width > 700 ? 0.9 : 1.0};
     width: {suggestionModalActive ? 'calc(100vw - 4rem)' : containerWidth};
     height: {suggestionModalActive ? 'calc(100vh - 4rem)' : containerHeight};
     "
@@ -448,7 +448,7 @@
   class="marker"
   style="z-index: {visibleIndex ? 10 : -10}; opacity: {!visibleIndex
     ? 0.0
-    : width > 600
+    : width > 700
     ? 0.9
     : 1.0};"
   bind:this={markerEl}
@@ -526,7 +526,7 @@
   }
 
   /* Mobile */
-  @media only screen and (max-width: 600px) {
+  @media only screen and (max-width: 700px) {
     .map {
       position: absolute;
       width: 100%;
@@ -539,7 +539,7 @@
   }
 
   /* Keyboard open */
-  @media only screen and (max-width: 600px) and (max-height: 400px) {
+  @media only screen and (max-width: 700px) and (max-height: 400px) {
     .map {
       opacity: 0 !important;
       z-index: -100;
@@ -547,7 +547,7 @@
   }
 
   /* Tablet */
-  @media only screen and (min-width: 601px) and (max-width: 1100px) {
+  @media only screen and (min-width: 701px) and (max-width: 1100px) {
     .map {
       width: 20.4rem;
       height: 11rem;

@@ -7,7 +7,7 @@
   export let bannerVisible;
 
   let loading = false;
-  let eventActionName = window.innerWidth > 600 ? "Click" : "Tap";
+  let eventActionName = window.innerWidth > 700 ? "Click" : "Tap";
   let message = `${eventActionName} to drop a raindrop anywhere in the world and watch where it ends up`;
 
   $: if (currentLocation?.lat && message !== "") {
@@ -19,7 +19,7 @@
     loading = false;
   } else if (vizState === "overview") {
     message =
-      window.innerWidth > 600
+      window.innerWidth > 700
         ? ""
         : "Run the path again, copy a link to share, or exit and try another path using the buttons below.";
     loading = false;
@@ -90,7 +90,7 @@
   <div
     style="display:{vizState === 'uninitialized' &&
     loading === false &&
-    window.innerWidth > 600
+    window.innerWidth > 700
       ? 'block'
       : 'none'};"
     class="scroll-helper"
@@ -140,7 +140,7 @@
   }
 
   /* Mobile */
-  @media only screen and (max-width: 600px) {
+  @media only screen and (max-width: 700px) {
     .scroll-helper {
       display: none;
     }
@@ -170,7 +170,7 @@
   }
 
   /* Keyboard open */
-  @media only screen and (max-width: 600px) and (max-height: 400px) {
+  @media only screen and (max-width: 700px) and (max-height: 400px) {
     .message-box {
       opacity: 0 !important;
       z-index: -100;
@@ -178,7 +178,7 @@
   }
 
   /* Tablet */
-  @media only screen and (min-width: 601px) and (max-width: 1100px) {
+  @media only screen and (min-width: 701px) and (max-width: 1100px) {
     .wrapper {
       top: 1.5rem;
       transform: translateX(-85%);

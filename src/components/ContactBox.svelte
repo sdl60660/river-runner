@@ -3,12 +3,12 @@
 </script>
 
 <div
-  style="display: {vizState === 'running' && window.innerWidth > 600
+  style="display: {vizState === 'running' && window.innerWidth > 700
     ? 'none'
     : 'block'};"
   class={"contact-box"}
 >
-  {#if window.innerWidth > 600}
+  {#if window.innerWidth > 700}
     <p>
       <strong
         >Visualization by <a
@@ -127,7 +127,13 @@
     color: rgb(50, 133, 216);
   }
 
-  @media only screen and (max-width: 600px) {
+  @media only screen and (max-width: 1000px) and (min-width: 701px) {
+    .contact-box {
+      font-size: 0.82rem;
+    }
+  }
+
+  @media only screen and (max-width: 700px) {
     .contact-box {
       box-sizing: border-box;
       border-radius: 0;

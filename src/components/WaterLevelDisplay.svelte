@@ -607,7 +607,7 @@
         outline: 0;
     }
 
-    @media only screen and (max-width: 600px) {
+    @media only screen and (max-width: 700px) {
         div {
             display: none;
         }

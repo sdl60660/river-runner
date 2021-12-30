@@ -103,7 +103,7 @@
   class="navbox-wrapper"
   style={`display: ${
     visible === true &&
-    (screenWidth > 600 ||
+    (screenWidth > 700 ||
       vizState === "overview" ||
       (activeFeatureIndex >= 0 && featureGroups))
       ? "block"
@@ -112,19 +112,19 @@
 >
   <div
     class="total-length"
-    style="display: {screenWidth > 600 && totalLength ? 'block' : 'none'}"
+    style="display: {screenWidth > 700 && totalLength ? 'block' : 'none'}"
   >
     Total Length: {Math.round(totalLength)} km
   </div>
 
   <div
     class="info-box"
-    style="display: {screenWidth <= 600 && vizState === 'overview'
+    style="display: {screenWidth <= 700 && vizState === 'overview'
       ? 'none'
       : 'block'}"
   >
     <!-- Desktop/Tablet -->
-    {#if screenWidth > 600}
+    {#if screenWidth > 700}
       <div class="feature-listing bounding-location">
         {currentStartLocation}
       </div>
@@ -286,7 +286,7 @@
 </div>
 <div
   style="
-    display: {screenWidth > 600 &&
+    display: {screenWidth > 700 &&
   vizState === 'running' &&
   featureGroups
     .map(({ name }) => name.toLowerCase().includes('unidentified'))
@@ -489,7 +489,7 @@
   }
 
   /* Mobile */
-  @media only screen and (max-width: 600px) {
+  @media only screen and (max-width: 700px) {
     .pre-run-controls {
       display: none;
     }
@@ -530,7 +530,7 @@
   }
 
   /* Tablet */
-  @media only screen and (min-width: 601px) and (max-width: 1100px) {
+  @media only screen and (min-width: 701px) and (max-width: 1100px) {
     .navbox-wrapper {
       /* right: 3rem; */
     }
