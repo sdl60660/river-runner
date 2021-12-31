@@ -1183,15 +1183,16 @@
         };
       }
 
-      if (tick % 3 === 0) {
-        // This will update the location of the marker on the locator map
-        currentLocation = alongTarget;
-
-        // When you hit next feature group, adjust index
+      if (tick % 8 === 0) {
         const closestCoordinatePathIndex = nearestPointOnLine(
           coordinatePathLineString,
           alongTarget
         ).properties.index;
+
+        // This will update the location of the marker on the locator map
+        currentLocation = coordinatePath[closestCoordinatePathIndex];
+
+        // When you hit next feature group, adjust index
         if (
           playbackSpeed > 0 &&
           featureIndexes[activeFeatureIndex + 1] &&

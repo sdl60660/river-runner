@@ -233,7 +233,11 @@
       map.resize();
 
       const coordinateSet = lineString(riverPath[0].geometry.coordinates);
-      map.fitBounds(bbox(coordinateSet), { animate: true, padding: 30 });
+      const boundProps = { animate: true, padding: 30 };
+      if (suggestionModalActive === false) {
+        boundProps.maxZoom = maxZoom
+      };
+      map.fitBounds(bbox(coordinateSet), boundProps);
 
       map.once("moveend", () => {
         map.setMaxBounds(map.getBounds());
