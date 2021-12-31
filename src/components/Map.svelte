@@ -711,6 +711,12 @@
       }
     });
 
+    const stopFeatureNameOverrides = {
+      "Saint Lawrence River": "Gulf of Saint Lawrence",
+      "Yangtze": "East China Sea"
+    };
+    const stopFeatureName = closestFeature.properties.stop_feature_name;
+
     // If the closest feature in the stop feature set is more than 10 km away, this is landing on an unidentified inland water feature
     if (
       minDistance > 10000 &&
@@ -718,9 +724,9 @@
     ) {
       return "Inland Water Feature";
     } else if (
-      closestFeature.properties.stop_feature_name === "Saint Lawrence River"
+      Object.keys(stopFeatureNameOverrides).includes(stopFeatureName)
     ) {
-      return "Gulf of Saint Lawrence";
+      return stopFeatureNameOverrides[stopFeatureName];
     } else {
       return closestFeature.properties.stop_feature_name;
     }
