@@ -112,6 +112,8 @@ const correctInterruptingLakes = (namedFlowlines) => {
     let lastFeatureId = null;
     let lastFeatureName = null;
     let currentFeature = null;
+
+    // console.log('here1', namedFlowlines.map(d => d.properties.feature_id));
     
     namedFlowlines.forEach((flowline, i) => {
         const lastFlowline = namedFlowlines[i-1];
@@ -130,7 +132,9 @@ const correctInterruptingLakes = (namedFlowlines) => {
             currentFeature = flowline.properties.feature_id;
             flowline.properties.feature_id = lastFeatureId + '-copy';
         }
-    })
+    });
+
+    // console.log('here2', namedFlowlines.map(d => d.properties.feature_id));
 
     return namedFlowlines;
 }
@@ -165,12 +169,13 @@ export const assignParentFeatureNames = (flowlines, nameOverrides, inlandFeature
 
     inlandFeaturePolygons.forEach(inlandPolygon => {
         const pointsWithin = pointsWithinPolygon(flowlineStartingPoints, inlandPolygon);
+        const featureName = inlandPolygon.properties.stop_feature_name === "" ? "Inland Water Feature" : inlandPolygon.properties.stop_feature_name;
         
         pointsWithin.features.forEach(intersectingPoint => {
             const correspondingFlowline = mappedFlowlines[intersectingPoint.properties.comid];
 
-            correspondingFlowline.properties.feature_name = inlandPolygon.properties.stop_feature_name;
-            correspondingFlowline.properties.feature_id = inlandPolygon.properties.stop_feature_name;
+            correspondingFlowline.properties.feature_name = featureName;
+            correspondingFlowline.properties.feature_id = featureName;
             correspondingFlowline.properties.renamed_inland = true;
         });
     });

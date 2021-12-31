@@ -738,10 +738,6 @@
       (item, i, ar) => ar.indexOf(item) === i
     );
 
-    console.log({ featureNames, uniqueFeatureNames });
-
-    const fullDistance = flowlinesData.features[0].properties.pathlength;
-
     // This fixes a rare, but frustrating bug, where because I don't sample each flowline for VAA data, and because...
     // I assume once a feature starts that it continues until the next unique feature, this function gets confused by...
     // Long rivers sandwiching small unnames features, like the snake river in Idaho, and thinks that the small feature interruption
