@@ -112,8 +112,6 @@ const correctInterruptingLakes = (namedFlowlines) => {
     let lastFeatureId = null;
     let lastFeatureName = null;
     let currentFeature = null;
-
-    // console.log('here1', namedFlowlines.map(d => d.properties.feature_id));
     
     namedFlowlines.forEach((flowline, i) => {
         const lastFlowline = namedFlowlines[i-1];
@@ -133,8 +131,6 @@ const correctInterruptingLakes = (namedFlowlines) => {
             flowline.properties.feature_id = lastFeatureId + '-copy';
         }
     });
-
-    // console.log('here2', namedFlowlines.map(d => d.properties.feature_id));
 
     return namedFlowlines;
 }
