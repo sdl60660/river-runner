@@ -169,7 +169,9 @@ export const assignParentFeatureNames = (flowlines, nameOverrides, inlandFeature
 
     inlandFeaturePolygons.forEach(inlandPolygon => {
         const pointsWithin = pointsWithinPolygon(flowlineStartingPoints, inlandPolygon);
-        const featureName = inlandPolygon.properties.stop_feature_name === "" ? "Inland Water Feature" : inlandPolygon.properties.stop_feature_name;
+
+        const properties = inlandPolygon.properties;
+        const featureName = properties.stop_feature_name === "" ? `Inland Water Feature ${properties.id}` : properties.stop_feature_name;
         
         pointsWithin.features.forEach(intersectingPoint => {
             const correspondingFlowline = mappedFlowlines[intersectingPoint.properties.comid];
