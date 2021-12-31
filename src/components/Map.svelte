@@ -1100,7 +1100,6 @@
           );
           phase = distanceCovered / routeDistance;
         }
-
         phaseJump = undefined;
       }
 
@@ -1119,8 +1118,6 @@
       }
 
       lastTime = time;
-
-      const adjustedTargetPhase = altitudeMultiplier * phaseGap + phase;
 
       // When finished, exit animation loop and zoom out to show ending point
       if (phase > 1 || aborted === true) {
