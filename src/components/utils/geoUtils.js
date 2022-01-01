@@ -21,7 +21,6 @@ export const pathSmoother = (
   preserveStart = 2,
   preserveEnd = 1
 ) => {
-  const setLength = coordinateSet.length;
   const smoothedCoordinatePath = coordinateSet.map((coordinate, index) => {
     const coordinateGroup = coordinateSet.slice(
       Math.max(0, index - smoothingCoefficient),
@@ -34,6 +33,10 @@ export const pathSmoother = (
 
     return [lng, lat];
   });
+
+  if (coordinateSet.length < 3) {
+    return smoothedCoordinatePath;
+  }
 
   return [
     ...coordinateSet.slice(0, preserveStart),
