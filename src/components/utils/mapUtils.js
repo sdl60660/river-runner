@@ -222,7 +222,7 @@ export const getFlowrateData = async (flowlineFeatures, thinningIndex = 4, buffe
       const nextIndex = thinningIndex * Math.ceil(i / thinningIndex);
 
       const lastValue = flowrateData[lastIndex].properties.flowrate;
-      const nextValue = flowrateData[nextIndex]?.properties?.flowrate;
+      const nextValue = flowrateData[nextIndex] ? flowrateData[nextIndex].properties.flowrate : null;
 
       let interpolatedValue = nextValue
         ? lastValue + (nextValue - lastValue) * ((i % thinningIndex) / thinningIndex)
