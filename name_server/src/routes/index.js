@@ -1,5 +1,6 @@
 const express = require('express');
 const Suggestion = require('../models/suggestion');
+const Query = require('../models/query');
 
 const router = express.Router();
 
