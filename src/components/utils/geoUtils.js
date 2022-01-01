@@ -15,7 +15,12 @@ export const bearingBetween = (coordinate1, coordinate2) => {
   return bearing(point1, point2);
 };
 
-export const pathSmoother = (coordinateSet, smoothingCoefficient = 1, preserveStart=2) => {
+export const pathSmoother = (
+  coordinateSet,
+  smoothingCoefficient = 1,
+  preserveStart = 2,
+  preserveEnd = 1
+) => {
   const setLength = coordinateSet.length;
   const smoothedCoordinatePath = coordinateSet.map((coordinate, index) => {
     const coordinateGroup = coordinateSet.slice(
@@ -30,7 +35,11 @@ export const pathSmoother = (coordinateSet, smoothingCoefficient = 1, preserveSt
     return [lng, lat];
   });
 
-  return [...coordinateSet.slice(0, preserveStart), ...smoothedCoordinatePath.slice(preserveStart)];
+  return [
+    ...coordinateSet.slice(0, preserveStart),
+    ...smoothedCoordinatePath.slice(preserveStart, -preserveEnd),
+    ...coordinateSet.slice(-preserveEnd),
+  ];
 };
 
 export const calculatePitch = (elevation, distance) =>
