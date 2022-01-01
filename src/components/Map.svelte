@@ -34,7 +34,7 @@
     pathSmoother,
     calculatePitch,
     pathDistance,
-    findArtificialCameraPoint,
+    projectDistance,
     getFeaturesOnRoute,
     assignParentFeatureNames,
   } from "./utils/geoUtils";
@@ -367,7 +367,7 @@
     if (firstBearingPoint === smoothedPath[0]) {
       firstBearingPoint = smoothedPath[1];
     }
-    const cameraStart = findArtificialCameraPoint({
+    const cameraStart = projectDistance({
       distanceGap: altitudeMultiplier * distanceGap,
       originPoint: smoothedPath[0],
       targetPoint: firstBearingPoint,
@@ -826,7 +826,7 @@
       alongTarget = smoothedPath[1];
     }
 
-    const alongCamera = findArtificialCameraPoint({
+    const alongCamera = projectDistance({
       distanceGap: altitudeMultiplier * distanceGap,
       originPoint: smoothedPath[0],
       targetPoint: alongTarget,
@@ -974,7 +974,7 @@
 
       const alongCamera =
         phase - altitudeMultiplier * phaseGap <= 0
-          ? findArtificialCameraPoint({
+          ? projectDistance({
               distanceGap: altitudeMultiplier * distanceGap,
               originPoint: route[0],
               targetPoint: alongTarget,
