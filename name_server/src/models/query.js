@@ -1,20 +1,20 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const querySchema = new mongoose.Schema({
-  "lat": {
+  lat: {
     type: String,
-    required: true
+    required: true,
   },
-  "lng": {
+  lng: {
     type: String,
-    required: true
+    required: true,
   },
-  "from_share_link": {
+  from_share_link: {
     type: Boolean,
-    required: true
+    required: true,
   },
-  "timestamp": Number
+  timestamp: Number,
 });
 
-const Query = mongoose.model('Query', querySchema);
+const Query = mongoose.model("Query", querySchema);
 module.exports = Query;

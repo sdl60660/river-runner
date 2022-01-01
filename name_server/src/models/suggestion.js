@@ -1,23 +1,23 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const suggestionSchema = new mongoose.Schema({
-  "nameid": {
+  nameid: {
     type: Number,
-    required: true
+    required: true,
   },
-  "suggested_name": {
+  suggested_name: {
     type: String,
-    required: true
+    required: true,
   },
-  "current_name": {
+  current_name: {
     type: String,
-    required: true
+    required: true,
   },
-  "timestamp": Number,
-  "route_start": String,
-  "has_existing_name": Boolean,
-  "user_email": String
+  timestamp: Number,
+  route_start: String,
+  has_existing_name: Boolean,
+  user_email: String,
 });
 
-const Suggestion = mongoose.model('Suggestion', suggestionSchema);
+const Suggestion = mongoose.model("Suggestion", suggestionSchema);
 module.exports = Suggestion;
