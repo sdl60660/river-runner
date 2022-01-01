@@ -40,7 +40,8 @@
   } from "./utils/geoUtils";
   import {
     sendQueryData,
-    basicSiteTypeData
+    basicSiteTypeData,
+    getTickElevation
   } from "./utils/mapUtils";
 
   export let bounds;
@@ -343,7 +344,7 @@
       (cameraBaseAltitude +
         terrainElevationMultiplier * Math.round(elevations[0]));
 
-    const targetPitch = 70;
+    const targetPitch = 69;
     const distanceGap =
       (initialElevation * Math.tan((targetPitch * Math.PI) / 180)) / 1000;
 
@@ -533,7 +534,7 @@
           );
         }
       } catch (e) {
-        console.error(e);
+        // console.error(e);
         console.log(
           `Error while rounding coordinates to ${roundingDigits} digits. Trying again with less precise coordinates.`
         );
@@ -862,7 +863,7 @@
     map,
     animationDuration,
     cameraBaseAltitude = 4300,
-    cameraPitch = 70,
+    cameraPitch = 69,
     distanceGap,
     coordinatePath,
     elevations,
@@ -960,19 +961,7 @@
       }
 
       // Calculate camera elevation using the base elevation and the elevation at the specific coordinate point
-      const elevationLast = elevations[Math.floor(elevations.length * phase)];
-      const elevationNext =
-        elevations[Math.ceil(elevations.length * phase)] ||
-        elevations[Math.ceil(elevations.length * phase) - 1];
-      const elevationStepProgress =
-        elevations.length * phase - Math.floor(elevations.length * phase);
-
-      const elevationEstimate =
-        elevationLast + (elevationNext - elevationLast) * elevationStepProgress;
-      const tickElevation =
-        altitudeMultiplier *
-        (cameraBaseAltitude +
-          terrainElevationMultiplier * Math.round(elevationEstimate));
+      const tickElevation = getTickElevation(phase, elevations, altitudeMultiplier, cameraBaseAltitude, terrainElevationMultiplier);
 
       let alongTarget = along(
         lineString(route),

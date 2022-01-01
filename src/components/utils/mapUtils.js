@@ -184,3 +184,25 @@ export const findClosestFeature = async (e) => {
 
   return closestFeature;
 };
+
+export const getTickElevation = (
+  phase,
+  elevations,
+  altitudeMultiplier,
+  cameraBaseAltitude,
+  terrainElevationMultiplier
+) => {
+  const elevationLast = elevations[Math.floor(elevations.length * phase)];
+  const elevationNext =
+    elevations[Math.ceil(elevations.length * phase)] ||
+    elevations[Math.ceil(elevations.length * phase) - 1];
+  const elevationStepProgress = elevations.length * phase - Math.floor(elevations.length * phase);
+
+  const elevationEstimate = elevationLast + (elevationNext - elevationLast) * elevationStepProgress;
+
+  const tickElevation =
+    altitudeMultiplier *
+    (cameraBaseAltitude + terrainElevationMultiplier * Math.round(elevationEstimate));
+
+  return tickElevation;
+};
