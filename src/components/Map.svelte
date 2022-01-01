@@ -15,7 +15,7 @@
 
   import Prompt from "./Prompt.svelte";
   import NavigationInfo from "./NavigationInfo.svelte";
-  import LocatorMap from "./LocatorMap.svelte";
+  import InsetMap from "./InsetMap.svelte";
   import ContactBox from "./ContactBox.svelte";
   import Controls from "./Controls.svelte";
   import Legend from "./Legend.svelte";
@@ -1388,7 +1388,7 @@
       : 10
     : -10};"
 >
-  <LocatorMap
+  <InsetMap
     {bounds}
     {stateBoundaries}
     visibleIndex={null}

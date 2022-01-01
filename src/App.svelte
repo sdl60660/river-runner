@@ -9,7 +9,7 @@
     d3.json("data/us_states.json"),
     d3.json("data/global_stopping_features.json"),
     d3.json("data/active_nwis_sites.json"),
-    d3.json("data/name_overrides.json"),
+    d3.csv("data/name_overrides.csv"),
   ];
 
   const dataLoad = Promise.all(dataFilePromises).then(async (data) => {
@@ -20,7 +20,12 @@
     ).features;
 
     const activeNWISSites = data[2].sites;
-    const nameOverrides = data[3];
+    const nameOverrides = {};
+    data[3].forEach((d) => {
+      nameOverrides[d['nameid']] = {
+        feature_name: d['feature_name']
+      };
+    });
 
     return [states, stoppingFeatures, activeNWISSites, nameOverrides];
   });

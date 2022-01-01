@@ -233,7 +233,7 @@
       map.resize();
 
       const coordinateSet = lineString(riverPath[0].geometry.coordinates);
-      const boundProps = { animate: true, padding: 30 };
+      const boundProps = { animate: true, padding: 30, speed: 1.2 };
       if (suggestionModalActive === false) {
         boundProps.maxZoom = maxZoom
       };
