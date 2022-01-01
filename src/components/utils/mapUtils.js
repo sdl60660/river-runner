@@ -206,3 +206,49 @@ export const getTickElevation = (
 
   return tickElevation;
 };
+
+export const getFlowrateData = async (flowlineFeatures, thinningIndex = 4, bufferSize = 50) => {
+  // Gather a sample of flowline flowrate data from firebase server, using thinningIndex
+  const flowrateData = await Promise.all(
+    flowlineFeatures.map(
+      async (feature, i) => await getFeatureFlowrate(feature, i, thinningIndex, bufferSize)
+    )
+  );
+
+  // Interpolate gathered data to fill values for flowlines filtered out by thinningIndex
+  flowrateData.forEach((feature, i) => {
+    if (i > bufferSize && i % thinningIndex !== 0) {
+      const lastIndex = thinningIndex * Math.floor(i / thinningIndex);
+      const nextIndex = thinningIndex * Math.ceil(i / thinningIndex);
+
+      const lastValue = flowrateData[lastIndex].properties.flowrate;
+      const nextValue = flowrateData[nextIndex]?.properties?.flowrate;
+
+      let interpolatedValue = nextValue
+        ? lastValue + (nextValue - lastValue) * ((i % thinningIndex) / thinningIndex)
+        : lastValue;
+      interpolatedValue = Math.ceil(interpolatedValue);
+
+      feature.properties.flowrate = interpolatedValue;
+    }
+  });
+
+  return flowrateData;
+};
+
+export const getFeatureFlowrate = async (feature, index, thinningIndex, bufferSize = 50) => {
+  if (index > bufferSize && index % thinningIndex !== 0) {
+    return feature;
+  }
+
+  const baseUrl = "https://river-runner-flowrates.firebaseio.com/";
+  const response = await fetch(baseUrl + feature.properties.nhdplus_comid + ".json");
+  const featureData = await response.json();
+
+  feature.properties = {
+    ...feature.properties,
+    flowrate: parseFloat(featureData.flowrate),
+  };
+
+  return feature;
+};

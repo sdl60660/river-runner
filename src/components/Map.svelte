@@ -41,7 +41,8 @@
   import {
     sendQueryData,
     basicSiteTypeData,
-    getTickElevation
+    getTickElevation,
+    getFlowrateData
   } from "./utils/mapUtils";
 
   export let bounds;
@@ -134,7 +135,7 @@
       map.on("load", () => {
         // If there's feature data passed in as a prop (doesn't really happen anymore), render rivers on load
         if (featureData) {
-          addRivers({ map, featureData, lineWidth: 1 });
+          addRivers({ map, featureData, lineWidth: 2 });
         }
 
         // Add 3D topo layer if flag is set (should basically always be)
@@ -344,7 +345,7 @@
       (cameraBaseAltitude +
         terrainElevationMultiplier * Math.round(elevations[0]));
 
-    const targetPitch = 69;
+    const targetPitch = 70;
     const distanceGap =
       (initialElevation * Math.tan((targetPitch * Math.PI) / 180)) / 1000;
 
@@ -722,65 +723,6 @@
     return riverFeatures;
   };
 
-  const getFeatureFlowrate = async (
-    feature,
-    index,
-    thinningIndex,
-    bufferSize = 50
-  ) => {
-    if (index > bufferSize && index % thinningIndex !== 0) {
-      return feature;
-    }
-
-    const baseUrl = "https://river-runner-flowrates.firebaseio.com/";
-    const response = await fetch(
-      baseUrl + feature.properties.nhdplus_comid + ".json"
-    );
-    const featureData = await response.json();
-
-    feature.properties = {
-      ...feature.properties,
-      flowrate: parseFloat(featureData.flowrate),
-    };
-
-    return feature;
-  };
-
-  const getFlowrateData = async (
-    flowlineFeatures,
-    thinningIndex = 4,
-    bufferSize = 50
-  ) => {
-    // Gather a sample of flowline flowrate data from firebase server, using thinningIndex
-    const flowrateData = await Promise.all(
-      flowlineFeatures.map(
-        async (feature, i) =>
-          await getFeatureFlowrate(feature, i, thinningIndex, bufferSize)
-      )
-    );
-
-    // Interpolate gathered data to fill values for flowlines filtered out by thinningIndex
-    flowrateData.forEach((feature, i) => {
-      if (i > bufferSize && i % thinningIndex !== 0) {
-        const lastIndex = thinningIndex * Math.floor(i / thinningIndex);
-        const nextIndex = thinningIndex * Math.ceil(i / thinningIndex);
-
-        const lastValue = flowrateData[lastIndex].properties.flowrate;
-        const nextValue = flowrateData[nextIndex]?.properties?.flowrate;
-
-        let interpolatedValue = nextValue
-          ? lastValue +
-            (nextValue - lastValue) * ((i % thinningIndex) / thinningIndex)
-          : lastValue;
-        interpolatedValue = Math.ceil(interpolatedValue);
-
-        feature.properties.flowrate = interpolatedValue;
-      }
-    });
-
-    return flowrateData;
-  };
-
   const positionCamera = ({
     map,
     cameraCoordinates,
@@ -822,14 +764,10 @@
     let alongTarget = along(lineString(smoothedPath), routeDistance * 0.000005)
       .geometry.coordinates;
 
-    if (alongTarget === smoothedPath[0]) {
-      alongTarget = smoothedPath[1];
-    }
-
     const alongCamera = projectDistance({
       distanceGap: altitudeMultiplier * distanceGap,
       originPoint: smoothedPath[0],
-      targetPoint: alongTarget,
+      targetPoint: alongTarget === smoothedPath[0] ? smoothedPath[1] : alongTarget,
     });
 
     const bearing = bearingBetween(alongCamera, alongTarget);
@@ -863,7 +801,7 @@
     map,
     animationDuration,
     cameraBaseAltitude = 4300,
-    cameraPitch = 69,
+    cameraPitch = 70,
     distanceGap,
     coordinatePath,
     elevations,

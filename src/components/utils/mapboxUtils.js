@@ -150,7 +150,7 @@ export const drawFlowPath = ({
     map,
     featureData,
     lineColor = "steelblue",
-    lineWidth = 2,
+    lineWidth = 3,
     sourceID = "route",
 }) => {
     clearRiverLines({ map, sourceID });
