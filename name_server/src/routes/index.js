@@ -22,4 +22,14 @@ router.post("/suggestions", async (req, res) => {
     res.status(201).json(suggestions);
 });
 
+// stash (completely anonymized) user queries to better understand where people are looking
+router.post("/query", async (req, res) => {
+  const qyeryData= {...req.body, timestamp: Date.now()};
+  const query = new Query(qyeryData);
+  const mongoResponse = await query.save();
+
+  res.status(201).json(qyeryData);
+});
+
+
 module.exports = { router };
