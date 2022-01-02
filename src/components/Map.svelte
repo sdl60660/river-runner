@@ -8,7 +8,7 @@
   import { lineString, round } from "@turf/helpers";
   import distance from "@turf/distance";
   import nearestPointOnLine from "@turf/nearest-point-on-line";
-  import lineDistance from "@turf/line-distance";
+  import length from "@turf/length";
 
   import { distanceToPolygon, getDataBounds, sleep } from "../utils";
   import { coordinates, stoppingFeature } from "../state";
@@ -868,7 +868,7 @@
         if (nearestCoordinate === 0) {
           phase = 0;
         } else {
-          const distanceCovered = lineDistance(
+          const distanceCovered = length(
             lineString(route.slice(0, nearestCoordinate + 1))
           );
           phase = distanceCovered / routeDistance;

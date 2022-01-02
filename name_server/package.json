@@ -1,14 +1,19 @@
 {
   "name": "name_server",
   "version": "1.0.0",
-  "description": "",
+  "private": true,
+  "description": "node/express name server for processing name suggestions from river runner app",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "pm2 start ecosystem.config.json --no-daemon",
     "dev": "cross-env NODE_ENV=development nodemon src/index.js"
   },
-  "author": "",
+  "author": "Sam Learner",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sdl60660/river-runner"
+  },
   "license": "ISC",
   "dependencies": {
     "compression": "^1.7.4",

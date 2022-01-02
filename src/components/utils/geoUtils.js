@@ -1,5 +1,5 @@
 import { lineString, polygon } from "@turf/helpers";
-import lineDistance from "@turf/line-distance";
+import length from "@turf/length";
 import destination from "@turf/destination";
 import bearing from "@turf/bearing";
 import { point, points } from "@turf/helpers";
@@ -48,7 +48,7 @@ export const pathSmoother = (
 export const calculatePitch = (elevation, distance) =>
   90 - Math.atan(elevation / distance) * (180 / Math.PI);
 
-export const pathDistance = (coordinateSet) => lineDistance(lineString(coordinateSet));
+export const pathDistance = (coordinateSet) => length(lineString(coordinateSet));
 
 export const calculateCameraPath = (coordinatePath, cameraTargetDistance, routeDistance) => {
   const cameraPathCoordinates = coordinatePath.slice(0, -cameraTargetDistance);
