@@ -35,7 +35,7 @@ export const pathSmoother = (
   });
 
   if (coordinateSet.length < 3) {
-    return smoothedCoordinatePath;
+    return coordinateSet;
   }
 
   return [
@@ -145,9 +145,9 @@ export const assignParentFeatureNames = (flowlines, nameOverrides, inlandFeature
 
   const mappedFlowlines = Object.fromEntries(flowlines.map((d) => [d.properties.comid, d]));
 
-  const inlandFeaturePolygons = inlandFeatures.map((d) =>
-    polygon(d.geometry.coordinates, d.properties)
-  );
+  const inlandFeaturePolygons = inlandFeatures
+    // .filter((d) => d.properties.stop_feature_name !== "")
+    .map((d) => polygon(d.geometry.coordinates, d.properties));
   const flowlineStartingPoints = {
     type: "FeatureCollection",
     features: flowlines.map((flowline) =>

@@ -285,8 +285,7 @@
           ]
         : flowlinesData.features
             .map((feature) => feature.geometry.coordinates)
-            .flat()
-            .filter((d, i) => i % 2 === 0);
+            .flat();
 
     // Update props used by child components
     riverPath = [{ geometry: { coordinates: coordinatePath } }];
@@ -309,9 +308,9 @@
 
     let terrainElevationMultiplier = 1.2;
     let cameraBaseAltitude = 4300;
-    const elevationArrayStep = Math.round(
+    const elevationArrayStep = Math.max(2, Math.round(
       Math.min(coordinatePath.length / 4 - 1, 100)
-    );
+    ));
 
     // Sometimes while 3D tiles are still loading, the queryTerrainElevation method doesn't hit,
     // so we'll give it a few attempts with a delay in between before falling back on a method that doesn't
@@ -368,6 +367,7 @@
     if (firstBearingPoint === smoothedPath[0]) {
       firstBearingPoint = smoothedPath[1];
     }
+
     const cameraStart = projectDistance({
       distanceGap: altitudeMultiplier * distanceGap,
       originPoint: smoothedPath[0],
