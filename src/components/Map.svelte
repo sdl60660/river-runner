@@ -254,6 +254,8 @@
     const flowlinesData = await getFlowlineData(e);
     if (!flowlinesData) {
       vizState = "error";
+      sendQueryData(e.lngLat.lat, e.lngLat.lat, false, true);
+      
       resetMapState({ map, error: true });
       return;
     }

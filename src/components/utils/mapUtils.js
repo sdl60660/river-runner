@@ -7,11 +7,12 @@ import {
 
 import { addFeatureExtrusions } from "./mapboxUtils";
 
-export const sendQueryData = async (lat, lng, startingSearch) => {
+export const sendQueryData = async (lat, lng, startingSearch, query_error=false) => {
   const queryData = {
     lat,
     lng,
     from_share_link: startingSearch === true,
+    query_error
   };
 
   fetch("https://river-runner-name-suggestions.herokuapp.com/api/query", {
