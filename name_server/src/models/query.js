@@ -13,6 +13,10 @@ const querySchema = new mongoose.Schema({
     type: Boolean,
     required: true,
   },
+  query_error: {
+    type: Boolean,
+    required: false
+  },
   timestamp: Number,
 });
 
