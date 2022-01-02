@@ -130,7 +130,7 @@
       mapBounds = map.getBounds();
 
       map.dragRotate.disable();
-      map.touchZoomRotate.disable();
+      map.touchZoomRotate.disableRotation();
 
       map.on("load", () => {
         // If there's feature data passed in as a prop (doesn't really happen anymore), render rivers on load
