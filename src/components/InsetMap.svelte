@@ -1,6 +1,7 @@
 <script>
   import resize from "svelte-actions-resize";
   import { onMount, createEventDispatcher } from "svelte";
+  import { stoppingFeature, startLocation } from "../state";
   import { mapbox } from "../mapbox.js";
   import { tick } from "svelte";
   import bbox from "@turf/bbox";
@@ -38,6 +39,9 @@
 
   let suggestionFormData = {};
   let userEmail = "";
+
+  let currentStartLocation = null;
+  let currentStoppingFeature = null;
 
   $: containerWidth = width > 700 ? "26rem" : "100%";
   $: containerHeight = width > 700 ? "14rem" : "20vh";
@@ -117,6 +121,18 @@
       marker = new mapbox.Marker({ element: markerEl })
         .setLngLat([0, 0])
         .addTo(map);
+      
+      const unsubscribeStoppingFeature = stoppingFeature.subscribe(
+        (featureName) => {
+          currentStoppingFeature = featureName;
+        }
+      );
+
+      const unsubscribeStartLocation = startLocation.subscribe(
+        (startLocation) => {
+          currentStartLocation = startLocation;
+        }
+      );
     };
 
     document.head.appendChild(link);
@@ -390,7 +406,8 @@
   bind:this={container}
   use:resize
   on:resize={handleResize}
-  aria-label="inset map showing the flowpath from selected spot"
+  aria-label={`Inset map showing the flowpath from ${currentStartLocation} to ${currentStoppingFeature}.`}
+  tabindex="0"
 >
   {#if map}
     <slot />
