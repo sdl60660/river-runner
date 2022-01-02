@@ -34,7 +34,7 @@ export const pathSmoother = (
     return [lng, lat];
   });
 
-  if (coordinateSet.length < 3) {
+  if (coordinateSet.length <= 3) {
     return coordinateSet;
   }
 
@@ -94,6 +94,31 @@ export const getFeaturesOnRoute = (stoppingFeatures, flowlines) => {
   });
 };
 
+const greatLakesCorrection = (namedFlowlines) => {
+  let lastFeature = null;
+
+  namedFlowlines.forEach((flowline, i) => {
+    if (flowline.properties.feature_name === "Detroit River") {
+      if (lastFeature === "Lake Huron") {
+        flowline.properties.feature_name = flowline.properties.feature_id = "St. Clair River";
+      } else if (lastFeature === "Lake Erie") {
+        flowline.properties.feature_name = flowline.properties.feature_id = "Niagara River";
+      } else if (lastFeature === "Lake Ontario") {
+        flowline.properties.feature_name = flowline.properties.feature_id = "Saint Lawrence River";
+      }
+
+      flowline.properties.renamed_inland = true;
+    } else if (
+      flowline.properties.feature_name.includes("Lake") &&
+      flowline.properties.feature_name !== lastFeature
+    ) {
+      lastFeature = flowline.properties.feature_name;
+    }
+  });
+
+  return namedFlowlines;
+};
+
 const correctInterruptingLakes = (namedFlowlines) => {
   // Take a dynamic programming approach, instead of a functional one to save an extra layer of iterations
   let lastFeatureId = null;
@@ -132,14 +157,12 @@ export const assignParentFeatureNames = (flowlines, nameOverrides, inlandFeature
       feature.properties.feature_name = `Unidentified River ${feature.properties.levelpathi}`;
       feature.properties.feature_id = levelpathi;
     } else {
-      feature.properties.feature_name = nameid;
-      feature.properties.feature_id = nameid;
+      feature.properties.feature_name = feature.properties.feature_id = nameid;
     }
 
     const overrideEntry = nameOverrides[levelpathi];
     if (overrideEntry) {
-      feature.properties.feature_name = overrideEntry.feature_name;
-      feature.properties.feature_id = overrideEntry.feature_name;
+      feature.properties.feature_name = feature.properties.feature_id = overrideEntry.feature_name;
     }
   });
 
@@ -155,6 +178,7 @@ export const assignParentFeatureNames = (flowlines, nameOverrides, inlandFeature
     ),
   };
 
+  let greatLakesPath = false;
   inlandFeaturePolygons.forEach((inlandPolygon) => {
     const pointsWithin = pointsWithinPolygon(flowlineStartingPoints, inlandPolygon);
 
@@ -163,6 +187,10 @@ export const assignParentFeatureNames = (flowlines, nameOverrides, inlandFeature
       properties.stop_feature_name === ""
         ? `Inland Water Feature ${properties.id}`
         : properties.stop_feature_name;
+
+    if (featureName === "Lake Ontario") {
+      greatLakesPath = true;
+    }
 
     pointsWithin.features.forEach((intersectingPoint) => {
       const correspondingFlowline = mappedFlowlines[intersectingPoint.properties.comid];
@@ -202,5 +230,10 @@ export const assignParentFeatureNames = (flowlines, nameOverrides, inlandFeature
   // to the next instance of a river so that it will be represented in the unique features array later on
   const correctedNamedFlowlines = correctInterruptingLakes(namedFlowlines);
 
-  return correctedNamedFlowlines;
+  if (greatLakesPath === true) {
+    // Manual correction for really pesky river naming situation between Great Lakes
+    return greatLakesCorrection(correctedNamedFlowlines);
+  } else {
+    return correctedNamedFlowlines;
+  }
 };
