@@ -221,6 +221,14 @@
     d3.selectAll(".mapboxgl-ctrl-geocoder").style("display", "none");
     d3.select(".mapboxgl-ctrl-top-left").style("display", "none");
 
+    // Correct out of bounds longitudes from map wrapping
+    if (e.lngLat.lng < -180) {
+      e.lngLat.lng += 360
+    }
+    else if (e.lngLat.lng > 180) {
+      e.lngLat.lng -= 360;
+    }
+
     currentLocation = e.lngLat;
     startCoordinates = e.lngLat;
     mapBounds = map.getBounds();
