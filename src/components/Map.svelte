@@ -1136,6 +1136,7 @@
   class="map-wrapper"
   style="opacity: {visibleIndex ? 1 : 0}"
   bind:this={container}
+  aria-label="world map"
 >
   {#if map}
     <slot />

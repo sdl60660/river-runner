@@ -76,7 +76,7 @@
   };
 </script>
 
-<div class="wrapper" style="display: {bannerVisible ? 'none' : 'block'};">
+<div class="wrapper" style="display: {bannerVisible ? 'none' : 'block'};" tabindex="0" aria-label="prompt and information box">
   <div
     style={`display: ${message === "" ? "none" : "flex"};`}
     class="message-box"

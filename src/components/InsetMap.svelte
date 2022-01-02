@@ -390,6 +390,7 @@
   bind:this={container}
   use:resize
   on:resize={handleResize}
+  aria-label="inset map showing the flowpath from selected spot"
 >
   {#if map}
     <slot />

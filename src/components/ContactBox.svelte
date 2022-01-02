@@ -24,13 +24,17 @@
           alt="twitter link"
         /></a
       >
-      |
+      ·
       <a target="_blank" href="mailto:learnersd@gmail.com"
         ><img class="icon-img" src="/images/email.svg" alt="email link" /></a
       >
-      |
+      ·
       <a target="_blank" href="https://github.com/sdl60660"
         ><img class="icon-img" src="/images/github.svg" alt="github link" /></a
+      >
+      ·
+      <a target="_blank" href="https://ko-fi.com/samlearner"
+        ><img class="icon-img" src="/images/kofi.svg" alt="ko-fi link" /></a
       >
     </p>
     <p>

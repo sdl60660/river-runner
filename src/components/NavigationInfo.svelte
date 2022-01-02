@@ -109,10 +109,14 @@
       ? "block"
       : "none"
   };`}
+  tabindex="0"
+  aria-label="navigation box with flowpath details"
 >
   <div
     class="total-length"
     style="display: {screenWidth > 700 && totalLength ? 'block' : 'none'}"
+    tabindex="0"
+    aria-label="total length of flowpath"
   >
     Total Length: {Math.round(totalLength)} km
   </div>
@@ -125,7 +129,7 @@
   >
     <!-- Desktop/Tablet -->
     {#if screenWidth > 700}
-      <div class="feature-listing bounding-location">
+      <div class="feature-listing bounding-location" tabindex="0" aria-label="starting location">
         {currentStartLocation}
       </div>
       {#each featureGroups as { name, length_km, index, first_coordinate }, i}
@@ -149,11 +153,13 @@
               removeHighlight();
             }
           }}
+          tabindex="0"
+          aria-label="flowpath section"
         >
           {i + 1}. {name} ({length_km} km)
         </div>
       {/each}
-      <div class="feature-listing bounding-location">
+      <div class="feature-listing bounding-location" tabindex="0" aria-label="stopping feature">
         {currentStoppingFeature}
       </div>
 
