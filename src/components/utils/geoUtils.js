@@ -1,78 +1,66 @@
 import { lineString } from "@turf/helpers";
 import lineDistance from "@turf/line-distance";
 import destination from "@turf/destination";
-import bearing from '@turf/bearing';
+import bearing from "@turf/bearing";
 import { point } from "@turf/helpers";
 
-export const bearingBetween = (coordinate1, coordinate2) => { 
-    const point1 = point(coordinate1);
-    const point2 = point(coordinate2);
+export const bearingBetween = (coordinate1, coordinate2) => {
+  const point1 = point(coordinate1);
+  const point2 = point(coordinate2);
 
-    return bearing(point1, point2);
-}
+  return bearing(point1, point2);
+};
 
-export const pathSmoother = (coordinateSet, smoothingCoefficient = 1) => {
-    const setLength = coordinateSet.length;
-    const smoothedCoordinatePath = coordinateSet.map(
-        (coordinate, index) => {
-            const coordinateGroup = coordinateSet.slice(
-                Math.max(0, index - smoothingCoefficient),
-                index + 1 + smoothingCoefficient
-            );
-            const lng =
-                coordinateGroup
-                    .map((d) => d[0])
-                    .reduce((a, b) => a + b, 0) / coordinateGroup.length;
-            const lat =
-                coordinateGroup
-                    .map((d) => d[1])
-                    .reduce((a, b) => a + b, 0) / coordinateGroup.length;
-
-            return [lng, lat];
-        }
+export const pathSmoother = (
+  coordinateSet,
+  smoothingCoefficient = 1,
+  preserveStart = 2,
+  preserveEnd = 1
+) => {
+  const smoothedCoordinatePath = coordinateSet.map((coordinate, index) => {
+    const coordinateGroup = coordinateSet.slice(
+      Math.max(0, index - smoothingCoefficient),
+      index + 1 + smoothingCoefficient
     );
+    const lng =
+      coordinateGroup.map((d) => d[0]).reduce((a, b) => a + b, 0) / coordinateGroup.length;
+    const lat =
+      coordinateGroup.map((d) => d[1]).reduce((a, b) => a + b, 0) / coordinateGroup.length;
 
-    return smoothedCoordinatePath;
+    return [lng, lat];
+  });
+
+  if (coordinateSet.length <= 3) {
+    return coordinateSet;
+  }
+
+  return [
+    ...coordinateSet.slice(0, preserveStart),
+    ...smoothedCoordinatePath.slice(preserveStart, -preserveEnd),
+    ...coordinateSet.slice(-preserveEnd),
+  ];
 };
 
 export const calculatePitch = (elevation, distance) =>
-    90 - Math.atan(elevation / distance) * (180 / Math.PI);
+  90 - Math.atan(elevation / distance) * (180 / Math.PI);
 
-export const pathDistance = (coordinateSet) =>
-    lineDistance(lineString(coordinateSet));
+export const pathDistance = (coordinateSet) => lineDistance(lineString(coordinateSet));
 
 export const projectDistance = (fromCoordinate, toCoordinate, distance) => {
-    const bearing = bearingBetween(fromCoordinate, toCoordinate);
-    return destination(fromCoordinate, distance, bearing).geometry
-        .coordinates;
+  const bearing = bearingBetween(fromCoordinate, toCoordinate);
+  return destination(fromCoordinate, distance, bearing).geometry.coordinates;
 };
 
-export const calculateCameraPath = (
-    coordinatePath,
-    cameraTargetDistance,
-    routeDistance
-) => {
-    const cameraPathCoordinates = coordinatePath.slice(
-        0,
-        -cameraTargetDistance
-    );
-    const distanceGap = routeDistance - pathDistance(cameraPathCoordinates);
+export const calculateCameraPath = (coordinatePath, cameraTargetDistance, routeDistance) => {
+  const cameraPathCoordinates = coordinatePath.slice(0, -cameraTargetDistance);
+  const distanceGap = routeDistance - pathDistance(cameraPathCoordinates);
 
-    return cameraPathCoordinates.map((coordinate, index) => {
-        return projectDistance(
-            coordinatePath[index + cameraTargetDistance],
-            coordinate,
-            distanceGap
-        );
-    });
+  return cameraPathCoordinates.map((coordinate, index) => {
+    return projectDistance(coordinatePath[index + cameraTargetDistance], coordinate, distanceGap);
+  });
 };
 
-export const findArtificialCameraPoint = ({
-    distanceGap,
-    originPoint,
-    targetPoint,
-}) => {
-    const bearing = bearingBetween(targetPoint, originPoint);
-    return destination(targetPoint, distanceGap, bearing).geometry
-        .coordinates;
+export const findArtificialCameraPoint = ({ distanceGap, originPoint, targetPoint }) => {
+  const bearing = bearingBetween(targetPoint, originPoint);
+  return destination(targetPoint, distanceGap, bearing).geometry.coordinates;
 };

@@ -45,6 +45,7 @@
 
   const exitNavigationPath = () => {
     dispatch("exit-path");
+    autoplayDisrupted = false;
   };
 
   const highlightFeature = (featureIndex) => {
