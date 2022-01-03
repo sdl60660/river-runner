@@ -1,3 +1,5 @@
+<!-- Based heavily on: https://github.com/martinRenou/threejs-water -->
+
 <script>
     import { onMount } from "svelte";
 

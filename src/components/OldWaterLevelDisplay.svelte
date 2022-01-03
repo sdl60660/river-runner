@@ -1,3 +1,5 @@
+<!-- Based heavily on: https://github.com/martinRenou/threejs-water -->
+
 <script>
     import { onMount } from 'svelte';
 
@@ -5,15 +7,6 @@
     import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
     import { Water } from 'three/examples/jsm/objects/Water.js';
     import { Sky } from 'three/examples/jsm/objects/Sky.js';
-
-	// import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.117.1/build/three.module.js';
-
-    // import * as dat from 'dat.gui';
-    // import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.117.1/examples/jsm/controls/OrbitControls.js";
-    // import Stats from 'https://cdn.jsdelivr.net/npm/three@0.117.1/examples/jsm/libs/stats.module.js';
-    // import { GUI } from 'https://cdn.jsdelivr.net/npm/three@0.117.1/examples/jsm/libs/dat.gui.module.js';
-    // import { Water } from 'https://cdn.jsdelivr.net/npm/three@0.117.1/examples/jsm/objects/Water.js';
-    // import { Sky } from 'https://cdn.jsdelivr.net/npm/three@0.117.1/examples/jsm/objects/Sky.js';
 
     let container;
     let camera, scene, renderer;

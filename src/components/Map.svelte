@@ -25,6 +25,7 @@
     getElevations,
     getElevationsMapQuery,
     addTopoLayer,
+    addBuildingLayer,
     clearRiverLines,
     drawFlowPath,
     addRivers,
@@ -53,6 +54,7 @@
   export let visibleIndex;
   export let mapStyle;
   export let addTopo;
+  export let addBuildings = false;
   export let advancedFeaturesOn;
   export let nameOverrides;
 
@@ -141,6 +143,10 @@
         // Add 3D topo layer if flag is set (should basically always be)
         if (addTopo) {
           addTopoLayer({ map });
+        }
+
+        if (addBuildings) {
+          addBuildingLayer({ map });
         }
 
         // Add geocoder search bar to search for location/address instead of clicking
