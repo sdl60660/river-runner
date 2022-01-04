@@ -36,6 +36,6 @@ Thank you to [Mapbox](https://www.mapbox.com/) for sponsoring this project!
 
 ## Updates
 
-**January 2021**: The [global version](https://river-runner-global.samlearner.com/) of this tool is now released and in beta! While some lingering issues are resolved and it remains in beta, it can be found on [this branch](https://github.com/sdl60660/river-runner/tree/global)
+* **January 2021**: The [global version](https://river-runner-global.samlearner.com/) of this tool is now released and in beta! While some lingering issues are resolved and it remains in beta, it can be found on [this branch](https://github.com/sdl60660/river-runner/tree/global)
 
 If you'd like to be notified about major updates to the tool, you can sign up for an email list [here](https://tinyletter.com/samlearner)
