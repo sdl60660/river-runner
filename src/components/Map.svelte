@@ -71,6 +71,7 @@
 
   let aborted = false;
   let vizState = "uninitialized";
+  let errorStatus = null;
   let postRun = false;
   let runTimeout;
 
@@ -237,7 +238,13 @@
 
     currentLocation = e.lngLat;
     startCoordinates = e.lngLat;
-    mapBounds = map.getBounds();
+
+    try {
+      mapBounds = map.getBounds();
+    } catch (e) {
+      // console.error(e);
+      return;
+    }
 
     if (!mapBounds.contains(e.lngLat)) {
       map.flyTo({
@@ -258,10 +265,12 @@
 
   const initializeData = async ({ map, e }) => {
     const flowlinesData = await getFlowlineData(e);
-    if (!flowlinesData) {
+
+    if (!flowlinesData || flowlinesData.error === true) {
+      errorStatus = flowlinesData;
       vizState = "error";
-      sendQueryData(e.lngLat.lat, e.lngLat.lat, false, true);
-      
+
+      sendQueryData(e.lngLat.lat, e.lngLat.lat, false, true);      
       resetMapState({ map, error: true });
       return;
     }
@@ -527,7 +536,16 @@
           },
         });
 
-        const responseData = (await flowlinesResponse.json()).value;
+        if (flowlinesResponse.status !== 200) {
+          return { error: true, status: "API error" };
+        }
+
+        const results = (await flowlinesResponse.json());
+        if (results.code === "fail") {
+          return { error: true, status: "Routing error" };
+        }
+
+        const responseData = results.value;
         resultFound = responseData.features.length > 0;
 
         if (resultFound) {
@@ -1030,6 +1048,7 @@
     if (error) {
       setTimeout(() => {
         vizState = "uninitialized";
+        errorStatus = null;
       }, 2000);
     } else {
       vizState = "uninitialized";
@@ -1149,7 +1168,7 @@
   {/if}
 </div>
 
-<Prompt {vizState} {currentLocation} />
+<Prompt {vizState} {errorStatus} {currentLocation} />
 <ContactBox {vizState} />
 
 <div

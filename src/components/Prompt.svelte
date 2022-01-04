@@ -4,6 +4,7 @@
 
   export let currentLocation;
   export let vizState;
+  export let errorStatus;
   export let bannerVisible;
 
   let loading = false;
@@ -26,8 +27,13 @@
   } else if (vizState === "uninitialized") {
     resetPrompt();
   } else if (vizState === "error") {
-    message =
+    if (errorStatus?.status === "API error") {
+      message = "Routing Server is down! Sorry, this is likely due to high volume, try again in a bit."
+    }
+    else {
+      message =
       "Unable to find a flowpath for that location. Please try somewhere else.";
+    }
     loading = false;
   }
 
