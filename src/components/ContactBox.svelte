@@ -100,7 +100,7 @@
     </p>
         <p>
             <strong>Sources</strong>: The data used in this project comes from the USGS's <a target="_blank" href="https://waterdata.usgs.gov/blog/nldi-intro/">NLDI API</a>, along with additional <a href="https://www.usgs.gov/core-science-systems/ngp/national-hydrography/nhdplus-high-resolution">NHDPlus</a> data.
-            Code and data for this project lives <a target="_blank" href={"https://github.com/sdl60660/river-runner/"}>here</a>.
+            Code and data for this project lives <a target="_blank" href={"https://github.com/sdl60660/river-runner/tree/us-only"}>here</a>.
         </p>
     {:else}
         <strong>Visualization by <a target="_blank" href="https://bit.ly/main-project-site">Sam Learner</a></strong> |
