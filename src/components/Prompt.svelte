@@ -68,7 +68,7 @@
   };
 
   const resetPrompt = () => {
-    message = `${eventActionName} to drop a raindrop anywhere in the the world and watch where it ends up`;
+    message = `${eventActionName} to drop a raindrop anywhere in the world and watch where it ends up`;
     loading = false;
   };
 
