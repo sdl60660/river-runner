@@ -70,38 +70,41 @@
 
 <div style="display: {vizState === "running" && window.innerWidth > 600 ? "none" : "block"};" class={"contact-box"}>
     {#if window.innerWidth > 600}
-    <p>
-      <strong
-        >Visualization by <a
-          target="_blank"
-          href="https://bit.ly/main-project-site">Sam Learner</a
-        ></strong
-      >
-      |
-      <a target="_blank" href="https://twitter.com/sam_learner"
-        ><img
-          class="icon-img"
-          src="/images/twitter.svg"
-          alt="twitter link"
-        /></a
-      >
-      ·
-      <a target="_blank" href="mailto:learnersd@gmail.com"
-        ><img class="icon-img" src="/images/email.svg" alt="email link" /></a
-      >
-      ·
-      <a target="_blank" href="https://github.com/sdl60660"
-        ><img class="icon-img" src="/images/github.svg" alt="github link" /></a
-      >
-      ·
-      <a target="_blank" href="https://ko-fi.com/samlearner"
-        ><img class="icon-img" src="/images/kofi.svg" alt="ko-fi link" /></a
-      >
-    </p>
-        <p>
-            <strong>Sources</strong>: The data used in this project comes from the USGS's <a target="_blank" href="https://waterdata.usgs.gov/blog/nldi-intro/">NLDI API</a>, along with additional <a href="https://www.usgs.gov/core-science-systems/ngp/national-hydrography/nhdplus-high-resolution">NHDPlus</a> data.
-            Code and data for this project lives <a target="_blank" href={"https://github.com/sdl60660/river-runner/tree/us-only"}>here</a>.
-        </p>
+      <p>
+        <strong
+          >Visualization by <a
+            target="_blank"
+            href="https://bit.ly/main-project-site">Sam Learner</a
+          ></strong
+        >
+        |
+        <a target="_blank" href="https://twitter.com/sam_learner"
+          ><img
+            class="icon-img"
+            src="/images/twitter.svg"
+            alt="twitter link"
+          /></a
+        >
+        ·
+        <a target="_blank" href="mailto:learnersd@gmail.com"
+          ><img class="icon-img" src="/images/email.svg" alt="email link" /></a
+        >
+        ·
+        <a target="_blank" href="https://github.com/sdl60660"
+          ><img class="icon-img" src="/images/github.svg" alt="github link" /></a
+        >
+        ·
+        <a target="_blank" href="https://ko-fi.com/samlearner"
+          ><img class="icon-img" src="/images/kofi.svg" alt="ko-fi link" /></a
+        >
+      </p>
+      <p>
+          <strong>Sources</strong>: The data used in this project comes from the USGS's <a target="_blank" href="https://waterdata.usgs.gov/blog/nldi-intro/">NLDI API</a>, along with additional <a href="https://www.usgs.gov/core-science-systems/ngp/national-hydrography/nhdplus-high-resolution">NHDPlus</a> data.
+          Code and data for this project lives <a target="_blank" href={"https://github.com/sdl60660/river-runner/tree/us-only"}>here</a>.
+      </p>
+      <p>
+        <strong>Note</strong>: A global version of this project is now available <a target="_blank" href={"https://river-runner-global.samlearner.com/"}>here</a>.
+      </p>
     {:else}
         <strong>Visualization by <a target="_blank" href="https://bit.ly/main-project-site">Sam Learner</a></strong> |
         <a target="_blank" href="https://twitter.com/sam_learner"><img class="icon-img" src="/images/twitter.svg" alt="twitter link"/></a> |
