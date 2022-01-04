@@ -48,7 +48,7 @@
       <a href="https://ksonda.github.io/global-river-runner/" target="_blank"
         >here</a
       >. Code and data for this project lives
-      <a target="_blank" href={"https://github.com/sdl60660/river-runner/"}
+      <a target="_blank" href={"https://github.com/sdl60660/river-runner/tree/global"}
         >here</a
       >.
     </p>
