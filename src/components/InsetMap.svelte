@@ -521,6 +521,8 @@
 
   .feature-inputs {
     margin-bottom: 15px;
+    max-height: 26rem;
+    overflow-y: scroll;
   }
 
   .instructions {
