@@ -22,7 +22,7 @@
     const activeNWISSites = data[2].sites;
     const nameOverrides = {};
     data[3].forEach((d) => {
-      nameOverrides[d['nameid']] = {
+      nameOverrides[d['levelpathid']] = {
         feature_name: d['feature_name']
       };
     });
