@@ -13,7 +13,11 @@ router.get("/test", async (_, res) => {
 });
 
 router.post("/suggestions", async (req, res) => {
-  const suggestions = req.body.map((item) => ({ ...item, timestamp: Date.now() }));
+  const suggestions = req.body.map((item) => ({
+    ...item,
+    timestamp: Date.now(),
+    route_url: `https://river-runner-global.samlearner.com/?lat=${JSON.parse(item.route_start).lat}&lng=${JSON.parse(item.route_start).lng}`
+  }));
 
   suggestions.forEach(async (item) => {
     const suggestion = new Suggestion(item);

@@ -15,6 +15,7 @@ const suggestionSchema = new mongoose.Schema({
   },
   timestamp: Number,
   route_start: String,
+  route_url: String,
   has_existing_name: Boolean,
   user_email: String,
 });
