@@ -1,3 +1,5 @@
+<!-- Based heavily on: https://github.com/martinRenou/threejs-water -->
+
 <script>
     import { onMount } from "svelte";
 
@@ -607,7 +609,7 @@
         outline: 0;
     }
 
-    @media only screen and (max-width: 600px) {
+    @media only screen and (max-width: 700px) {
         div {
             display: none;
         }

@@ -1,0 +1,16 @@
+{
+    "short_name": "River Runner",
+    "name": "River Runner Visualization Tool",
+    "icons": [
+      {
+        "src": "favicon.png",
+        "sizes": "64x64 32x32 24x24 16x16",
+        "type": "image/x-icon"
+      }
+    ],
+    "start_url": "/",
+    "display": "fullscreen",
+    "orientation": "portrait",
+    "theme_color": "#000000",
+    "background_color": "#ffffff"
+  }

@@ -1,0 +1,1 @@
+web: npm start --prefix name_server

@@ -5,31 +5,27 @@
   import * as d3 from "d3";
 
   import along from "@turf/along";
-  import { lineString } from "@turf/helpers";
+  import { lineString, round } from "@turf/helpers";
   import distance from "@turf/distance";
+  import nearestPointOnLine from "@turf/nearest-point-on-line";
+  import length from "@turf/length";
 
-  import { distanceToPolygon, getDataBounds } from "../utils";
+  import { distanceToPolygon, getDataBounds, sleep } from "../utils";
   import { coordinates, stoppingFeature } from "../state";
 
   import Prompt from "./Prompt.svelte";
   import NavigationInfo from "./NavigationInfo.svelte";
-  import LocatorMap from "./LocatorMap.svelte";
+  import InsetMap from "./InsetMap.svelte";
   import ContactBox from "./ContactBox.svelte";
   import Controls from "./Controls.svelte";
   import Legend from "./Legend.svelte";
   import WaterLevelDisplay from "./WaterLevelDisplay.svelte";
 
   import {
-    nwisPopupFormat,
-    wqpPopupFormat,
-    caGagePopupFormat,
-    wadePopupFormat,
-  } from "./utils/popupFormats";
-  import {
     getElevations,
     getElevationsMapQuery,
-    addFeatureExtrusions,
     addTopoLayer,
+    addBuildingLayer,
     clearRiverLines,
     drawFlowPath,
     addRivers,
@@ -39,8 +35,16 @@
     pathSmoother,
     calculatePitch,
     pathDistance,
-    findArtificialCameraPoint,
+    projectDistance,
+    getFeaturesOnRoute,
+    assignParentFeatureNames,
   } from "./utils/geoUtils";
+  import {
+    sendQueryData,
+    basicSiteTypeData,
+    getTickElevation,
+    getFlowrateData
+  } from "./utils/mapUtils";
 
   export let bounds;
   export let stateBoundaries;
@@ -50,7 +54,9 @@
   export let visibleIndex;
   export let mapStyle;
   export let addTopo;
+  export let addBuildings = false;
   export let advancedFeaturesOn;
+  export let nameOverrides;
 
   const urlParams = new URLSearchParams(window.location.search);
   let startingSearch = urlParams.has("lat")
@@ -65,6 +71,7 @@
 
   let aborted = false;
   let vizState = "uninitialized";
+  let errorStatus = null;
   let postRun = false;
   let runTimeout;
 
@@ -78,11 +85,12 @@
   let phaseJump;
 
   // Zoom level won't be adjustable on mobile, but it will be set slightly higher to avoid jiterriness
-  const defaultAltitudeMultiplier = window.innerWidth < 600 ? 1.1 : 0.8;
+  const defaultAltitudeMultiplier = window.innerWidth < 700 ? 1.1 : 0.9;
   let altitudeMultiplier = defaultAltitudeMultiplier;
   let altitudeChange = false;
   let paused = false;
   let playbackSpeed = 1;
+  const smoothingCoefficient = 3;
 
   // let currentFlowrateIndex = 0;
   let currentFlowrate = { level: 10000, index: 0 };
@@ -92,6 +100,8 @@
 
   let siteTypes = [];
   let siteTypeData = {};
+
+  let suggestionModalActive = false;
 
   onMount(async () => {
     await tick();
@@ -106,21 +116,38 @@
         style: mapStyle || "mapbox://styles/mapbox/light-v10",
         center: [0, 0],
         zoom: 9,
+        minZoom: 2,
+        maxBounds: [
+          [-500, -65],
+          [500, 85],
+        ],
+        // projection: 'naturalEarth'
       });
 
       map.fitBounds(bounds, { animate: false, padding: 30 });
-      map.setMaxBounds(map.getBounds());
+      if (startingSearch) {
+        map.jumpTo({
+          center: startingSearch.lngLat,
+        });
+      }
       mapBounds = map.getBounds();
+
+      map.dragRotate.disable();
+      map.touchZoomRotate.disableRotation();
 
       map.on("load", () => {
         // If there's feature data passed in as a prop (doesn't really happen anymore), render rivers on load
         if (featureData) {
-          addRivers({ map, featureData, lineWidth: 1 });
+          addRivers({ map, featureData, lineWidth: 2 });
         }
 
         // Add 3D topo layer if flag is set (should basically always be)
         if (addTopo) {
           addTopoLayer({ map });
+        }
+
+        if (addBuildings) {
+          addBuildingLayer({ map });
         }
 
         // Add geocoder search bar to search for location/address instead of clicking
@@ -131,13 +158,13 @@
           showCompass: false,
           visualizePitch: true,
         });
-        if (window.innerWidth > 600) {
+        if (window.innerWidth > 700) {
           map.addControl(nav, "top-left");
         }
 
         // If starting coordinates were passed in as a parameter (from a shared link), load starting path
         if (startingSearch) {
-          initRunner({ map, e: startingSearch });
+          initRunner({ map, e: {...startingSearch, from_share_link: true} });
           startingSearch = null;
         }
       });
@@ -151,45 +178,7 @@
 
     document.head.appendChild(link);
 
-    siteTypeData = {
-      "NWIS Surface Water Sites": {
-        color: "green",
-        layerID: "nwis-points",
-        formatterFunction: nwisPopupFormat,
-        markerRadius: 0.1,
-        markerHeight: 80,
-        displayName: "USGS Monitoring Locations",
-        informationLink: "https://waterdata.usgs.gov/nwis",
-      },
-      "Water Quality Portal": {
-        color: "yellow",
-        layerID: "wqp-points",
-        formatterFunction: wqpPopupFormat,
-        markerRadius: 0.06,
-        markerHeight: 50,
-        displayName: "Water Quality Portal sites",
-        informationLink: "https://www.waterqualitydata.us/",
-      },
-      "Water Data Exchange 2.0 Sites": {
-        color: "#9e0e0e",
-        layerID: "wade-points",
-        formatterFunction: wadePopupFormat,
-        markerRadius: 0.06,
-        markerHeight: 50,
-        displayName: "Points of Diversion",
-        informationLink: "https://westernstateswater.org/wade/",
-      },
-      "Streamgage catalog for CA SB19": {
-        color: "blue",
-        layerID: "ca-gage-points",
-        formatterFunction: caGagePopupFormat,
-        markerRadius: 0.06,
-        markerHeight: 50,
-        displayName: "California Stream Gages",
-        informationLink:
-          "https://gispublic.waterboards.ca.gov/portal/home/item.html?id=32dfb85bd2744487affe6e3475190093",
-      },
-    };
+    siteTypeData = basicSiteTypeData;
 
     return () => {
       map.remove();
@@ -200,15 +189,13 @@
   const initGeocoder = ({ map }) => {
     const geocoderControl = new MapboxGeocoder({
       accessToken: mapboxAccessToken,
-      countries: "us",
-      bbox: bounds.flat(),
       mapboxgl: mapbox,
       placeholder: "Search for any location",
       marker: false,
       flyTo: false,
     });
 
-    if (window.innerWidth < 600) {
+    if (window.innerWidth < 700) {
       geocoderControl.setLimit(4);
     }
 
@@ -223,73 +210,10 @@
       initRunner({ map, e: result });
     });
 
-    const position = window.innerWidth > 600 ? "top-right" : "bottom-left";
+    const position = window.innerWidth > 700 ? "top-right" : "bottom-left";
     map.addControl(geocoderControl, position);
 
     return geocoderControl;
-  };
-
-  const fetchNLDI = async (closestFeature, featureTypes) => {
-    let [flowlinesData, nwisData, caGageData, wqpData, wadeData] =
-      await Promise.all(
-        featureTypes.map((siteType) => getSiteData(closestFeature, siteType))
-      );
-
-    // Determine which NWIS Sites have display images, based on the active gage data stored in a static data file
-    if (nwisData) {
-      nwisData.features.forEach((feature) => {
-        feature.properties.display_image = activeNWISSites.includes(
-          feature.properties.identifier.slice(5)
-        );
-      });
-    }
-
-    // Gather the true station metadata web links for any CA gages
-    if (caGageData) {
-      const weblinkResponses = await Promise.all(
-        caGageData.features.map((gage) => {
-          return async () => {
-            try {
-              const response = await fetch(
-                `https://sb19.linked-data.internetofwater.dev/collections/ca_gages/items/${gage.properties.identifier}?f=json`
-              );
-              return response;
-            } catch (e) {
-              console.log("Error fetching CA Gage data:", e);
-              return { status: 500 };
-            }
-          };
-        })
-      );
-
-      const weblinkData = await Promise.all(
-        weblinkResponses.map((a) => (a.status === 200 ? a.json() : null))
-      );
-
-      caGageData.features.forEach((d, i) => {
-        d.properties.weblink =
-          weblinkData[i] === null ? null : weblinkData[i].properties.weblink;
-      });
-
-      caGageData.features = caGageData.features
-        .slice()
-        .filter((d) => d.properties.weblink !== null);
-    }
-
-    // For each site type that exists on a given run, plot it the points and add them to a data array for the legend to use
-    siteTypes = [];
-    [nwisData, wqpData, wadeData, caGageData].forEach((featureSet) => {
-      if (featureSet && featureSet?.features?.length > 0) {
-        const sourceName = featureSet.features[0].properties.sourceName;
-
-        siteTypes.push(sourceName);
-        const siteData = siteTypeData[sourceName];
-
-        addFeatureExtrusions({ map, featureSet, ...siteData });
-      }
-    });
-
-    return flowlinesData;
   };
 
   const initRunner = async ({ map, e }) => {
@@ -304,43 +228,67 @@
     d3.selectAll(".mapboxgl-ctrl-geocoder").style("display", "none");
     d3.select(".mapboxgl-ctrl-top-left").style("display", "none");
 
+    // Correct out of bounds longitudes from map wrapping
+    if (e.lngLat.lng < -180) {
+      e.lngLat.lng += 360
+    }
+    else if (e.lngLat.lng > 180) {
+      e.lngLat.lng -= 360;
+    }
+
     currentLocation = e.lngLat;
     startCoordinates = e.lngLat;
 
-    // Use the NLDI API to find the closest flowline coordinate to the click
-    const closestFeature = await findClosestFeature(e);
+    try {
+      mapBounds = map.getBounds();
+    } catch (e) {
+      // console.error(e);
+      return;
+    }
 
-    // If no feature can be found, even after rounding coordinates off, send error message and reset
-    if (!closestFeature) {
+    if (!mapBounds.contains(e.lngLat)) {
+      map.flyTo({
+        center: e.lngLat,
+        speed: 0.9,
+        zoom: 4,
+      });
+
+      map.once("moveend", () => {
+        setTimeout(() => {
+          initializeData({ map, e });
+        }, 300);
+      });
+    } else {
+      initializeData({ map, e });
+    }
+  };
+
+  const initializeData = async ({ map, e }) => {
+    const flowlinesData = await getFlowlineData(e);
+
+    if (!flowlinesData || flowlinesData.error === true) {
+      errorStatus = flowlinesData;
       vizState = "error";
+
+      sendQueryData(e.lngLat.lat, e.lngLat.lat, false, true);      
       resetMapState({ map, error: true });
       return;
     }
 
-    // Get downstream flowline path from origin point, as well as any data on NWIS Sites, Reference Gages, WQP Sites, WaDE Sites
-    const featureTypes = advancedFeaturesOn
-      ? ["flowlines", "nwissite", "ca_gages", "wqp", "wade"]
-      : ["flowlines"];
-    // const featureTypes = ["flowlines", "nwissite", "ca_gages", "wqp", "wade"];
-    const flowlinesData = await fetchNLDI(closestFeature, featureTypes);
-
-    // Append VAA data/flowrate data from firebase to flowline data
-    flowlinesData.features = await addVAAData(flowlinesData.features);
-
     if (advancedFeaturesOn === true) {
       flowlinesData.features = await getFlowrateData(flowlinesData.features);
+      flowrates = flowlinesData.features.map((d) => d.properties.flowrate);
+      // Set max flowrate for gauge. Max defaults to 20,000 cubic feet/second, but will go up if there's a higher value in the current path's set
+      maxFlowrate = Math.max(...flowrates, 20000);
+      // currentFlowrateIndex = 0;
     }
-    flowrates = flowlinesData.features.map((d) => d.properties.flowrate);
-
-    // Set max flowrate for gauge. Max defaults to 20,000 cubic feet/second, but will go up if there's a higher value in the current path's set
-    maxFlowrate = Math.max(...flowrates, 20000);
-    // currentFlowrateIndex = 0;
 
     // Find the parent features of flowlines along the path
     totalLength =
       flowlinesData.features[0].properties.pathlength > 0
         ? flowlinesData.features[0].properties.pathlength
         : undefined;
+
     const riverFeatures = getFeatureGroups(flowlinesData);
     featureGroups = riverFeatures;
 
@@ -362,8 +310,7 @@
           ]
         : flowlinesData.features
             .map((feature) => feature.geometry.coordinates)
-            .flat()
-            .filter((d, i) => i % 2 === 0);
+            .flat();
 
     // Update props used by child components
     riverPath = [{ geometry: { coordinates: coordinatePath } }];
@@ -377,63 +324,76 @@
     });
     stoppingFeature.update(() => pathStoppingFeature);
 
-    // Draw river lines from flowline features. Combining them aboids mapbox simplification on low zoom levels that creates a choppy looking flow path.
+    // Draw river lines from flowline features. Combining them avoids mapbox simplification on low zoom levels that creates a choppy looking flow path.
     const combinedFlowlines = flowlinesData.features[0];
     combinedFlowlines.geometry.coordinates = flowlinesData.features
       .map((a) => a.geometry.coordinates)
       .flat();
     drawFlowPath({ map, featureData: [combinedFlowlines], lineWidth: 3 });
 
-    let terrainElevationMultiplier = 1;
-    let cameraBaseAltitude = 3600;
-    const elevationArrayStep = Math.min(coordinatePath.length / 2 - 1, 100);
+    let terrainElevationMultiplier = 1.2;
+    let cameraBaseAltitude = 4300;
+    const elevationArrayStep = Math.max(2, Math.round(
+      Math.min(coordinatePath.length / 4 - 1, 100)
+    ));
 
-    // const elevations = await getElevations(coordinatePath, elevationArrayStep);
-    let elevations = getElevationsMapQuery(
-      coordinatePath,
-      map,
-      elevationArrayStep
-    );
+    // Sometimes while 3D tiles are still loading, the queryTerrainElevation method doesn't hit,
+    // so we'll give it a few attempts with a delay in between before falling back on a method that doesn't
+    // account for exaggeration and will lead to some disjointedness
+    let elevations = null;
+    let attempts = 0;
+
+    while (
+      attempts < 10 &&
+      (elevations === null || elevations.every((d) => d === null))
+    ) {
+      await sleep(200);
+
+      elevations = await getElevationsMapQuery(
+        coordinatePath,
+        map,
+        elevationArrayStep
+      );
+
+      attempts += 1;
+    }
+
     if (elevations.includes(null)) {
       elevations = await getElevations(coordinatePath, elevationArrayStep);
-      cameraBaseAltitude = 4300;
-      terrainElevationMultiplier = 1.25;
     }
 
     // Take base altitude and then adjust up based on the elevation of the first coordinate
     // The multiplier is necessary for higher elevations since they tend to be mountainous areas, as well, requiring additional height for the camera
     const initialElevation =
-      cameraBaseAltitude +
       altitudeMultiplier *
-        terrainElevationMultiplier *
-        Math.round(elevations[0]);
+      (cameraBaseAltitude +
+        terrainElevationMultiplier * Math.round(elevations[0]));
 
-    const targetPitch = 69;
+    const targetPitch = 70;
     const distanceGap =
       (initialElevation * Math.tan((targetPitch * Math.PI) / 180)) / 1000;
 
     // Create smoothed path by averaging coordinates with their neighbors. This helps reduce horizontal movement with bendy rivers.
-    // const smoothedPath = pathSmoother(coordinatePath, Math.min(9, Math.floor(coordinatePath.length / 2)));
     const smoothedPath = pathSmoother(
       coordinatePath,
       Math.min(
-        Math.floor(9 * altitudeMultiplier),
+        Math.floor(smoothingCoefficient * altitudeMultiplier),
         Math.floor(coordinatePath.length / 2)
       )
     );
 
     const routeDistance = pathDistance(smoothedPath);
-    const trueRouteDistance = pathDistance(coordinatePath);
 
     let firstBearingPoint = along(
       lineString(smoothedPath),
-      routeDistance * 0.00005
+      routeDistance * 0.000005
     ).geometry.coordinates;
 
     if (firstBearingPoint === smoothedPath[0]) {
       firstBearingPoint = smoothedPath[1];
     }
-    const cameraStart = findArtificialCameraPoint({
+
+    const cameraStart = projectDistance({
       distanceGap: altitudeMultiplier * distanceGap,
       originPoint: smoothedPath[0],
       targetPoint: firstBearingPoint,
@@ -480,7 +440,7 @@
 
     // When using the vizState change/return instead of startRun, it displays the overview before automatically starting the run
     // We'll do this with a countdown timer on desktop, and just right into it on mobile
-    if (window.innerWidth > 600) {
+    if (window.innerWidth > 700) {
       vizState = "overview";
       map.scrollZoom.enable();
 
@@ -515,6 +475,8 @@
     paused = false;
     playbackSpeed = 1;
 
+    resetRiverHighlight();
+
     // Fly to clicked point and pitch camera (initial "raindrop" animation)
     map.flyTo({
       center,
@@ -532,7 +494,7 @@
 
     // Maintain a consistent speed using the route distance. The higher the speed coefficient, the slower the runner will move.
     const speedCoefficient =
-      smoothedPath.length < 50 ? 200 : 185 - 5 * (cameraPitch - 70);
+      smoothedPath.length < 50 ? 200 : 175 - 5 * (cameraPitch - 70);
     const animationDuration = Math.round(speedCoefficient * routeDistance);
 
     map.once("moveend", () => {
@@ -555,46 +517,68 @@
     });
   };
 
-  const findClosestFeature = async (e) => {
-    let closestFeature;
+  const getFlowlineData = async (e) => {
+    let flowlinesData = null;
     let resultFound = false;
     let roundingDigits = 6;
+
     while (resultFound === false && roundingDigits >= 0) {
-      roundingDigits -= 1;
-
       try {
-        const closestFeatureURL = `https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/position?coords=POINT%28${e.lngLat.lng.toFixed(
-          roundingDigits
-        )}%20${e.lngLat.lat.toFixed(roundingDigits)}%29`;
-        const coordinateResponse = await fetch(closestFeatureURL);
-        const data = await coordinateResponse.json();
-        closestFeature = data.features[0];
+        const roundedLng = e.lngLat.lng.toFixed(roundingDigits);
+        const roundedLat = e.lngLat.lat.toFixed(roundingDigits);
+        const iowURL = `https://merit.internetofwater.app/processes/river-runner/execution?lng=${roundedLng}&lat=${roundedLat}&properties=comid,nameid,pathlength,levelpathi,streamlev,riverid,hydroseq`;
 
-        resultFound = true;
-      } catch {
+        const flowlinesResponse = await fetch(iowURL, {
+          method: "GET",
+          headers: {
+            "Accept-Encoding": "gzip",
+            Accept: "application/json",
+          },
+        });
+
+        if (flowlinesResponse.status !== 200) {
+          return { error: true, status: "API error" };
+        }
+
+        const results = (await flowlinesResponse.json());
+        if (results.code === "fail") {
+          return { error: true, status: "Routing error" };
+        }
+
+        const responseData = results.value;
+        resultFound = responseData.features.length > 0;
+
+        if (resultFound) {
+          flowlinesData = responseData;
+
+          sendQueryData(roundedLat, roundedLng, e.from_share_link);
+
+          flowlinesData.features = flowlinesData.features.sort(
+            (a, b) => b.properties.hydroseq - a.properties.hydroseq
+          );
+
+          const inlandFeatures = getFeaturesOnRoute(
+            stoppingFeatures,
+            flowlinesData.features
+          );
+
+          flowlinesData.features = assignParentFeatureNames(
+            flowlinesData.features,
+            nameOverrides,
+            inlandFeatures
+          );
+        }
+      } catch (e) {
+        // console.error(e);
         console.log(
           `Error while rounding coordinates to ${roundingDigits} digits. Trying again with less precise coordinates.`
         );
       }
+
+      roundingDigits -= 1;
     }
 
-    return closestFeature;
-  };
-
-  const getSiteData = async (closestFeature, siteType) => {
-    const siteURL =
-      closestFeature.properties.navigation +
-      "/DM/" +
-      siteType +
-      "?f=json&distance=6000";
-    const response = await fetch(siteURL);
-
-    try {
-      const data = await response.json();
-      return data;
-    } catch {
-      return null;
-    }
+    return flowlinesData;
   };
 
   const determineStoppingFeature = ({ destinationPoint, stoppingFeatures }) => {
@@ -619,46 +603,23 @@
       }
     });
 
+    const stopFeatureNameOverrides = {
+      "Saint Lawrence River": "Gulf of Saint Lawrence",
+      "Yangtze": "East China Sea",
+      "Canal do Sul": "North Atlantic Ocean"
+    };
+    const stopFeatureName = closestFeature.properties.stop_feature_name;
+
     // If the closest feature in the stop feature set is more than 10 km away, this is landing on an unidentified inland water feature
     if (
       minDistance > 10000 &&
       closestFeature.properties.stop_feature_type !== "ocean"
     ) {
       return "Inland Water Feature";
-    }
-    // Sometimes there's a large inlet/bay that creates artificial distance between the destination point and my imperfect ocean shapefile polygon
-    // It may then think that another feature, like a lake is the "stop feature", (this happens in the Alabama gulf, for example).
-    // We're going to say that if the ocean is within 50km of the stop point, it's very likely the true end point
-    else if (
-      closestFeature.properties.stop_feature_type === "ocean" ||
-      oceanDistance < 50000
+    } else if (
+      Object.keys(stopFeatureNameOverrides).includes(stopFeatureName)
     ) {
-      if (closestFeature.properties.stop_feature_name === "San Francisco Bay") {
-        return "San Francisco Bay";
-      }
-	  else if (closestFeature.properties.stop_feature_name === "Delaware Bay") {
-		return "Delaware Bay";
-	  }
-
-      // Gulf of Mexico: lng < -82 && lat < 31
-      // Chesapeake Bay: -75.6 > lng > -77.68 && 39.61 > lat > 37.79
-      // Delaware Bay: -74.87 > lng > -75.54 && 39.53 > lat > 38.77
-      // Otherwise split by Texas, basically, between Atlantic/Pacific
-      return destinationPoint[0] < -82 && destinationPoint[1] < 31
-        ? "Gulf of Mexico"
-        : destinationPoint[0] < -75.6330075 &&
-          destinationPoint[0] > -77.684621 &&
-          destinationPoint[1] > 37.793247 &&
-          destinationPoint[1] < 39.61332
-        ? "Chesapeake Bay"
-        : destinationPoint[0] < -74.872 &&
-          destinationPoint[0] > -75.542 &&
-          destinationPoint[1] > 38.771 &&
-          destinationPoint[1] < 39.525
-        ? "Delaware Bay"
-        : destinationPoint[0] > -100
-        ? "Atlantic Ocean"
-        : "Pacific Ocean";
+      return stopFeatureNameOverrides[stopFeatureName];
     } else {
       return closestFeature.properties.stop_feature_name;
     }
@@ -671,10 +632,10 @@
     const featureNames = featurePoints.map(
       (feature) => feature.properties.feature_id
     );
+
     let uniqueFeatureNames = featureNames.filter(
       (item, i, ar) => ar.indexOf(item) === i
     );
-    const fullDistance = flowlinesData.features[0].properties.pathlength;
 
     // This fixes a rare, but frustrating bug, where because I don't sample each flowline for VAA data, and because...
     // I assume once a feature starts that it continues until the next unique feature, this function gets confused by...
@@ -693,19 +654,21 @@
 
         const sandwichOccurence = featurePoints
           .slice(firstOccurence)
-          .findIndex(
-            (point) => point.properties.feature_id === uniqueFeatureNames[i - 1]
+          .findIndex((point) =>
+            uniqueFeatureNames.slice(0, i).includes(point.properties.feature_id)
           );
+
         const surroundingFeatureData = featurePoints
           .slice(firstOccurence)
-          .find(
-            (point) => point.properties.feature_id === uniqueFeatureNames[i - 1]
+          .find((point) =>
+            uniqueFeatureNames.slice(0, i).includes(point.properties.feature_id)
           );
 
         if (
           sandwichOccurence > 0 &&
-          surroundingFeatureData.properties.streamlvl ===
-            featureData.properties.streamlvl
+          featureData.properties.renamed_inland !== true &&
+          surroundingFeatureData.properties.streamlev ===
+            featureData.properties.streamlev
         ) {
           return false;
         } else {
@@ -724,18 +687,16 @@
 
       return {
         feature_data_index: featureIndex,
-        progress:
-          fullDistance === -999
-            ? featureIndex / flowlinesData.features.length
-            : (fullDistance - featureData.properties.pathlength) / fullDistance,
+        first_coordinate: featureData.geometry.coordinates[0],
         name: featureData.properties.feature_name,
         distance_from_destination:
           featureData.properties.pathlength === -9999
             ? 0
             : featureData.properties.pathlength,
         index,
-        stream_level: featureData.properties.streamlvl,
+        stream_level: featureData.properties.streamlev,
         active: false,
+        levelpathi: featureData.properties.levelpathi,
       };
     });
 
@@ -743,18 +704,24 @@
     // that's part of the Mississippi Delta, but isn't technically isn't grouped under the Mississippi river, and it considers it the last step
     // Here, I'm going to treat anyting with streamlevel 1 (which means it's a terminal feature) as the last feature in the sequence, but add an
     // exception case for paths that stop at inland lakes, just in case their last feature isn't encoded as stream level 1
-    let trueStopFeatureIndex = riverFeatures.findIndex(
-      (feature) => feature.stream_level === 1
-    );
-    if (trueStopFeatureIndex === -1) {
-      trueStopFeatureIndex = riverFeatures.length - 1;
+
+    // This is necessary beacause I'm getting streamlevel = 1 on non-terminal features in the data, otherwise excluding dummy terminal features should be more straightforward
+    if (
+      riverFeatures.length > 1 &&
+      riverFeatures[riverFeatures.length - 1].name.includes(
+        "Unidentified River"
+      ) &&
+      !riverFeatures[riverFeatures.length - 2].name.includes(
+        "Unidentified River"
+      ) &&
+      riverFeatures[riverFeatures.length - 2].stream_level === 1
+    ) {
+      riverFeatures = riverFeatures.slice(0, riverFeatures.length - 1);
     }
-    riverFeatures = riverFeatures.slice(0, trueStopFeatureIndex + 1);
 
     riverFeatures.forEach((feature, i) => {
       if (i === riverFeatures.length - 1) {
         feature.length_km = Math.round(feature.distance_from_destination);
-        feature.stop_point = null;
 
         feature.feature_data = [
           {
@@ -771,7 +738,6 @@
           feature.distance_from_destination -
           riverFeatures[i + 1].distance_from_destination;
         feature.length_km = Math.round(featureLength);
-        feature.stop_point = riverFeatures[i + 1].progress;
 
         feature.feature_data = [
           {
@@ -790,96 +756,6 @@
     });
 
     return riverFeatures;
-  };
-
-  const getFeatureVAA = async (feature, index, thinningIndex) => {
-    if (index > 50 && index % thinningIndex !== 0) {
-      return feature;
-    }
-
-    const baseUrl = "https://river-runner-20db3-default-rtdb.firebaseio.com/";
-    const response = await fetch(
-      baseUrl + feature.properties.nhdplus_comid + ".json"
-    );
-    const featureData = await response.json();
-
-    feature.properties = {
-      ...feature.properties,
-      ...featureData,
-      // feature_name: featureData.gnis_name || `Unnamed River/Stream (${featureData.levelpathid})`
-      feature_name: featureData.gnis_name || `Unnamed River/Stream`,
-      feature_id: featureData.gnis_name || featureData.levelpathid,
-    };
-
-    return feature;
-  };
-
-  const addVAAData = (flowlineFeatures) => {
-    const thinningIndex = Math.ceil(flowlineFeatures.length / 250);
-    return Promise.all(
-      flowlineFeatures.map(
-        async (feature, i) => await getFeatureVAA(feature, i, thinningIndex)
-      )
-    );
-  };
-
-  const getFeatureFlowrate = async (
-    feature,
-    index,
-    thinningIndex,
-    bufferSize = 50
-  ) => {
-    if (index > bufferSize && index % thinningIndex !== 0) {
-      return feature;
-    }
-
-    const baseUrl = "https://river-runner-flowrates.firebaseio.com/";
-    const response = await fetch(
-      baseUrl + feature.properties.nhdplus_comid + ".json"
-    );
-    const featureData = await response.json();
-
-    feature.properties = {
-      ...feature.properties,
-      flowrate: parseFloat(featureData.flowrate),
-    };
-
-    return feature;
-  };
-
-  const getFlowrateData = async (
-    flowlineFeatures,
-    thinningIndex = 4,
-    bufferSize = 50
-  ) => {
-    // Gather a sample of flowline flowrate data from firebase server, using thinningIndex
-    const flowrateData = await Promise.all(
-      flowlineFeatures.map(
-        async (feature, i) =>
-          await getFeatureFlowrate(feature, i, thinningIndex, bufferSize)
-      )
-    );
-
-    // Interpolate gathered data to fill values for flowlines filtered out by thinningIndex
-    flowrateData.forEach((feature, i) => {
-      if (i > bufferSize && i % thinningIndex !== 0) {
-        const lastIndex = thinningIndex * Math.floor(i / thinningIndex);
-        const nextIndex = thinningIndex * Math.ceil(i / thinningIndex);
-
-        const lastValue = flowrateData[lastIndex].properties.flowrate;
-        const nextValue = flowrateData[nextIndex]?.properties?.flowrate;
-
-        let interpolatedValue = nextValue
-          ? lastValue +
-            (nextValue - lastValue) * ((i % thinningIndex) / thinningIndex)
-          : lastValue;
-        interpolatedValue = Math.ceil(interpolatedValue);
-
-        feature.properties.flowrate = interpolatedValue;
-      }
-    });
-
-    return flowrateData;
   };
 
   const positionCamera = ({
@@ -923,14 +799,10 @@
     let alongTarget = along(lineString(smoothedPath), routeDistance * 0.000005)
       .geometry.coordinates;
 
-    if (alongTarget === smoothedPath[0]) {
-      alongTarget = smoothedPath[1];
-    }
-
-    const alongCamera = findArtificialCameraPoint({
+    const alongCamera = projectDistance({
       distanceGap: altitudeMultiplier * distanceGap,
       originPoint: smoothedPath[0],
-      targetPoint: alongTarget,
+      targetPoint: alongTarget === smoothedPath[0] ? smoothedPath[1] : alongTarget,
     });
 
     const bearing = bearingBetween(alongCamera, alongTarget);
@@ -974,17 +846,13 @@
   }) => {
     let start;
 
-    const startPoints = riverFeatures.map((d) => d.progress);
-    let startPoint = startPoints[0];
-
-    const stopPoints = riverFeatures.map((d) => d.stop_point);
-    let stopPoint = stopPoints[0];
+    const featureIndexes = riverFeatures.map((d) => d.feature_data_index);
     activeFeatureIndex = 0;
 
     let route = pathSmoother(
       coordinatePath,
       Math.min(
-        Math.floor(9 * altitudeMultiplier),
+        Math.floor(smoothingCoefficient * altitudeMultiplier),
         Math.floor(coordinatePath.length / 2)
       )
     );
@@ -999,26 +867,18 @@
     let speedCoefficient =
       1 / Math.pow(1 + 1.1 * Math.log(altitudeMultiplier), 1.25);
 
+    const coordinatePathLineString = lineString(coordinatePath);
+
     const frame = (time) => {
       if (!start) {
         start = lastTime = time;
-      }
-
-      // If a user has clicked one of the features in the navigation box, we'll need to adjust the "phase" to jump to that feature
-      if (phaseJump !== undefined) {
-        phase = phaseJump;
-
-        startPoint = startPoints[activeFeatureIndex];
-        stopPoint = stopPoints[activeFeatureIndex];
-
-        phaseJump = undefined;
       }
 
       if (altitudeChange) {
         route = pathSmoother(
           coordinatePath,
           Math.min(
-            Math.floor(9 * altitudeMultiplier),
+            Math.floor(smoothingCoefficient * altitudeMultiplier),
             Math.floor(coordinatePath.length / 2)
           )
         );
@@ -1031,6 +891,24 @@
           1 / Math.pow(1 + 1.1 * Math.log(altitudeMultiplier), 1.25);
 
         altitudeChange = false;
+      }
+
+      // If a user has clicked one of the features in the navigation box, we'll need to adjust the "phase" to jump to that feature
+      if (phaseJump !== undefined) {
+        const nearestCoordinate = nearestPointOnLine(
+          lineString(route),
+          phaseJump
+        ).properties.index;
+
+        if (nearestCoordinate === 0) {
+          phase = 0;
+        } else {
+          const distanceCovered = length(
+            lineString(route.slice(0, nearestCoordinate + 1))
+          );
+          phase = distanceCovered / routeDistance;
+        }
+        phaseJump = undefined;
       }
 
       // phase determines how far through the animation we are
@@ -1049,43 +927,14 @@
 
       lastTime = time;
 
-      const adjustedTargetPhase = altitudeMultiplier * phaseGap + phase;
-
       // When finished, exit animation loop and zoom out to show ending point
       if (phase > 1 || aborted === true) {
         exitNavigation({ map, coordinatePath });
         return;
       }
 
-      // When you hit next feature group, adjust index
-      if (stopPoint && phase >= stopPoint) {
-        activeFeatureIndex += 1;
-        startPoint = stopPoint;
-        stopPoint = stopPoints[activeFeatureIndex];
-      }
-
-      // If winding in reverse, and encountering a feature group change, do the reverse
-      if (startPoint && phase <= startPoint) {
-        activeFeatureIndex -= 1;
-        stopPoint = startPoint;
-        startPoint = startPoints[activeFeatureIndex];
-      }
-
       // Calculate camera elevation using the base elevation and the elevation at the specific coordinate point
-      const elevationLast = elevations[Math.floor(elevations.length * phase)];
-      const elevationNext =
-        elevations[Math.ceil(elevations.length * phase)] ||
-        elevations[Math.ceil(elevations.length * phase) - 1];
-      const elevationStepProgress =
-        elevations.length * phase - Math.floor(elevations.length * phase);
-
-      const elevationEstimate =
-        elevationLast + (elevationNext - elevationLast) * elevationStepProgress;
-      const tickElevation =
-        cameraBaseAltitude +
-        altitudeMultiplier *
-          terrainElevationMultiplier *
-          Math.round(elevationEstimate);
+      const tickElevation = getTickElevation(phase, elevations, altitudeMultiplier, cameraBaseAltitude, terrainElevationMultiplier);
 
       let alongTarget = along(
         lineString(route),
@@ -1097,8 +946,8 @@
       }
 
       const alongCamera =
-        phase - altitudeMultiplier * phaseGap < 0
-          ? findArtificialCameraPoint({
+        phase - altitudeMultiplier * phaseGap <= 0
+          ? projectDistance({
               distanceGap: altitudeMultiplier * distanceGap,
               originPoint: route[0],
               targetPoint: alongTarget,
@@ -1119,16 +968,39 @@
         bearing,
       });
 
-      // Set new flowrate value for water level gauge
-      currentFlowrate = {
-        level: flowrates[Math.floor(flowrates.length * phase)],
-        index: Math.floor(flowrates.length * phase),
-      };
-
-      // This will update the location of the marker on the locator map
-      if (tick % 5 === 0) {
-        currentLocation = alongTarget;
+      if (advancedFeaturesOn === true) {
+        // Set new flowrate value for water level gauge
+        currentFlowrate = {
+          level: flowrates[Math.floor(flowrates.length * phase)],
+          index: Math.floor(flowrates.length * phase),
+        };
       }
+
+      if (tick % 8 === 0) {
+        const closestCoordinatePathIndex = nearestPointOnLine(
+          coordinatePathLineString,
+          alongTarget
+        ).properties.index;
+
+        // This will update the location of the marker on the locator map
+        currentLocation = coordinatePath[closestCoordinatePathIndex];
+
+        // When you hit next feature group, adjust index
+        if (
+          playbackSpeed > 0 &&
+          featureIndexes[activeFeatureIndex + 1] &&
+          closestCoordinatePathIndex >= featureIndexes[activeFeatureIndex + 1]
+        ) {
+          activeFeatureIndex += 1;
+        } else if (
+          playbackSpeed < 0 &&
+          featureIndexes[activeFeatureIndex] &&
+          closestCoordinatePathIndex < featureIndexes[activeFeatureIndex]
+        ) {
+          activeFeatureIndex -= 1;
+        }
+      }
+
       tick += 1;
 
       window.requestAnimationFrame(frame);
@@ -1152,7 +1024,7 @@
       pitch: 0,
       padding: 70,
       maxZoom: 12,
-      offset: window.innerWidth < 600 ? [0, -20] : [0, 0], // On mobile, the search bar will get in the way so we actually want it a little off center
+      offset: window.innerWidth < 700 ? [0, -20] : [0, 0], // On mobile, the search bar will get in the way so we actually want it a little off center
     });
 
     map.once("moveend", () => {
@@ -1177,6 +1049,7 @@
     if (error) {
       setTimeout(() => {
         vizState = "uninitialized";
+        errorStatus = null;
       }, 2000);
     } else {
       vizState = "uninitialized";
@@ -1210,7 +1083,7 @@
 
   const handleJump = (e) => {
     activeFeatureIndex = e.detail.featureIndex;
-    phaseJump = e.detail.pathProgress;
+    phaseJump = e.detail.coordinate;
   };
 
   const jumpIndex = (direction) => {
@@ -1222,17 +1095,16 @@
         activeFeatureIndex + 1,
         featureGroups.length - 1
       );
-      phaseJump = featureGroups[activeFeatureIndex].progress;
+      phaseJump = featureGroups[activeFeatureIndex].first_coordinate;
     } else if (direction === "backward" && activeFeatureIndex - 1 >= 0) {
       activeFeatureIndex = Math.max(activeFeatureIndex - 1, 0);
-      phaseJump = featureGroups[activeFeatureIndex].progress;
+      phaseJump = featureGroups[activeFeatureIndex].first_coordinate;
     }
   };
 
   const setAltitudeMultipier = (e) => {
-    // console.log(e.target.value);
     altitudeChange = true;
-    altitudeMultiplier = e.target.value;
+    altitudeMultiplier = parseFloat(e.target.value);
   };
 
   const togglePause = () => {
@@ -1262,6 +1134,18 @@
     }
   };
 
+  const showSuggestionModal = () => {
+    playbackSpeed = 0;
+    paused = true;
+    suggestionModalActive = true;
+  };
+
+  const hideSuggestionModal = () => {
+    suggestionModalActive = false;
+    playbackSpeed = 1;
+    paused = false;
+  };
+
   $: coordinates.update(() => {
     if (mapBounds._sw) {
       return [
@@ -1278,17 +1162,25 @@
   class="map-wrapper"
   style="opacity: {visibleIndex ? 1 : 0}"
   bind:this={container}
+  aria-label="world map"
 >
   {#if map}
     <slot />
   {/if}
 </div>
 
-<Prompt {vizState} {currentLocation} />
+<Prompt {vizState} {errorStatus} {currentLocation} />
 <ContactBox {vizState} />
 
-<div class="left-column" style="z-index: {vizState === 'running' ? 10 : -10};">
-  <LocatorMap
+<div
+  class="left-column"
+  style="z-index: {vizState === 'running'
+    ? suggestionModalActive
+      ? 25
+      : 10
+    : -10};"
+>
+  <InsetMap
     {bounds}
     {stateBoundaries}
     visibleIndex={null}
@@ -1296,9 +1188,12 @@
     {currentLocation}
     {vizState}
     {activeFeatureIndex}
+    {startCoordinates}
     {featureGroups}
+    {suggestionModalActive}
+    on:hide-suggestion-modal={hideSuggestionModal}
   />
-  {#if window.innerWidth > 600 && advancedFeaturesOn === true}
+  {#if window.innerWidth > 700 && advancedFeaturesOn === true}
     <WaterLevelDisplay
       {currentFlowrate}
       {maxFlowrate}
@@ -1309,7 +1204,7 @@
   {/if}
 </div>
 
-<div class="right-column">
+<div class="right-column" style="z-index: {suggestionModalActive ? -10 : 20};">
   <NavigationInfo
     on:highlight-feature={(e) => highlightRiverFeature(e.detail.featureIndex)}
     on:remove-highlight={resetRiverHighlight}
@@ -1319,6 +1214,7 @@
     on:exit-path={() => resetMapState({ map })}
     on:abort-run={exitFunction}
     on:progress-set={(e) => handleJump(e)}
+    on:show-suggestion-modal={showSuggestionModal}
     {vizState}
     {activeFeatureIndex}
     {featureGroups}
@@ -1380,7 +1276,7 @@
     font-weight: bold;
   }
 
-  @media only screen and (min-width: 601px) {
+  @media only screen and (min-width: 701px) {
     .right-column,
     .left-column {
       display: flex;
@@ -1392,7 +1288,7 @@
     .right-column {
       right: 3rem;
       top: 3rem;
-      z-index: 20;
+      /* z-index: 20; */
     }
 
     .left-column {
@@ -1403,7 +1299,7 @@
     }
   }
 
-  @media only screen and (max-width: 600px) {
+  @media only screen and (max-width: 700px) {
     .map-wrapper {
       /* this prevents some weird stuff on mobile screens when the geolocator search suggestons come up*/
       /* height: max(400px, calc(100% - 20vh)); */
@@ -1414,7 +1310,7 @@
   }
 
   /* Keyboard open */
-  @media only screen and (max-width: 600px) and (max-height: 400px) {
+  @media only screen and (max-width: 700px) and (max-height: 400px) {
     .map-wrapper {
       height: 100%;
       top: 0;
@@ -1422,7 +1318,7 @@
   }
 
   /* Tablet */
-  @media only screen and (min-width: 601px) and (max-width: 1100px) {
+  @media only screen and (min-width: 701px) and (max-width: 1100px) {
     .right-column {
       bottom: 3rem;
     }

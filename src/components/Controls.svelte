@@ -164,21 +164,21 @@
     margin: auto;
   }
 
-  .slow-button {
+  /* .slow-button {
     height: 1rem;
     width: 1rem;
     position: absolute;
-  }
+  } */
 
   .skip-back-button,
   .skip-forward-button {
     display: none;
   }
 
-  @media only screen and (max-width: 600px) {
-    .slow-button {
+  @media only screen and (max-width: 700px) {
+    /* .slow-button {
       display: none;
-    }
+    } */
 
     .detail-speed-slider {
       display: none;
@@ -229,7 +229,7 @@
   }
 
   /* Tablet */
-  @media only screen and (min-width: 601px) and (max-width: 1100px) {
+  @media only screen and (min-width: 701px) and (max-width: 1100px) {
     .wrapper {
       margin-top: auto;
     }

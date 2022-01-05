@@ -56,9 +56,13 @@
     dispatch("remove-highlight");
   };
 
-  const setPhase = (pathProgress, featureIndex) => {
+  const showSuggestionModal = () => {
+    dispatch("show-suggestion-modal");
+  };
+
+  const setPhase = (featureIndex, coordinate) => {
     if (activeFeatureIndex >= 0) {
-      dispatch("progress-set", { pathProgress, featureIndex });
+      dispatch("progress-set", { featureIndex, coordinate });
     }
   };
 
@@ -99,32 +103,36 @@
   class="navbox-wrapper"
   style={`display: ${
     visible === true &&
-    (screenWidth > 600 ||
+    (screenWidth > 700 ||
       vizState === "overview" ||
       (activeFeatureIndex >= 0 && featureGroups))
       ? "block"
       : "none"
   };`}
+  tabindex="0"
+  aria-label="navigation box with flowpath details"
 >
   <div
     class="total-length"
-    style="display: {screenWidth > 600 && totalLength ? 'block' : 'none'}"
+    style="display: {screenWidth > 700 && totalLength ? 'block' : 'none'}"
+    tabindex="0"
+    aria-label="total length of flowpath"
   >
     Total Length: {Math.round(totalLength)} km
   </div>
 
   <div
     class="info-box"
-    style="display: {screenWidth <= 600 && vizState === 'overview'
+    style="display: {screenWidth <= 700 && vizState === 'overview'
       ? 'none'
       : 'block'}"
   >
     <!-- Desktop/Tablet -->
-    {#if screenWidth > 600}
-      <div class="feature-listing bounding-location">
+    {#if screenWidth > 700}
+      <div class="feature-listing bounding-location" tabindex="0" aria-label="starting location">
         {currentStartLocation}
       </div>
-      {#each featureGroups as { name, length_km, index, progress }, i}
+      {#each featureGroups as { name, length_km, index, first_coordinate }, i}
         <div
           style="font-weight:{index === activeFeatureIndex
             ? 'bold'
@@ -134,7 +142,7 @@
           class:river-feature={activeFeatureIndex >= 0 &&
             vizState === "running"}
           class:hover-feature={vizState === "overview"}
-          on:click={() => setPhase(progress, index)}
+          on:click={() => setPhase(index, first_coordinate)}
           on:mouseenter={() => {
             if (vizState === "overview") {
               highlightFeature(index);
@@ -145,11 +153,13 @@
               removeHighlight();
             }
           }}
+          tabindex="0"
+          aria-label="flowpath section"
         >
           {i + 1}. {name} ({length_km} km)
         </div>
       {/each}
-      <div class="feature-listing bounding-location">
+      <div class="feature-listing bounding-location" tabindex="0" aria-label="stopping feature">
         {currentStoppingFeature}
       </div>
 
@@ -201,14 +211,9 @@
       {/each}
     {/if}
   </div>
-
-  <div
-    style="display: {activeFeatureIndex >= 0 && vizState === 'running'
-      ? 'block'
-      : 'none'};"
-  >
+  {#if activeFeatureIndex >= 0 && vizState === "running"}
     <CloseButton on:abort-run />
-  </div>
+  {/if}
 
   <div
     class="pre-run-controls"
@@ -285,6 +290,30 @@
     >
   </div>
 </div>
+<div
+  style="
+    display: {screenWidth > 700 &&
+  vizState === 'running' &&
+  featureGroups
+    .map(({ name }) => name.toLowerCase().includes('unidentified'))
+    .some((d) => d)
+    ? 'block'
+    : 'none'};
+    opacity: {vizState === 'running' && activeFeatureIndex >= 0 ? 1 : 0};
+    cursor: {vizState === 'running' && activeFeatureIndex >= 0
+    ? 'pointer'
+    : 'default'};
+    z-index: {vizState === 'running' && activeFeatureIndex >= 0
+    ? 'unset'
+    : -10};
+    "
+  class="name-suggestion-tooltip"
+  on:click={vizState === "running" && activeFeatureIndex >= 0
+    ? showSuggestionModal
+    : () => {}}
+>
+  Know one of these missing river names? Make a suggestion!
+</div>
 
 <style>
   .navbox-wrapper {
@@ -308,6 +337,17 @@
     box-shadow: 3px 2px 2px rgba(56, 56, 56, 0.925);
 
     font-family: "Roboto", "Inter", Arial, Helvetica, sans-serif;
+  }
+
+  .name-suggestion-tooltip {
+    display: block;
+    padding: 7px;
+    background-color: #c2c2a4;
+    border-radius: 3px;
+    margin-top: -14px;
+    color: black;
+    font-size: 0.85rem;
+    /* cursor: pointer; */
   }
 
   .feature-listing {
@@ -455,7 +495,7 @@
   }
 
   /* Mobile */
-  @media only screen and (max-width: 600px) {
+  @media only screen and (max-width: 700px) {
     .pre-run-controls {
       display: none;
     }
@@ -496,7 +536,7 @@
   }
 
   /* Tablet */
-  @media only screen and (min-width: 601px) and (max-width: 1100px) {
+  @media only screen and (min-width: 701px) and (max-width: 1100px) {
     .navbox-wrapper {
       /* right: 3rem; */
     }

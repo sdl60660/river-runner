@@ -37,8 +37,10 @@ const distanceToPolygon = ({ startPoint, targetPolygon }) => {
     
     let distance;
 
-    // console.log(targetPolygon);
-    if (targetPolygon.type === "MultiPolygon") {
+    if (targetPolygon.coordinates.length === 0) {
+      return 9999999;
+    }
+    if (targetPolygon.type === "MultiPolygon" || typeof targetPolygon.coordinates[0][0][0] === "object") {
       distance = targetPolygon.coordinates
         .map(coords => distanceToPolygon({ startPoint, targetPolygon: polygon(coords).geometry }))
         .reduce((smallest, current) => (current < smallest ? current : smallest));
@@ -120,7 +122,15 @@ const copyTextToClipboard = (text) => {
   });
 }
 
+const sleep = (ms) => {
+  return new Promise(function (resolve, reject) {
+    setTimeout(function () {
+      resolve();
+    }, ms);
+  });
+}
+
 const stateAbbreviations = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'];
 
 
-export { contructCoordinateQuadtree, roundToDigits, getDataBounds, distanceToPolygon, copyTextToClipboard, stateAbbreviations };
+export { contructCoordinateQuadtree, roundToDigits, getDataBounds, distanceToPolygon, copyTextToClipboard, sleep, stateAbbreviations };

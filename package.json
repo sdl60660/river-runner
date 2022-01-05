@@ -1,12 +1,18 @@
 {
   "name": "river-runner",
-  "version": "1.6.2",
+  "version": "2.0.0",
   "private": true,
+  "author": "Sam Learner",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sdl60660/river-runner"
+  },
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
     "start": "sirv public --no-clear",
-    "update-nwis": "node scripts/gatherActiveNWISSites.js"
+    "update-nwis": "node scripts/gatherActiveNWISSites.js",
+    "postinstall": "npm install --prefix name_server"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^17.0.0",
@@ -25,6 +31,8 @@
   "dependencies": {
     "@rollup/plugin-json": "^4.1.0",
     "@turf/along": "^6.3.0",
+    "@turf/bbox": "^6.5.0",
+    "@turf/bbox-polygon": "^6.5.0",
     "@turf/bearing": "^6.3.0",
     "@turf/boolean-point-in-polygon": "^6.3.0",
     "@turf/buffer": "^6.3.0",
@@ -33,13 +41,14 @@
     "@turf/destination": "^6.3.0",
     "@turf/distance": "^6.3.0",
     "@turf/helpers": "^6.3.0",
+    "@turf/intersect": "^6.5.0",
     "@turf/length": "^6.3.0",
-    "@turf/line-distance": "^4.7.3",
     "@turf/line-offset": "^6.3.0",
-    "@turf/line-split": "^6.3.0",
+    "@turf/line-split": "^6.5.0",
+    "@turf/nearest-point-on-line": "^6.5.0",
     "@turf/point-to-line-distance": "^6.3.0",
+    "@turf/points-within-polygon": "^6.5.0",
     "@turf/polygon-to-line": "^6.3.0",
-    "axios": "^0.21.1",
     "d3": "^6.7.0",
     "d3-fetch": "^2.0.0",
     "dateformat": "^4.5.1",
@@ -49,11 +58,15 @@
     "node-html-parser": "^3.3.5",
     "scrollama": "^2.2.2",
     "sirv-cli": "^1.0.0",
+    "svelte-actions-resize": "^0.1.1",
     "svelte-loading-spinners": "^0.1.4",
     "svelte-slider": "^1.0.0",
     "three": "^0.113.0",
     "title-case": "^3.0.3",
     "topojson-client": "^3.1.0",
     "topojson-server": "^3.0.1"
+  },
+  "engines": {
+    "node": "14.x"
   }
 }
