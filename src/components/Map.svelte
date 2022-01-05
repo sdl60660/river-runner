@@ -605,7 +605,8 @@
 
     const stopFeatureNameOverrides = {
       "Saint Lawrence River": "Gulf of Saint Lawrence",
-      "Yangtze": "East China Sea"
+      "Yangtze": "East China Sea",
+      "Canal do Sul": "North Atlantic Ocean"
     };
     const stopFeatureName = closestFeature.properties.stop_feature_name;
 
