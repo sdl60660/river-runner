@@ -25,7 +25,7 @@
         /></a
       >
       ·
-      <a target="_blank" href="mailto:learnersd@gmail.com"
+      <a target="_blank" href="mailto:learnersd+river-runner@gmail.com"
         ><img class="icon-img" src="/images/email.svg" alt="email link" /></a
       >
       ·
