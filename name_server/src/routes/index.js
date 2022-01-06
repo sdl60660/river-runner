@@ -35,6 +35,8 @@ router.post("/unnamed_features", async (req, res) => {
     route_url: `https://river-runner-global.samlearner.com/?lat=${JSON.parse(item.route_start).lat}&lng=${JSON.parse(item.route_start).lng}`
   }));
 
+  console.log({ unnamedFeatures });
+
   unnamedFeatures.forEach(async (item) => {
     const unnamedFeature = new UnnamedFeature(item);
     await unnamedFeature.save();
