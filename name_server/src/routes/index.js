@@ -30,12 +30,13 @@ router.post("/suggestions", async (req, res) => {
 
 router.post("/unnamed_features", async (req, res) => {
   const unnamedFeatures = req.body.map((item) => ({
-    ...item,
+    // Corrects for an earlier frontend mistake
+    levelpathid: item.levelpathid || Number(item.name_id),
+    current_name: item.current_name,
     timestamp: Date.now(),
+    route_start: item.route_start,
     route_url: `https://river-runner-global.samlearner.com/?lat=${JSON.parse(item.route_start).lat}&lng=${JSON.parse(item.route_start).lng}`
   }));
-
-  console.log({ unnamedFeatures });
 
   unnamedFeatures.forEach(async (item) => {
     const unnamedFeature = new UnnamedFeature(item);

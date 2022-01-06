@@ -30,8 +30,6 @@ export const sendUnnamedFeatureData = async (startCoordinates, featureNames) => 
     .filter((d) => d.includes("Unidentified River "))
     .filter((v, i, a) => a.indexOf(v) === i);
 
-  console.log({ unidentifiedFeatures });
-
   const featureData = unidentifiedFeatures.map((feature) => ({
     levelpathid: Number(feature.split("Unidentified River ")[1]),
     current_name: feature,
