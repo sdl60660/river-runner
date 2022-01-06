@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const unamedFeatureSchema = new mongoose.Schema({
-  nameid: {
+  levelpathid: {
     type: Number,
     required: true,
   },

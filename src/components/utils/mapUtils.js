@@ -25,8 +25,6 @@ export const sendQueryData = async (lat, lng, startingSearch, query_error = fals
 };
 
 export const sendUnnamedFeatureData = async (startCoordinates, featureNames) => {
-  console.log({ featureNames });
-
   // Get list of unidentified, unique features
   const unidentifiedFeatures = featureNames
     .filter((d) => d.includes("Unidentified River "))
@@ -35,7 +33,7 @@ export const sendUnnamedFeatureData = async (startCoordinates, featureNames) => 
   console.log({ unidentifiedFeatures });
 
   const featureData = unidentifiedFeatures.map((feature) => ({
-    name_id: feature.split("Unidentified River ")[1],
+    levelpathid: Number(feature.split("Unidentified River ")[1]),
     current_name: feature,
     route_start: JSON.stringify(startCoordinates),
   }));
