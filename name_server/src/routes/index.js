@@ -1,6 +1,7 @@
 const express = require("express");
 const Suggestion = require("../models/suggestion");
 const Query = require("../models/query");
+const UnnamedFeature = require("../models/unnamedFeature");
 
 const router = express.Router();
 
@@ -25,6 +26,21 @@ router.post("/suggestions", async (req, res) => {
   });
 
   res.status(201).json(suggestions);
+});
+
+router.post("/unnamed_features", async (req, res) => {
+  const unnamedFeatures = req.body.map((item) => ({
+    ...item,
+    timestamp: Date.now(),
+    route_url: `https://river-runner-global.samlearner.com/?lat=${JSON.parse(item.route_start).lat}&lng=${JSON.parse(item.route_start).lng}`
+  }));
+
+  unnamedFeatures.forEach(async (item) => {
+    const unnamedFeature = new UnnamedFeature(item);
+    await unnamedFeature.save();
+  });
+
+  res.status(201).json(unnamedFeatures);
 });
 
 // stash (completely anonymized) user queries to better understand where people are looking
