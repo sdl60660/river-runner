@@ -36,7 +36,7 @@ export const sendUnnamedFeatureData = async (startCoordinates, featureNames) => 
 
   const featureData = unidentifiedFeatures.map((feature) => ({
     name_id: feature.split("Unidentified River ")[1],
-    current_name: `Unidentified River ${feature}`,
+    current_name: feature,
     route_start: JSON.stringify(startCoordinates),
   }));
 
