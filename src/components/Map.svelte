@@ -117,11 +117,11 @@
         center: [0, 0],
         zoom: 9,
         minZoom: 2,
-        maxBounds: [
-          [-500, -65],
-          [500, 85],
-        ],
-        // projection: 'naturalEarth'
+        // maxBounds: [
+        //   [-500, -65],
+        //   [500, 85],
+        // ],
+        projection: 'globe'
       });
 
       map.fitBounds(bounds, { animate: false, padding: 30 });
