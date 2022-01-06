@@ -17,7 +17,7 @@ router.post("/suggestions", async (req, res) => {
   const suggestions = req.body.map((item) => ({
     ...item,
     timestamp: Date.now(),
-    route_url: `https://river-runner-global.samlearner.com/?lat=${JSON.parse(item.route_start).lat}&lng=${JSON.parse(item.route_start).lng}`
+    route_url: `https://river-runner-global.samlearner.com/?lng=${JSON.parse(item.route_start).lng}&lat=${JSON.parse(item.route_start).lat}`
   }));
 
   suggestions.forEach(async (item) => {
@@ -35,7 +35,7 @@ router.post("/unnamed_features", async (req, res) => {
     current_name: item.current_name,
     timestamp: Date.now(),
     route_start: item.route_start,
-    route_url: `https://river-runner-global.samlearner.com/?lat=${JSON.parse(item.route_start).lat}&lng=${JSON.parse(item.route_start).lng}`
+    route_url: `https://river-runner-global.samlearner.com/?lng=${JSON.parse(item.route_start).lng}&lat=${JSON.parse(item.route_start).lat}`
   }));
 
   unnamedFeatures.forEach(async (item) => {
