@@ -608,7 +608,9 @@
       "Yangtze": "East China Sea",
       "Canal do Sul": "North Atlantic Ocean"
     };
-    const stopFeatureName = closestFeature.properties.stop_feature_name;
+    const stopFeatureName = closestFeature.properties.stop_feature_name === "" ?
+      `Inland Water Feature ${closestFeature.properties.id}`:
+      closestFeature.properties.stop_feature_name;
 
     // If the closest feature in the stop feature set is more than 10 km away, this is landing on an unidentified inland water feature
     if (
@@ -621,7 +623,7 @@
     ) {
       return stopFeatureNameOverrides[stopFeatureName];
     } else {
-      return closestFeature.properties.stop_feature_name;
+      return stopFeatureName;
     }
   };
 
