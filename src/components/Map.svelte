@@ -41,6 +41,7 @@
   } from "./utils/geoUtils";
   import {
     sendQueryData,
+    sendUnnamedFeatureData,
     basicSiteTypeData,
     getTickElevation,
     getFlowrateData
@@ -638,6 +639,11 @@
     let uniqueFeatureNames = featureNames.filter(
       (item, i, ar) => ar.indexOf(item) === i
     );
+
+    const allNames = featurePoints.map(
+      (feature) => feature.properties.feature_name
+    )
+    sendUnnamedFeatureData(startCoordinates, allNames);
 
     // This fixes a rare, but frustrating bug, where because I don't sample each flowline for VAA data, and because...
     // I assume once a feature starts that it continues until the next unique feature, this function gets confused by...

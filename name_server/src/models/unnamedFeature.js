@@ -13,8 +13,7 @@ const unamedFeatureSchema = new mongoose.Schema(
     timestamp: Number,
     route_start: String,
     route_url: String,
-  },
-  { collection: "unnamed_features" }
+  }
 );
 
 const UnnamedFeature = mongoose.model("UnnamedFeature", unamedFeatureSchema);
