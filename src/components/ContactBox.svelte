@@ -47,10 +47,12 @@
       Learn about it
       <a href="https://ksonda.github.io/global-river-runner/" target="_blank"
         >here</a
-      >. Code and data for this project lives
+      >.</p>
+      
+    <p>Code and data for this project lives
       <a target="_blank" href={"https://github.com/sdl60660/river-runner/tree/global"}
         >here</a
-      >.
+      >. Thank you to <a href="https://www.mapbox.com/community/" target="_blank">Mapbox</a> for sponsoring.
     </p>
     <p>
       This version of the app is in beta. Report any issues you experience <a
@@ -96,7 +98,7 @@
 
     position: absolute;
     z-index: 30;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     bottom: 1.5rem;
     right: 1rem;
     max-width: 32rem;
