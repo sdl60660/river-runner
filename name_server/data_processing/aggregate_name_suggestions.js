@@ -3,6 +3,9 @@ const path = require("path");
 const assert = require("assert");
 const MongoClient = require("mongodb").MongoClient;
 
+const fs = require("fs");
+const csv = require("fast-csv");
+
 dotenv.config({ path: path.join(__dirname, "../.env") });
 
 const unnamedFeatureCounts = [
@@ -46,6 +49,18 @@ const suggestionCounts = [
   },
 ];
 
+const getExistingOverrides = async (filepath) => {
+  let rows = [];
+
+  return new Promise((resolve) => {
+    fs.createReadStream(path.join(__dirname, filepath))
+      .pipe(csv.parse({ headers: true }))
+      .on("error", (error) => console.error(error))
+      .on("data", (row) => rows.push(row))
+      .on("end", () => resolve(rows));
+  });
+};
+
 const runAggregation = async (aggregationPipeline, collection) => {
   return new Promise((resolve) => {
     MongoClient.connect(
@@ -70,10 +85,13 @@ const runAggregation = async (aggregationPipeline, collection) => {
 };
 
 const main = async () => {
+  const csvFilepath = "../../public/data/name_overrides.csv";
+
+  const existingOverrides = await getExistingOverrides(csvFilepath);
   const groupedOccurences = await runAggregation(unnamedFeatureCounts, "unnamed_features");
   const groupedSuggestions = await runAggregation(suggestionCounts, "suggestions");
 
-  console.log(groupedSuggestions.filter(d => d.count > 3));
+  console.log(groupedSuggestions.filter((d) => d.count > 3));
 };
 
 main();
