@@ -91,7 +91,12 @@ const main = async () => {
   const groupedOccurences = await runAggregation(unnamedFeatureCounts, "unnamed_features");
   const groupedSuggestions = await runAggregation(suggestionCounts, "suggestions");
 
-  console.log(groupedSuggestions.filter((d) => d.count > 3));
+  const overridenIDs = existingOverrides.map((d) => Number(d.levelpathid));
+  const unhandledSuggestions = groupedSuggestions
+    .filter((d) => d.count > 3)
+    .filter((d) => !overridenIDs.includes(d._id));
+
+  console.log(unhandledSuggestions);
 };
 
 main();
