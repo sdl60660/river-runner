@@ -25,3 +25,4 @@
 # /data_processing/data/water_bodies.geojson
 package-lock.json
 name_server/package-lock.json
+name_server/data_processing/data
