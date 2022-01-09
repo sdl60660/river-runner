@@ -91,40 +91,41 @@ const main = async () => {
   const groupedOccurences = await runAggregation(unnamedFeatureCounts, "unnamed_features");
   const groupedSuggestions = await runAggregation(suggestionCounts, "suggestions");
 
-  //   const overridenIDs = existingOverrides.map((d) => Number(d.levelpathid));
-  //   const unhandledSuggestions = groupedSuggestions
-  //     .filter((d) => d.count > 3)
-  //     .filter((d) => !overridenIDs.includes(d._id));
+  const overridenIDs = existingOverrides.map((d) => Number(d.levelpathid));
+  const unhandledSuggestions = groupedSuggestions
+    .filter((d) => d.count > 3)
+    .filter((d) => !overridenIDs.includes(d._id));
 
-  //   console.log(unhandledSuggestions);
-  const joinedData = groupedOccurences.map((d) => {
-    const suggestions = groupedSuggestions.find((a) => a._id === d._id) || {
-      count: 0,
-      route_url: [],
-      suggestions: null,
-    };
+  console.log(unhandledSuggestions);
 
-    const override = existingOverrides.find((a) => Number(a.levelpathid) === d._id);
+  // const joinedData = groupedOccurences.map((d) => {
+  //   const suggestions = groupedSuggestions.find((a) => a._id === d._id) || {
+  //     count: 0,
+  //     route_url: [],
+  //     suggestions: null,
+  //   };
 
-    return {
-      levelpathid: d._id,
-      sample_route_url: [...suggestions.route_url, d.route_url].filter((d) => d)[0],
-      num_suggestions: suggestions.count,
-      num_occurences: d.count,
-      suggestions: suggestions.suggestions,
-      overriden: override ? true : false,
-      overriden_val: override ? override.feature_name : null,
-    };
-  });
+  //   const override = existingOverrides.find((a) => Number(a.levelpathid) === d._id);
 
-  const outputFile = fs.createWriteStream("data/aggregated_suggestions.csv");
+  //   return {
+  //     levelpathid: d._id,
+  //     sample_route_url: [...suggestions.route_url, d.route_url].filter((d) => d)[0],
+  //     num_suggestions: suggestions.count,
+  //     num_occurences: d.count,
+  //     suggestions: suggestions.suggestions,
+  //     overriden: override ? true : false,
+  //     overriden_val: override ? override.feature_name : null,
+  //   };
+  // });
 
-  csv
-    .write(joinedData, { headers: true })
-    .on("finish", function () {
-      console.log("Write to CSV successfully!");
-    })
-    .pipe(outputFile);
+  // const outputFile = fs.createWriteStream("data/aggregated_suggestions.csv");
+
+  // csv
+  //   .write(joinedData, { headers: true })
+  //   .on("finish", function () {
+  //     console.log("Write to CSV successfully!");
+  //   })
+  //   .pipe(outputFile);
 
   //   console.log(joinedData.slice(0,5));
 };
