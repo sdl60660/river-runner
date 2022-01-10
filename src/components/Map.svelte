@@ -1212,7 +1212,7 @@
   {/if}
 </div>
 
-<div class="right-column" style="z-index: {suggestionModalActive ? -10 : 20};">
+<div class="right-column" style="z-index: {suggestionModalActive ? -10 : 31};">
   <NavigationInfo
     on:highlight-feature={(e) => highlightRiverFeature(e.detail.featureIndex)}
     on:remove-highlight={resetRiverHighlight}
