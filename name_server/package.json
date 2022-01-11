@@ -41,6 +41,7 @@
     "nodemon": "^2.0.15"
   },
   "engines": {
-    "node": "14.x"
+    "node": "14.x",
+    "npm": "8.x"
   }
 }
