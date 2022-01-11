@@ -33,10 +33,6 @@ const getDataBounds = (linestringData, coordinatesExtracted=false) => {
 // Returns distance in meters (negative values for points inside) from a point to the edges of a polygon
 // This function comes from here: https://github.com/Turfjs/turf/issues/1743
 const distanceToPolygon = ({ startPoint, targetPolygon }) => {
-    // if (!targetPolygon.geometry) {
-      console.log('here!', targetPolygon)
-    // }
-
     if (targetPolygon.type === "Feature") { targetPolygon = targetPolygon.geometry }
     
     let distance;
