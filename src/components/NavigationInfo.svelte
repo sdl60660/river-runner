@@ -82,6 +82,20 @@
     autoplayDisrupted = true;
   };
 
+  const handleKeydown = (event) => {
+    if (event.key === "Escape") {
+      if (vizState !== "overview") {
+        return;
+      }
+      else if (postRun === true || autoplayDisrupted === true) {
+        exitNavigationPath();
+      }
+      else {
+        disruptAutoplay();
+      }
+    }
+  }
+
   onMount(() => {
     const unsubscribeStoppingFeature = stoppingFeature.subscribe(
       (featureName) => {
@@ -97,7 +111,7 @@
   });
 </script>
 
-<svelte:window bind:innerWidth={screenWidth} />
+<svelte:window bind:innerWidth={screenWidth} on:keydown={handleKeydown} />
 
 <div
   class="navbox-wrapper"
@@ -129,57 +143,61 @@
   >
     <!-- Desktop/Tablet -->
     {#if screenWidth > 700}
-      <div class="feature-listing bounding-location" tabindex="0" aria-label="starting location">
-        {currentStartLocation}
-      </div>
-      {#each featureGroups as { name, length_km, index, first_coordinate }, i}
-        <div
-          style="font-weight:{index === activeFeatureIndex
-            ? 'bold'
-            : 'normal'};"
-          key={i}
-          class="feature-listing river-feature"
-          class:river-feature={activeFeatureIndex >= 0 &&
-            vizState === "running"}
-          class:hover-feature={vizState === "overview"}
-          on:click={() => setPhase(index, first_coordinate)}
-          on:mouseenter={() => {
-            if (vizState === "overview") {
-              highlightFeature(index);
-            }
-          }}
-          on:mouseleave={() => {
-            if (vizState === "overview") {
-              removeHighlight();
-            }
-          }}
-          tabindex="0"
-          aria-label="flowpath section"
-        >
-          {i + 1}. {name} ({length_km} km)
+      <div class="feature-list-wrapper">
+        <div class="feature-listing bounding-location" tabindex="0" aria-label="starting location">
+          {currentStartLocation}
         </div>
-      {/each}
-      <div class="feature-listing bounding-location" tabindex="0" aria-label="stopping feature">
-        {currentStoppingFeature}
-      </div>
+        {#each featureGroups as { name, length_km, index, first_coordinate }, i}
+          <div
+            style="font-weight:{index === activeFeatureIndex
+              ? 'bold'
+              : 'normal'};"
+            key={i}
+            class="feature-listing river-feature"
+            class:river-feature={activeFeatureIndex >= 0 &&
+              vizState === "running"}
+            class:hover-feature={vizState === "overview"}
+            on:click={() => setPhase(index, first_coordinate)}
+            on:mouseenter={() => {
+              if (vizState === "overview") {
+                highlightFeature(index);
+              }
+            }}
+            on:mouseleave={() => {
+              if (vizState === "overview") {
+                removeHighlight();
+              }
+            }}
+            tabindex="0"
+            aria-label="flowpath section"
+          >
+            {i + 1}. {name} ({length_km} km)
+          </div>
+        {/each}
+        <div class="feature-listing bounding-location" tabindex="0" aria-label="stopping feature">
+          {currentStoppingFeature}
+        </div>
 
-      {#each [currentStartLocation, ...featureGroups, currentStoppingFeature] as progressPoint, i}
-        <div
-          style="
-                    background-color: {activeFeatureIndex + 1 === i
-            ? 'rgb(76, 79, 230)'
-            : activeFeatureIndex + 1 > i
-            ? 'rgb(117, 117, 117)'
-            : 'rgb(243, 243, 243)'};
-                    top: calc(1rem + 8px + ({i /
-            (featureGroups.length + 2)}*(100% - 2rem - 6px)));
-                    "
-          class="progress-point"
-          key={i}
-        />
-      {/each}
+      <div class="progress-points">
+        {#each [currentStartLocation, ...featureGroups, currentStoppingFeature] as progressPoint, i}
+          <div
+            style="
+              background-color: {activeFeatureIndex + 1 === i
+                ? 'rgb(76, 79, 230)'
+                : activeFeatureIndex + 1 > i
+                ? 'rgb(117, 117, 117)'
+                : 'rgb(243, 243, 243)'};
+              top: calc(1rem + 8px + ({i /
+              (featureGroups.length + 2)}*(100% - 2rem - 6px)));
+            "
+            class="progress-point"
+            key={i}
+          />
+        {/each}
+      </div>
 
       <div class="progress-bar" />
+    </div>
 
       <!-- Mobile (simpler, only displays name of current feature) -->
     {:else if activeFeatureIndex >= 0 && featureGroups}
@@ -491,6 +509,13 @@
   @keyframes dash {
     to {
       stroke-dashoffset: 0;
+    }
+  }
+
+  /* Shorter screens */
+  @media only screen and (max-height: 900px) {
+    .feature-listing {
+      font-size: 0.9rem;
     }
   }
 

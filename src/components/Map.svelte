@@ -1154,6 +1154,12 @@
     paused = false;
   };
 
+  const handleKeydown = (e) => {
+    if (e.key === "Escape" && vizState === 'running' && activeFeatureIndex >= 0) {
+      aborted = true;
+    }
+  }
+
   $: coordinates.update(() => {
     if (mapBounds._sw) {
       return [
@@ -1164,7 +1170,7 @@
   });
 </script>
 
-<svelte:window on:resize={handleResize} />
+<svelte:window on:resize={handleResize} on:keydown={handleKeydown} />
 
 <div
   class="map-wrapper"
