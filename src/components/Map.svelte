@@ -284,12 +284,13 @@
       // currentFlowrateIndex = 0;
     }
 
-    // Find the parent features of flowlines along the path
+
     totalLength =
-      flowlinesData.features[0].properties.pathlength > 0
-        ? flowlinesData.features[0].properties.pathlength
+      flowlinesData.features[0].properties.pathlength >= 0
+        ? flowlinesData.features[0].properties.pathlength + flowlinesData.features[0].properties.lengthkm
         : undefined;
 
+    // Find the parent features of flowlines along the path
     const riverFeatures = getFeatureGroups(flowlinesData);
     featureGroups = riverFeatures;
 
@@ -527,7 +528,7 @@
       try {
         const roundedLng = e.lngLat.lng.toFixed(roundingDigits);
         const roundedLat = e.lngLat.lat.toFixed(roundingDigits);
-        const iowURL = `https://merit.internetofwater.app/processes/river-runner/execution?lng=${roundedLng}&lat=${roundedLat}&properties=comid,nameid,pathlength,levelpathi,streamlev,riverid,hydroseq`;
+        const iowURL = `https://merit.internetofwater.app/processes/river-runner/execution?lng=${roundedLng}&lat=${roundedLat}&properties=comid,nameid,pathlength,levelpathi,streamlev,riverid,hydroseq,lengthkm`;
 
         const flowlinesResponse = await fetch(iowURL, {
           method: "GET",
@@ -700,7 +701,7 @@
         distance_from_destination:
           featureData.properties.pathlength === -9999
             ? 0
-            : featureData.properties.pathlength,
+            : featureData.properties.pathlength + featureData.properties.lengthkm,
         index,
         stream_level: featureData.properties.streamlev,
         active: false,
