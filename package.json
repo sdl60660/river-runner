@@ -54,7 +54,6 @@
     "dateformat": "^4.5.1",
     "fast-xml-parser": "^3.19.0",
     "mapbox-gl": "2.3",
-    "node-fetch-polyfill": "^2.0.6",
     "node-html-parser": "^3.3.5",
     "scrollama": "^2.2.2",
     "sirv-cli": "^1.0.0",
