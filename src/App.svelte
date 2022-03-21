@@ -36,8 +36,8 @@
     stoppingFeatures={data[1]}
     activeNWISSites={data[2]}
     visibleIndex={1}
-    addTopo={true}
-    mapStyle={"mapbox://styles/mapbox-map-design/ckhqrf2tz0dt119ny6azh975y"}
+    addTopo={false}
+    mapStyle={"mapbox://styles/samlearner/cl102hmrx002o14o0oa29kqfw"}
     advancedFeaturesOn={false}
   />
 {/await}
