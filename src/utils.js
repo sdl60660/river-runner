@@ -37,7 +37,7 @@ const distanceToPolygon = ({ startPoint, targetPolygon }) => {
     
     let distance;
 
-    if (targetPolygon.coordinates.length === 0) {
+    if (!targetPolygon || targetPolygon.coordinates.length === 0) {
       return 9999999;
     }
     if (targetPolygon.type === "MultiPolygon" || typeof targetPolygon.coordinates[0][0][0] === "object") {

@@ -44,8 +44,8 @@
     activeNWISSites={data[2]}
     nameOverrides={data[3]}
     visibleIndex={1}
-    addTopo={true}
-    mapStyle={"mapbox://styles/mapbox-map-design/ckhqrf2tz0dt119ny6azh975y"}
+    addTopo={false}
+    mapStyle={"mapbox://styles/samlearner/cl0xgv1fo001615l8vwu3xq31"}
     advancedFeaturesOn={false}
   />
 {/await}

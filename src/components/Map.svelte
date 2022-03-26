@@ -41,6 +41,7 @@
   } from "./utils/geoUtils";
   import {
     sendQueryData,
+    sendUnnamedFeatureData,
     basicSiteTypeData,
     getTickElevation,
     getFlowrateData
@@ -116,7 +117,7 @@
         style: mapStyle || "mapbox://styles/mapbox/light-v10",
         center: [0, 0],
         zoom: 9,
-        minZoom: 2,
+        minZoom: 1.6,
         // maxBounds: [
         //   [-500, -65],
         //   [500, 85],
@@ -132,8 +133,8 @@
       }
       mapBounds = map.getBounds();
 
-      map.dragRotate.disable();
-      map.touchZoomRotate.disableRotation();
+      // map.dragRotate.disable();
+      // map.touchZoomRotate.disableRotation();
 
       map.on("load", () => {
         // If there's feature data passed in as a prop (doesn't really happen anymore), render rivers on load
@@ -155,7 +156,7 @@
 
         // Initialize and add explicit zoom controls in top-left corner, if not on mobile
         const nav = new mapbox.NavigationControl({
-          showCompass: false,
+          showCompass: true,
           visualizePitch: true,
         });
         if (window.innerWidth > 700) {
@@ -283,12 +284,13 @@
       // currentFlowrateIndex = 0;
     }
 
-    // Find the parent features of flowlines along the path
+
     totalLength =
-      flowlinesData.features[0].properties.pathlength > 0
-        ? flowlinesData.features[0].properties.pathlength
+      flowlinesData.features[0].properties.pathlength >= 0
+        ? flowlinesData.features[0].properties.pathlength + flowlinesData.features[0].properties.lengthkm
         : undefined;
 
+    // Find the parent features of flowlines along the path
     const riverFeatures = getFeatureGroups(flowlinesData);
     featureGroups = riverFeatures;
 
@@ -526,7 +528,7 @@
       try {
         const roundedLng = e.lngLat.lng.toFixed(roundingDigits);
         const roundedLat = e.lngLat.lat.toFixed(roundingDigits);
-        const iowURL = `https://merit.internetofwater.app/processes/river-runner/execution?lng=${roundedLng}&lat=${roundedLat}&properties=comid,nameid,pathlength,levelpathi,streamlev,riverid,hydroseq`;
+        const iowURL = `https://merit.internetofwater.app/processes/river-runner/execution?lng=${roundedLng}&lat=${roundedLat}&properties=comid,nameid,pathlength,levelpathi,streamlev,riverid,hydroseq,lengthkm`;
 
         const flowlinesResponse = await fetch(iowURL, {
           method: "GET",
@@ -608,7 +610,9 @@
       "Yangtze": "East China Sea",
       "Canal do Sul": "North Atlantic Ocean"
     };
-    const stopFeatureName = closestFeature.properties.stop_feature_name;
+    const stopFeatureName = closestFeature.properties.stop_feature_name === "" ?
+      `Inland Water Feature ${closestFeature.properties.id}`:
+      closestFeature.properties.stop_feature_name;
 
     // If the closest feature in the stop feature set is more than 10 km away, this is landing on an unidentified inland water feature
     if (
@@ -621,7 +625,7 @@
     ) {
       return stopFeatureNameOverrides[stopFeatureName];
     } else {
-      return closestFeature.properties.stop_feature_name;
+      return stopFeatureName;
     }
   };
 
@@ -636,6 +640,11 @@
     let uniqueFeatureNames = featureNames.filter(
       (item, i, ar) => ar.indexOf(item) === i
     );
+
+    const allNames = featurePoints.map(
+      (feature) => feature.properties.feature_name
+    )
+    sendUnnamedFeatureData(startCoordinates, allNames);
 
     // This fixes a rare, but frustrating bug, where because I don't sample each flowline for VAA data, and because...
     // I assume once a feature starts that it continues until the next unique feature, this function gets confused by...
@@ -692,7 +701,7 @@
         distance_from_destination:
           featureData.properties.pathlength === -9999
             ? 0
-            : featureData.properties.pathlength,
+            : featureData.properties.pathlength + featureData.properties.lengthkm,
         index,
         stream_level: featureData.properties.streamlev,
         active: false,
@@ -1146,6 +1155,12 @@
     paused = false;
   };
 
+  const handleKeydown = (e) => {
+    if (e.key === "Escape" && vizState === 'running' && activeFeatureIndex >= 0) {
+      aborted = true;
+    }
+  }
+
   $: coordinates.update(() => {
     if (mapBounds._sw) {
       return [
@@ -1156,7 +1171,7 @@
   });
 </script>
 
-<svelte:window on:resize={handleResize} />
+<svelte:window on:resize={handleResize} on:keydown={handleKeydown} />
 
 <div
   class="map-wrapper"
@@ -1204,7 +1219,7 @@
   {/if}
 </div>
 
-<div class="right-column" style="z-index: {suggestionModalActive ? -10 : 20};">
+<div class="right-column" style="z-index: {suggestionModalActive ? -10 : 31};">
   <NavigationInfo
     on:highlight-feature={(e) => highlightRiverFeature(e.detail.featureIndex)}
     on:remove-highlight={resetRiverHighlight}

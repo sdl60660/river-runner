@@ -1,6 +1,6 @@
 {
   "name": "river-runner",
-  "version": "2.0.2",
+  "version": "2.2.1",
   "private": true,
   "author": "Sam Learner",
   "repository": {
@@ -53,8 +53,7 @@
     "d3-fetch": "^2.0.0",
     "dateformat": "^4.5.1",
     "fast-xml-parser": "^3.19.0",
-    "mapbox-gl": "2.7.0-alpha.1",
-    "node-fetch-polyfill": "^2.0.6",
+    "mapbox-gl": "^2.8.0-alpha.4",
     "node-html-parser": "^3.3.5",
     "scrollama": "^2.2.2",
     "sirv-cli": "^1.0.0",

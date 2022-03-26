@@ -7,12 +7,12 @@ import {
 
 import { addFeatureExtrusions } from "./mapboxUtils";
 
-export const sendQueryData = async (lat, lng, startingSearch, query_error=false) => {
+export const sendQueryData = async (lat, lng, startingSearch, query_error = false) => {
   const queryData = {
     lat,
     lng,
     from_share_link: startingSearch === true,
-    query_error
+    query_error,
   };
 
   fetch("https://river-runner-name-suggestions.herokuapp.com/api/query", {
@@ -21,6 +21,27 @@ export const sendQueryData = async (lat, lng, startingSearch, query_error=false)
       "Content-Type": "application/json",
     },
     body: JSON.stringify(queryData),
+  });
+};
+
+export const sendUnnamedFeatureData = async (startCoordinates, featureNames) => {
+  // Get list of unidentified, unique features
+  const unidentifiedFeatures = featureNames
+    .filter((d) => d.includes("Unidentified River "))
+    .filter((v, i, a) => a.indexOf(v) === i);
+
+  const featureData = unidentifiedFeatures.map((feature) => ({
+    levelpathid: Number(feature.split("Unidentified River ")[1]),
+    current_name: feature,
+    route_start: JSON.stringify(startCoordinates),
+  }));
+
+  fetch("https://river-runner-name-suggestions.herokuapp.com/api/unnamed_features", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(featureData),
   });
 };
 
@@ -223,7 +244,9 @@ export const getFlowrateData = async (flowlineFeatures, thinningIndex = 4, buffe
       const nextIndex = thinningIndex * Math.ceil(i / thinningIndex);
 
       const lastValue = flowrateData[lastIndex].properties.flowrate;
-      const nextValue = flowrateData[nextIndex] ? flowrateData[nextIndex].properties.flowrate : null;
+      const nextValue = flowrateData[nextIndex]
+        ? flowrateData[nextIndex].properties.flowrate
+        : null;
 
       let interpolatedValue = nextValue
         ? lastValue + (nextValue - lastValue) * ((i % thinningIndex) / thinningIndex)

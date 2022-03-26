@@ -20,6 +20,8 @@ Here's part of the path from Southwest Arizona down to the Mexican border:
 
 ![Screenshot of the river runner in progress from Southwest Arizona to Mexican border. Mountain features, desert, and river are visible.](https://github.com/sdl60660/river-runner/blob/main/public/images/example-2-az.png?raw=true)
 
+You can look at a heatmap of previous searches [here](https://river-runner-query-heatmap.vercel.app/) or find a list of some of our favorite paths [here](https://docs.google.com/document/d/1EqRNDvvCwJdfNvejHzw-0zCd6Ax-0i7nyHkU4h0M9Kg/edit?usp=sharing)
+
 ## Running this on your own
 
 If you'd like to run this locally and play around with it, just run the following commands in your terminal (assuming you have [npm](https://www.npmjs.com/get-npm) installed):
@@ -37,6 +39,6 @@ Thank you to [Mapbox](https://www.mapbox.com/) for sponsoring this project!
 <img src="https://user-images.githubusercontent.com/12772904/129089126-5c528d47-961f-427f-820f-df58974d15c3.png" alt="mapbox-logo-black" width="300"/>
 
 ## Updates
-* **January 2021**: The [global version](https://river-runner-global.samlearner.com/) of this tool is now released and in beta! While some lingering issues are resolved and it remains in beta, it can be found on this branch, while the original, US-only version is preserved [here](https://github.com/sdl60660/river-runner/tree/us-only) in Github, and at its original URL: https://river-runner.samlearner.com/. This is to avoid any breaking changes to existing share links/paths due to any discrepancies and because minor US issues persist on the global version, mainly when paths involve dams, canals, or conduits.
+* **January 2022**: The [global version](https://river-runner-global.samlearner.com/) of this tool is now released and in beta! While some lingering issues are resolved and it remains in beta, it can be found on this branch, while the original, US-only version is preserved [here](https://github.com/sdl60660/river-runner/tree/us-only) in Github, and at its original URL: https://river-runner.samlearner.com/. This is to avoid any breaking changes to existing share links/paths due to any discrepancies and because minor US issues persist on the global version, mainly when paths involve dams, canals, or conduits.
 
 If you'd like to be notified about major updates to the tool, you can sign up for an email list [here](https://tinyletter.com/samlearner)

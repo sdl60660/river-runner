@@ -9,6 +9,8 @@
 /public/data/rivers_full_detail.json
 /public/data/detailed_rivers_streams.json
 /public/data/flowrates.json
+/public/data/global_stopping_features_backup.json
+/public/data/global_stopping_features_update.json
 
 # Data files too large for github storage
 # Original VAA .parquet file can be found here: https://www.hydroshare.org/resource/6092c8a62fac45be97a09bfd0b0bf726/
@@ -23,3 +25,4 @@
 # /data_processing/data/water_bodies.geojson
 package-lock.json
 name_server/package-lock.json
+name_server/data_processing/data
