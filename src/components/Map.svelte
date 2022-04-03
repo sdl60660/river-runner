@@ -310,6 +310,11 @@
     // Use the NLDI API to find the closest flowline coordinate to the click
     const closestFeature = await findClosestFeature(e);
 
+    if (aborted === true) {
+      resetMapState({ map, error: true });
+      return;
+    }
+
     // If no feature can be found, even after rounding coordinates off, send error message and reset
     if (!closestFeature) {
       vizState = "error";
@@ -559,7 +564,7 @@
     let closestFeature;
     let resultFound = false;
     let roundingDigits = 6;
-    while (resultFound === false && roundingDigits >= 0) {
+    while (resultFound === false && roundingDigits >= 0 && aborted === false) {
       roundingDigits -= 1;
 
       try {
@@ -1284,7 +1289,11 @@
   {/if}
 </div>
 
-<Prompt {vizState} {currentLocation} />
+<Prompt
+  on:abort-run={exitFunction}
+  {vizState}
+  {currentLocation}
+/>
 <ContactBox {vizState} />
 
 <div class="left-column" style="z-index: {vizState === 'running' ? 10 : -10};">

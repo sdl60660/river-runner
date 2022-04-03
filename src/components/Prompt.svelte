@@ -1,6 +1,7 @@
 <script>
     import { Moon } from 'svelte-loading-spinners';
     import { stoppingFeature, startLocation } from '../state';
+    import { createEventDispatcher } from 'svelte';
 
     export let currentLocation;
     export let vizState;
@@ -9,6 +10,12 @@
     let loading = false;
     let eventActionName = window.innerWidth > 600 ? "Click" : "Tap"
     let message = `${eventActionName} to drop a raindrop anywhere in the contiguous United States and watch where it ends up`;
+
+
+    const dispatch = createEventDispatcher();
+    const abortRun = () => {
+        dispatch('abort-run')
+    }
 
     $: if (currentLocation?.lat && message !== "") {
         findLocation({ coordinates: currentLocation, })
@@ -37,6 +44,7 @@
         const country = addressData.features.find(d => d.place_type.includes('country'))?.text;
         if (country !== "United States") {
             displayCountryError();
+            abortRun();
             return;
         }   
 
