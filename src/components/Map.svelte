@@ -116,8 +116,8 @@
         container,
         style: mapStyle || "mapbox://styles/mapbox/light-v10",
         center: [0, 0],
-        zoom: 9,
-        minZoom: 1.6,
+        zoom: 2,
+        minZoom: 1.3,
         // maxBounds: [
         //   [-500, -65],
         //   [500, 85],
