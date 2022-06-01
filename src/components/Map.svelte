@@ -66,7 +66,7 @@
 
   let container;
   let map;
-  let mapBounds = bounds;
+  // let mapBounds = bounds;
   let geocoder = null;
   let runSettings = {};
 
@@ -131,7 +131,7 @@
           center: startingSearch.lngLat,
         });
       }
-      mapBounds = map.getBounds();
+      // mapBounds = map.getBounds();
 
       // map.dragRotate.disable();
       // map.touchZoomRotate.disableRotation();
@@ -247,21 +247,21 @@
       return;
     }
 
-    if (!mapBounds.contains(e.lngLat)) {
-      map.flyTo({
-        center: e.lngLat,
-        speed: 0.9,
-        zoom: 4,
-      });
+    // if (!mapBounds.contains(e.lngLat)) {
+    //   map.flyTo({
+    //     center: e.lngLat,
+    //     speed: 0.9,
+    //     zoom: 4,
+    //   });
 
-      map.once("moveend", () => {
-        setTimeout(() => {
-          initializeData({ map, e });
-        }, 300);
-      });
-    } else {
+    //   map.once("moveend", () => {
+    //     setTimeout(() => {
+    //       initializeData({ map, e });
+    //     }, 300);
+    //   });
+    // } else {
       initializeData({ map, e });
-    }
+    // }
   };
 
   const initializeData = async ({ map, e }) => {
@@ -1082,9 +1082,9 @@
     clearRiverLines({ map, sourceID: "highlighted-section" });
   };
 
-  const handleResize = () => {
-    mapBounds = map.getBounds();
-  };
+  // const handleResize = () => {
+  //   mapBounds = map.getBounds();
+  // };
 
   const exitFunction = () => {
     aborted = true;
@@ -1161,17 +1161,20 @@
     }
   }
 
-  $: coordinates.update(() => {
-    if (mapBounds._sw) {
-      return [
-        [mapBounds._sw.lat, mapBounds._ne.lat],
-        [mapBounds._sw.lng, mapBounds._ne.lng],
-      ];
-    }
-  });
+  // $: coordinates.update(() => {
+  //   console.log(mapBounds)
+  //   if (mapBounds._sw) {
+  //     return [
+  //       [mapBounds._sw.lat, mapBounds._ne.lat],
+  //       [mapBounds._sw.lng, mapBounds._ne.lng],
+  //     ];
+  //   }
+  // });
 </script>
 
-<svelte:window on:resize={handleResize} on:keydown={handleKeydown} />
+<svelte:window
+  on:keydown={handleKeydown}
+/>
 
 <div
   class="map-wrapper"
