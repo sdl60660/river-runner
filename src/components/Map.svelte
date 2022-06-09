@@ -44,7 +44,7 @@
     sendUnnamedFeatureData,
     basicSiteTypeData,
     getTickElevation,
-    getFlowrateData
+    getFlowrateData,
   } from "./utils/mapUtils";
 
   export let bounds;
@@ -116,13 +116,9 @@
         container,
         style: mapStyle || "mapbox://styles/mapbox/light-v10",
         center: [0, 0],
-        zoom: 2,
-        minZoom: 1.3,
-        // maxBounds: [
-        //   [-500, -65],
-        //   [500, 85],
-        // ],
-        projection: 'globe'
+        minZoom: 2,
+        zoom: 2.001,
+        projection: "globe",
       });
 
       map.fitBounds(bounds, { animate: false, padding: 30 });
@@ -165,14 +161,14 @@
 
         // If starting coordinates were passed in as a parameter (from a shared link), load starting path
         if (startingSearch) {
-          initRunner({ map, e: {...startingSearch, from_share_link: true} });
+          initRunner({ map, e: { ...startingSearch, from_share_link: true } });
           startingSearch = null;
         }
       });
 
       map.on("click", async (e) => {
         if (vizState === "uninitialized") {
-          initRunner({ map, e });
+          initRunner({ map, e, searched: false });
         }
       });
     };
@@ -208,7 +204,7 @@
       };
       geocoderControl.clear();
 
-      initRunner({ map, e: result });
+      initRunner({ map, e: result, searched: true });
     });
 
     const position = window.innerWidth > 700 ? "top-right" : "bottom-left";
@@ -217,7 +213,7 @@
     return geocoderControl;
   };
 
-  const initRunner = async ({ map, e }) => {
+  const initRunner = async ({ map, e, searched = false }) => {
     // If a click is in the middle of processing, just return
     if (map.interactive === false) {
       return;
@@ -231,37 +227,30 @@
 
     // Correct out of bounds longitudes from map wrapping
     if (e.lngLat.lng < -180) {
-      e.lngLat.lng += 360
-    }
-    else if (e.lngLat.lng > 180) {
+      e.lngLat.lng += 360;
+    } else if (e.lngLat.lng > 180) {
       e.lngLat.lng -= 360;
     }
 
     currentLocation = e.lngLat;
     startCoordinates = e.lngLat;
 
-    try {
-      mapBounds = map.getBounds();
-    } catch (e) {
-      // console.error(e);
-      return;
-    }
-
     // if (!mapBounds.contains(e.lngLat)) {
-    //   map.flyTo({
-    //     center: e.lngLat,
-    //     speed: 0.9,
-    //     zoom: 4,
-    //   });
+    if (searched === true) {
+      map.flyTo({
+        center: e.lngLat,
+        speed: 0.8,
+        zoom: 4.5,
+      });
 
-    //   map.once("moveend", () => {
-    //     setTimeout(() => {
-    //       initializeData({ map, e });
-    //     }, 300);
-    //   });
-    // } else {
+      map.once("moveend", () => {
+        setTimeout(() => {
+          initializeData({ map, e });
+        }, 400);
+      });
+    } else {
       initializeData({ map, e });
-    // }
+    }
   };
 
   const initializeData = async ({ map, e }) => {
@@ -271,7 +260,7 @@
       errorStatus = flowlinesData;
       vizState = "error";
 
-      sendQueryData(e.lngLat.lat, e.lngLat.lat, false, true);      
+      sendQueryData(e.lngLat.lat, e.lngLat.lat, false, true);
       resetMapState({ map, error: true });
       return;
     }
@@ -284,10 +273,10 @@
       // currentFlowrateIndex = 0;
     }
 
-
     totalLength =
       flowlinesData.features[0].properties.pathlength >= 0
-        ? flowlinesData.features[0].properties.pathlength + flowlinesData.features[0].properties.lengthkm
+        ? flowlinesData.features[0].properties.pathlength +
+          flowlinesData.features[0].properties.lengthkm
         : undefined;
 
     // Find the parent features of flowlines along the path
@@ -335,9 +324,10 @@
 
     let terrainElevationMultiplier = 1.2;
     let cameraBaseAltitude = 4300;
-    const elevationArrayStep = Math.max(2, Math.round(
-      Math.min(coordinatePath.length / 4 - 1, 100)
-    ));
+    const elevationArrayStep = Math.max(
+      2,
+      Math.round(Math.min(coordinatePath.length / 4 - 1, 100))
+    );
 
     // Sometimes while 3D tiles are still loading, the queryTerrainElevation method doesn't hit,
     // so we'll give it a few attempts with a delay in between before falling back on a method that doesn't
@@ -542,7 +532,7 @@
           return { error: true, status: "API error" };
         }
 
-        const results = (await flowlinesResponse.json());
+        const results = await flowlinesResponse.json();
         if (results.code === "fail") {
           return { error: true, status: "Routing error" };
         }
@@ -607,12 +597,13 @@
 
     const stopFeatureNameOverrides = {
       "Saint Lawrence River": "Gulf of Saint Lawrence",
-      "Yangtze": "East China Sea",
-      "Canal do Sul": "North Atlantic Ocean"
+      Yangtze: "East China Sea",
+      "Canal do Sul": "North Atlantic Ocean",
     };
-    const stopFeatureName = closestFeature.properties.stop_feature_name === "" ?
-      `Inland Water Feature ${closestFeature.properties.id}`:
-      closestFeature.properties.stop_feature_name;
+    const stopFeatureName =
+      closestFeature.properties.stop_feature_name === ""
+        ? `Inland Water Feature ${closestFeature.properties.id}`
+        : closestFeature.properties.stop_feature_name;
 
     // If the closest feature in the stop feature set is more than 10 km away, this is landing on an unidentified inland water feature
     if (
@@ -643,7 +634,7 @@
 
     const allNames = featurePoints.map(
       (feature) => feature.properties.feature_name
-    )
+    );
     sendUnnamedFeatureData(startCoordinates, allNames);
 
     // This fixes a rare, but frustrating bug, where because I don't sample each flowline for VAA data, and because...
@@ -701,7 +692,8 @@
         distance_from_destination:
           featureData.properties.pathlength === -9999
             ? 0
-            : featureData.properties.pathlength + featureData.properties.lengthkm,
+            : featureData.properties.pathlength +
+              featureData.properties.lengthkm,
         index,
         stream_level: featureData.properties.streamlev,
         active: false,
@@ -811,7 +803,8 @@
     const alongCamera = projectDistance({
       distanceGap: altitudeMultiplier * distanceGap,
       originPoint: smoothedPath[0],
-      targetPoint: alongTarget === smoothedPath[0] ? smoothedPath[1] : alongTarget,
+      targetPoint:
+        alongTarget === smoothedPath[0] ? smoothedPath[1] : alongTarget,
     });
 
     const bearing = bearingBetween(alongCamera, alongTarget);
@@ -943,7 +936,13 @@
       }
 
       // Calculate camera elevation using the base elevation and the elevation at the specific coordinate point
-      const tickElevation = getTickElevation(phase, elevations, altitudeMultiplier, cameraBaseAltitude, terrainElevationMultiplier);
+      const tickElevation = getTickElevation(
+        phase,
+        elevations,
+        altitudeMultiplier,
+        cameraBaseAltitude,
+        terrainElevationMultiplier
+      );
 
       let alongTarget = along(
         lineString(route),
@@ -1156,10 +1155,14 @@
   };
 
   const handleKeydown = (e) => {
-    if (e.key === "Escape" && vizState === 'running' && activeFeatureIndex >= 0) {
+    if (
+      e.key === "Escape" &&
+      vizState === "running" &&
+      activeFeatureIndex >= 0
+    ) {
       aborted = true;
     }
-  }
+  };
 
   // $: coordinates.update(() => {
   //   console.log(mapBounds)
@@ -1172,9 +1175,7 @@
   // });
 </script>
 
-<svelte:window
-  on:keydown={handleKeydown}
-/>
+<svelte:window on:keydown={handleKeydown} />
 
 <div
   class="map-wrapper"
