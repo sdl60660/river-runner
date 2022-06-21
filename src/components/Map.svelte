@@ -222,6 +222,9 @@
     // Turn off map interactivity
     map.interactive = false;
     map.scrollZoom.disable();
+    // map.dragRotate.disable();
+    // map.touchZoomRotate.disableRotation();
+
     d3.selectAll(".mapboxgl-ctrl-geocoder").style("display", "none");
     d3.select(".mapboxgl-ctrl-top-left").style("display", "none");
 
