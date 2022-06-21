@@ -116,8 +116,8 @@
         container,
         style: mapStyle || "mapbox://styles/mapbox/light-v10",
         center: [0, 0],
-        minZoom: 2,
-        zoom: 2.001,
+        minZoom: window.innerWidth > 700 ? 2 : 1.4,
+        zoom: window.innerWidth > 700 ? 2.001 : 1.4001,
         projection: "globe",
       });
 
@@ -242,7 +242,7 @@
       map.flyTo({
         center: e.lngLat,
         speed: 0.8,
-        zoom: 4.5,
+        zoom: 4.8,
       });
 
       map.once("moveend", () => {
