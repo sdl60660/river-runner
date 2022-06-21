@@ -44,7 +44,7 @@
     sendUnnamedFeatureData,
     basicSiteTypeData,
     getTickElevation,
-    getFlowrateData
+    getFlowrateData,
   } from "./utils/mapUtils";
 
   export let bounds;
@@ -165,7 +165,7 @@
 
         // If starting coordinates were passed in as a parameter (from a shared link), load starting path
         if (startingSearch) {
-          initRunner({ map, e: {...startingSearch, from_share_link: true} });
+          initRunner({ map, e: { ...startingSearch, from_share_link: true } });
           startingSearch = null;
         }
       });
@@ -226,14 +226,15 @@
     // Turn off map interactivity
     map.interactive = false;
     map.scrollZoom.disable();
+    map.dragPan.disable();
+
     d3.selectAll(".mapboxgl-ctrl-geocoder").style("display", "none");
     d3.select(".mapboxgl-ctrl-top-left").style("display", "none");
 
     // Correct out of bounds longitudes from map wrapping
     if (e.lngLat.lng < -180) {
-      e.lngLat.lng += 360
-    }
-    else if (e.lngLat.lng > 180) {
+      e.lngLat.lng += 360;
+    } else if (e.lngLat.lng > 180) {
       e.lngLat.lng -= 360;
     }
 
@@ -271,7 +272,7 @@
       errorStatus = flowlinesData;
       vizState = "error";
 
-      sendQueryData(e.lngLat.lat, e.lngLat.lat, false, true);      
+      sendQueryData(e.lngLat.lat, e.lngLat.lat, false, true);
       resetMapState({ map, error: true });
       return;
     }
@@ -284,10 +285,10 @@
       // currentFlowrateIndex = 0;
     }
 
-
     totalLength =
       flowlinesData.features[0].properties.pathlength >= 0
-        ? flowlinesData.features[0].properties.pathlength + flowlinesData.features[0].properties.lengthkm
+        ? flowlinesData.features[0].properties.pathlength +
+          flowlinesData.features[0].properties.lengthkm
         : undefined;
 
     // Find the parent features of flowlines along the path
@@ -335,9 +336,10 @@
 
     let terrainElevationMultiplier = 1.2;
     let cameraBaseAltitude = 4300;
-    const elevationArrayStep = Math.max(2, Math.round(
-      Math.min(coordinatePath.length / 4 - 1, 100)
-    ));
+    const elevationArrayStep = Math.max(
+      2,
+      Math.round(Math.min(coordinatePath.length / 4 - 1, 100))
+    );
 
     // Sometimes while 3D tiles are still loading, the queryTerrainElevation method doesn't hit,
     // so we'll give it a few attempts with a delay in between before falling back on a method that doesn't
@@ -444,7 +446,8 @@
     // We'll do this with a countdown timer on desktop, and just right into it on mobile
     if (window.innerWidth > 700) {
       vizState = "overview";
-      map.scrollZoom.enable();
+      // map.scrollZoom.enable();
+      // map.dragPan.enable();
 
       postRun = false;
       runTimeout = setTimeout(() => {
@@ -471,7 +474,9 @@
     riverFeatures,
     flowrates,
   }) => {
+    map.interactive = false;
     map.scrollZoom.disable();
+    map.dragPan.disable();
 
     altitudeMultiplier = defaultAltitudeMultiplier;
     paused = false;
@@ -500,7 +505,7 @@
     const animationDuration = Math.round(speedCoefficient * routeDistance);
 
     map.once("moveend", () => {
-      map.interactive = true;
+      // map.interactive = true;
 
       // When "raindrop" animation (flyto) is finished, begin the river run
       runRiver({
@@ -542,7 +547,7 @@
           return { error: true, status: "API error" };
         }
 
-        const results = (await flowlinesResponse.json());
+        const results = await flowlinesResponse.json();
         if (results.code === "fail") {
           return { error: true, status: "Routing error" };
         }
@@ -607,12 +612,13 @@
 
     const stopFeatureNameOverrides = {
       "Saint Lawrence River": "Gulf of Saint Lawrence",
-      "Yangtze": "East China Sea",
-      "Canal do Sul": "North Atlantic Ocean"
+      Yangtze: "East China Sea",
+      "Canal do Sul": "North Atlantic Ocean",
     };
-    const stopFeatureName = closestFeature.properties.stop_feature_name === "" ?
-      `Inland Water Feature ${closestFeature.properties.id}`:
-      closestFeature.properties.stop_feature_name;
+    const stopFeatureName =
+      closestFeature.properties.stop_feature_name === ""
+        ? `Inland Water Feature ${closestFeature.properties.id}`
+        : closestFeature.properties.stop_feature_name;
 
     // If the closest feature in the stop feature set is more than 10 km away, this is landing on an unidentified inland water feature
     if (
@@ -643,7 +649,7 @@
 
     const allNames = featurePoints.map(
       (feature) => feature.properties.feature_name
-    )
+    );
     sendUnnamedFeatureData(startCoordinates, allNames);
 
     // This fixes a rare, but frustrating bug, where because I don't sample each flowline for VAA data, and because...
@@ -701,7 +707,8 @@
         distance_from_destination:
           featureData.properties.pathlength === -9999
             ? 0
-            : featureData.properties.pathlength + featureData.properties.lengthkm,
+            : featureData.properties.pathlength +
+              featureData.properties.lengthkm,
         index,
         stream_level: featureData.properties.streamlev,
         active: false,
@@ -811,7 +818,8 @@
     const alongCamera = projectDistance({
       distanceGap: altitudeMultiplier * distanceGap,
       originPoint: smoothedPath[0],
-      targetPoint: alongTarget === smoothedPath[0] ? smoothedPath[1] : alongTarget,
+      targetPoint:
+        alongTarget === smoothedPath[0] ? smoothedPath[1] : alongTarget,
     });
 
     const bearing = bearingBetween(alongCamera, alongTarget);
@@ -943,7 +951,13 @@
       }
 
       // Calculate camera elevation using the base elevation and the elevation at the specific coordinate point
-      const tickElevation = getTickElevation(phase, elevations, altitudeMultiplier, cameraBaseAltitude, terrainElevationMultiplier);
+      const tickElevation = getTickElevation(
+        phase,
+        elevations,
+        altitudeMultiplier,
+        cameraBaseAltitude,
+        terrainElevationMultiplier
+      );
 
       let alongTarget = along(
         lineString(route),
@@ -1039,8 +1053,9 @@
     map.once("moveend", () => {
       vizState = "overview";
       postRun = true;
-      // map.interactive = true;
+      map.interactive = true;
       map.scrollZoom.enable();
+      map.dragPan.enable();
       // resetMapState({ map });
     });
   };
@@ -1048,6 +1063,7 @@
   const resetMapState = ({ map, error = false }) => {
     map.interactive = true;
     map.scrollZoom.enable();
+    map.dragPan.enable();
     aborted = false;
 
     clearRiverLines({ map });
@@ -1125,6 +1141,12 @@
     }
   };
 
+  const enableInteractivity = () => {
+    map.interactive = true;
+    map.scrollZoom.enable();
+    map.dragPan.enable();
+  };
+
   const setPlaybackSpeed = (newVal) => {
     paused = false;
     playbackSpeed = newVal;
@@ -1156,10 +1178,14 @@
   };
 
   const handleKeydown = (e) => {
-    if (e.key === "Escape" && vizState === 'running' && activeFeatureIndex >= 0) {
+    if (
+      e.key === "Escape" &&
+      vizState === "running" &&
+      activeFeatureIndex >= 0
+    ) {
       aborted = true;
     }
-  }
+  };
 
   $: coordinates.update(() => {
     if (mapBounds._sw) {
@@ -1230,6 +1256,7 @@
     on:abort-run={exitFunction}
     on:progress-set={(e) => handleJump(e)}
     on:show-suggestion-modal={showSuggestionModal}
+    on:autoplay-disrupted={enableInteractivity}
     {vizState}
     {activeFeatureIndex}
     {featureGroups}
