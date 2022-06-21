@@ -222,8 +222,7 @@
     // Turn off map interactivity
     map.interactive = false;
     map.scrollZoom.disable();
-    // map.dragRotate.disable();
-    // map.touchZoomRotate.disableRotation();
+    map.dragPan.disable();
 
     d3.selectAll(".mapboxgl-ctrl-geocoder").style("display", "none");
     d3.select(".mapboxgl-ctrl-top-left").style("display", "none");
@@ -437,7 +436,8 @@
     // We'll do this with a countdown timer on desktop, and just right into it on mobile
     if (window.innerWidth > 700) {
       vizState = "overview";
-      map.scrollZoom.enable();
+      // map.scrollZoom.enable();
+      // map.dragPan.enable();
 
       postRun = false;
       runTimeout = setTimeout(() => {
@@ -464,7 +464,9 @@
     riverFeatures,
     flowrates,
   }) => {
+    map.interactive = false;
     map.scrollZoom.disable();
+    map.dragPan.disable();
 
     altitudeMultiplier = defaultAltitudeMultiplier;
     paused = false;
@@ -493,7 +495,7 @@
     const animationDuration = Math.round(speedCoefficient * routeDistance);
 
     map.once("moveend", () => {
-      map.interactive = true;
+      // map.interactive = true;
 
       // When "raindrop" animation (flyto) is finished, begin the river run
       runRiver({
@@ -1041,8 +1043,9 @@
     map.once("moveend", () => {
       vizState = "overview";
       postRun = true;
-      // map.interactive = true;
+      map.interactive = true;
       map.scrollZoom.enable();
+      map.dragPan.enable();
       // resetMapState({ map });
     });
   };
@@ -1050,6 +1053,7 @@
   const resetMapState = ({ map, error = false }) => {
     map.interactive = true;
     map.scrollZoom.enable();
+    map.dragPan.enable();
     aborted = false;
 
     clearRiverLines({ map });
@@ -1125,6 +1129,12 @@
     } else {
       paused = !paused;
     }
+  };
+
+  const enableInteractivity = () => {
+    map.interactive = true;
+    map.scrollZoom.enable();
+    map.dragPan.enable();
   };
 
   const setPlaybackSpeed = (newVal) => {
@@ -1237,6 +1247,7 @@
     on:abort-run={exitFunction}
     on:progress-set={(e) => handleJump(e)}
     on:show-suggestion-modal={showSuggestionModal}
+    on:autoplay-disrupted={enableInteractivity}
     {vizState}
     {activeFeatureIndex}
     {featureGroups}

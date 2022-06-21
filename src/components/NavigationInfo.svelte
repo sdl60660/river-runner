@@ -79,6 +79,7 @@
 
   const disruptAutoplay = () => {
     clearTimeout(runTimeout);
+    dispatch("autoplay-disrupted");
     autoplayDisrupted = true;
   };
 
@@ -86,15 +87,13 @@
     if (event.key === "Escape") {
       if (vizState !== "overview") {
         return;
-      }
-      else if (postRun === true || autoplayDisrupted === true) {
+      } else if (postRun === true || autoplayDisrupted === true) {
         exitNavigationPath();
-      }
-      else {
+      } else {
         disruptAutoplay();
       }
     }
-  }
+  };
 
   onMount(() => {
     const unsubscribeStoppingFeature = stoppingFeature.subscribe(
@@ -144,7 +143,11 @@
     <!-- Desktop/Tablet -->
     {#if screenWidth > 700}
       <div class="feature-list-wrapper">
-        <div class="feature-listing bounding-location" tabindex="0" aria-label="starting location">
+        <div
+          class="feature-listing bounding-location"
+          tabindex="0"
+          aria-label="starting location"
+        >
           {currentStartLocation}
         </div>
         {#each featureGroups as { name, length_km, index, first_coordinate }, i}
@@ -174,30 +177,34 @@
             {i + 1}. {name} ({length_km} km)
           </div>
         {/each}
-        <div class="feature-listing bounding-location" tabindex="0" aria-label="stopping feature">
+        <div
+          class="feature-listing bounding-location"
+          tabindex="0"
+          aria-label="stopping feature"
+        >
           {currentStoppingFeature}
         </div>
 
-      <div class="progress-points">
-        {#each [currentStartLocation, ...featureGroups, currentStoppingFeature] as progressPoint, i}
-          <div
-            style="
+        <div class="progress-points">
+          {#each [currentStartLocation, ...featureGroups, currentStoppingFeature] as progressPoint, i}
+            <div
+              style="
               background-color: {activeFeatureIndex + 1 === i
                 ? 'rgb(76, 79, 230)'
                 : activeFeatureIndex + 1 > i
                 ? 'rgb(117, 117, 117)'
                 : 'rgb(243, 243, 243)'};
               top: calc(1rem + 8px + ({i /
-              (featureGroups.length + 2)}*(100% - 2rem - 6px)));
+                (featureGroups.length + 2)}*(100% - 2rem - 6px)));
             "
-            class="progress-point"
-            key={i}
-          />
-        {/each}
-      </div>
+              class="progress-point"
+              key={i}
+            />
+          {/each}
+        </div>
 
-      <div class="progress-bar" />
-    </div>
+        <div class="progress-bar" />
+      </div>
 
       <!-- Mobile (simpler, only displays name of current feature) -->
     {:else if activeFeatureIndex >= 0 && featureGroups}
