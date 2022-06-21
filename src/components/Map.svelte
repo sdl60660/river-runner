@@ -155,9 +155,9 @@
           showCompass: true,
           visualizePitch: true,
         });
-        if (window.innerWidth > 700) {
-          map.addControl(nav, "top-left");
-        }
+        // if (window.innerWidth > 700) {
+        map.addControl(nav, "top-left");
+        // }
 
         // If starting coordinates were passed in as a parameter (from a shared link), load starting path
         if (startingSearch) {
