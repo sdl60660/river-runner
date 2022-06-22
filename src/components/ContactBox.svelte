@@ -104,7 +104,9 @@
   {/if}
 </div>
 
-<style>
+<style type="text/scss">
+  @import "../settings.scss";
+
   .contact-box {
     background-color: rgba(243, 243, 243, 0.856);
     padding: 1rem;
@@ -153,7 +155,7 @@
     }
   }
 
-  @media only screen and (max-width: 700px) {
+  @media only screen and (max-width: $mobile-breakpoint) {
     .contact-box {
       box-sizing: border-box;
       border-radius: 0;
