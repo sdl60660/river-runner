@@ -64,6 +64,8 @@
     ? { lngLat: { lat: +urlParams.get("lat"), lng: +urlParams.get("lng") } }
     : null;
 
+  const mobileBreakpoint = 700;
+
   let container;
   let map;
   // let mapBounds = bounds;
@@ -86,7 +88,8 @@
   let phaseJump;
 
   // Zoom level won't be adjustable on mobile, but it will be set slightly higher to avoid jiterriness
-  const defaultAltitudeMultiplier = window.innerWidth < 700 ? 1.1 : 0.9;
+  const defaultAltitudeMultiplier =
+    window.innerWidth < mobileBreakpoint ? 1.1 : 0.9;
   let altitudeMultiplier = defaultAltitudeMultiplier;
   let altitudeChange = false;
   let paused = false;
@@ -116,12 +119,12 @@
         container,
         style: mapStyle || "mapbox://styles/mapbox/light-v10",
         center: [0, 0],
-        minZoom: window.innerWidth > 700 ? 2 : 1.4,
-        zoom: window.innerWidth > 700 ? 2.001 : 1.4001,
+        minZoom: window.innerWidth > mobileBreakpoint ? 2 : 1.4,
+        zoom: window.innerWidth > mobileBreakpoint ? 2.001 : 1.4001,
         projection: "globe",
       });
 
-      map.fitBounds(bounds, { animate: false, padding: 30 });
+      map.fitBounds(bounds, { animate: false, padding: 10 });
       if (startingSearch) {
         map.jumpTo({
           center: startingSearch.lngLat,
@@ -155,7 +158,7 @@
           showCompass: true,
           visualizePitch: true,
         });
-        // if (window.innerWidth > 700) {
+        // if (window.innerWidth > mobileBreakpoint) {
         map.addControl(nav, "top-left");
         // }
 
@@ -192,7 +195,7 @@
       flyTo: false,
     });
 
-    if (window.innerWidth < 700) {
+    if (window.innerWidth < mobileBreakpoint) {
       geocoderControl.setLimit(4);
     }
 
@@ -207,7 +210,8 @@
       initRunner({ map, e: result, searched: true });
     });
 
-    const position = window.innerWidth > 700 ? "top-right" : "bottom-left";
+    const position =
+      window.innerWidth > mobileBreakpoint ? "top-right" : "bottom-left";
     map.addControl(geocoderControl, position);
 
     return geocoderControl;
@@ -434,7 +438,7 @@
 
     // When using the vizState change/return instead of startRun, it displays the overview before automatically starting the run
     // We'll do this with a countdown timer on desktop, and just right into it on mobile
-    if (window.innerWidth > 700) {
+    if (window.innerWidth > mobileBreakpoint) {
       vizState = "overview";
       // map.scrollZoom.enable();
       // map.dragPan.enable();
@@ -1037,7 +1041,7 @@
       pitch: 0,
       padding: 70,
       maxZoom: 12,
-      offset: window.innerWidth < 700 ? [0, -20] : [0, 0], // On mobile, the search bar will get in the way so we actually want it a little off center
+      offset: window.innerWidth < mobileBreakpoint ? [0, -20] : [0, 0], // On mobile, the search bar will get in the way so we actually want it a little off center
     });
 
     map.once("moveend", () => {
@@ -1225,7 +1229,7 @@
     {suggestionModalActive}
     on:hide-suggestion-modal={hideSuggestionModal}
   />
-  {#if window.innerWidth > 700 && advancedFeaturesOn === true}
+  {#if window.innerWidth > mobileBreakpoint && advancedFeaturesOn === true}
     <WaterLevelDisplay
       {currentFlowrate}
       {maxFlowrate}
@@ -1280,7 +1284,9 @@
   {/if}
 </div>
 
-<style>
+<style type="text/scss">
+  @import "../settings.scss";
+
   .map-wrapper {
     position: absolute;
     width: 100vw;
@@ -1332,7 +1338,7 @@
     }
   }
 
-  @media only screen and (max-width: 700px) {
+  @media only screen and (max-width: $mobile-breakpoint) {
     .map-wrapper {
       /* this prevents some weird stuff on mobile screens when the geolocator search suggestons come up*/
       /* height: max(400px, calc(100% - 20vh)); */
@@ -1343,7 +1349,7 @@
   }
 
   /* Keyboard open */
-  @media only screen and (max-width: 700px) and (max-height: 400px) {
+  @media only screen and (max-width: $mobile-breakpoint) and (max-height: 400px) {
     .map-wrapper {
       height: 100%;
       top: 0;
