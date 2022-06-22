@@ -40,19 +40,33 @@
     <p>
       <strong>Sources</strong>: The data used in this project comes from the
       River Runner API, which is based on several open source projects and
-      datasets and developed by 
-      <a href="https://www.usgs.gov/staff-profiles/david-l-blodgett" target="_blank" rel="noreferrer">Dave Blodgett</a>, 
-      <a href="https://internetofwater.org/about/people/kyle-onda/" target="_blank" rel="noreferrer">Kyle Onda</a>, and 
-      <a href="https://github.com/webb-ben" target="_blank" rel="noreferrer">Ben Webb</a>. 
-      Learn about it
+      datasets and developed by
+      <a
+        href="https://www.usgs.gov/staff-profiles/david-l-blodgett"
+        target="_blank"
+        rel="noreferrer">Dave Blodgett</a
+      >,
+      <a
+        href="https://internetofwater.org/about/people/kyle-onda/"
+        target="_blank"
+        rel="noreferrer">Kyle Onda</a
+      >, and
+      <a href="https://github.com/webb-ben" target="_blank" rel="noreferrer"
+        >Ben Webb</a
+      >. Learn about it
       <a href="https://ksonda.github.io/global-river-runner/" target="_blank"
         >here</a
-      >.</p>
-      
-    <p>Code and data for this project lives
-      <a target="_blank" href={"https://github.com/sdl60660/river-runner/tree/global"}
-        >here</a
-      >. Thank you to <a href="https://www.mapbox.com/community/" target="_blank">Mapbox</a> for sponsoring.
+      >.
+    </p>
+
+    <p>
+      Code and data for this project lives
+      <a
+        target="_blank"
+        href={"https://github.com/sdl60660/river-runner/tree/global"}>here</a
+      >. Thank you to
+      <a href="https://www.mapbox.com/community/" target="_blank">Mapbox</a> for
+      sponsoring.
     </p>
     <p>
       This version of the app is in beta. Report any issues you experience <a
