@@ -340,7 +340,9 @@
   Know one of these missing river names? Make a suggestion!
 </div>
 
-<style>
+<style type="text/scss">
+  @import "../settings.scss";
+
   .navbox-wrapper {
     position: relative;
     /* position: absolute; */
@@ -527,7 +529,7 @@
   }
 
   /* Mobile */
-  @media only screen and (max-width: 700px) {
+  @media only screen and (max-width: $mobile-breakpoint) {
     .pre-run-controls {
       display: none;
     }

@@ -1362,6 +1362,12 @@
       bottom: 3rem;
     }
 
+    // .left-column {
+    //   left: 1rem;
+    //   top: 1rem;
+    //   bottom: 1rem;
+    // }
+
     :global(.mapboxgl-ctrl-top-left .mapboxgl-ctrl) {
       margin: 1.5rem 0 0 1rem !important;
     }

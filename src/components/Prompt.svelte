@@ -2,13 +2,16 @@
   import { Moon } from "svelte-loading-spinners";
   import { stoppingFeature, startLocation } from "../state";
 
+  import config from "../config.json";
+
   export let currentLocation;
   export let vizState;
   export let errorStatus;
   export let bannerVisible;
 
   let loading = false;
-  let eventActionName = window.innerWidth > 700 ? "Click" : "Tap";
+  let eventActionName =
+    window.innerWidth > config.mobile_breakpoint ? "Click" : "Tap";
   let message = `${eventActionName} to drop a raindrop anywhere in the world and watch where it ends up`;
 
   $: if (currentLocation?.lat && message !== "") {
@@ -20,7 +23,7 @@
     loading = false;
   } else if (vizState === "overview") {
     message =
-      window.innerWidth > 700
+      window.innerWidth > config.mobile_breakpoint
         ? ""
         : "Run the path again, copy a link to share, or exit and try another path using the buttons below.";
     loading = false;
@@ -28,11 +31,11 @@
     resetPrompt();
   } else if (vizState === "error") {
     if (errorStatus?.status === "API error") {
-      message = "Routing Server is down! Sorry, this is likely due to high volume, try again in a bit."
-    }
-    else {
       message =
-      "Unable to find a flowpath for that location. Please try somewhere else.";
+        "Routing Server is down! Sorry, this is likely due to high volume, try again in a bit.";
+    } else {
+      message =
+        "Unable to find a flowpath for that location. Please try somewhere else.";
     }
     loading = false;
   }
@@ -52,14 +55,19 @@
     const stateName = addressData.features.find((d) =>
       d.place_type.includes("region")
     )?.text;
-    const countryName = addressData.features.find(d => 
-      d.place_type.includes('country')
+    const countryName = addressData.features.find((d) =>
+      d.place_type.includes("country")
     )?.text;
 
     const place = placeName || countyName;
-    const locationStringComponents = [place, stateName, countryName].filter(d => d);
+    const locationStringComponents = [place, stateName, countryName].filter(
+      (d) => d
+    );
 
-    const fullLocationString = locationStringComponents.length > 0 ? locationStringComponents.join(', ') : "Unknown Territory";
+    const fullLocationString =
+      locationStringComponents.length > 0
+        ? locationStringComponents.join(", ")
+        : "Unknown Territory";
 
     startLocation.update(() => fullLocationString);
 
@@ -82,7 +90,12 @@
   };
 </script>
 
-<div class="wrapper" style="display: {bannerVisible ? 'none' : 'block'};" tabindex="0" aria-label="prompt and information box">
+<div
+  class="wrapper"
+  style="display: {bannerVisible ? 'none' : 'block'};"
+  tabindex="0"
+  aria-label="prompt and information box"
+>
   <div
     style={`display: ${message === "" ? "none" : "flex"};`}
     class="message-box"
@@ -96,7 +109,7 @@
   <div
     style="display:{vizState === 'uninitialized' &&
     loading === false &&
-    window.innerWidth > 700
+    window.innerWidth > config.mobile_breakpoint
       ? 'block'
       : 'none'};"
     class="scroll-helper"
@@ -105,7 +118,9 @@
   </div>
 </div>
 
-<style>
+<style type="text/scss">
+  @import "../settings.scss";
+
   .wrapper {
     font-family: "Roboto", "Inter", Arial, Helvetica, sans-serif;
 
@@ -146,7 +161,7 @@
   }
 
   /* Mobile */
-  @media only screen and (max-width: 700px) {
+  @media only screen and (max-width: $mobile-breakpoint) {
     .scroll-helper {
       display: none;
     }
@@ -176,7 +191,7 @@
   }
 
   /* Keyboard open */
-  @media only screen and (max-width: 700px) and (max-height: 400px) {
+  @media only screen and (max-width: $mobile-breakpoint) and (max-height: 400px) {
     .message-box {
       opacity: 0 !important;
       z-index: -100;

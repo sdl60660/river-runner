@@ -96,7 +96,9 @@
   </div>
 </div>
 
-<style>
+<style type="text/scss">
+  @import "../settings.scss";
+
   .wrapper {
     background-color: rgba(221, 221, 221, 0.89);
     padding: 0.5rem 0.8rem;
@@ -154,7 +156,7 @@
   }
 
   .button-active {
-    background-color: rgb(205 179 143);
+    background-color: rgb(205, 179, 143);
     border: 1px solid black;
   }
 
@@ -175,7 +177,7 @@
     display: none;
   }
 
-  @media only screen and (max-width: 700px) {
+  @media only screen and (max-width: $mobile-breakpoint) {
     /* .slow-button {
       display: none;
     } */
