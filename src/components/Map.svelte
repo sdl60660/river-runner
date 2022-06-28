@@ -330,9 +330,10 @@
 
     let terrainElevationMultiplier = 1.2;
     let cameraBaseAltitude = 4300;
+
     const elevationArrayStep = Math.max(
       2,
-      Math.round(Math.min(coordinatePath.length / 4 - 1, 100))
+      Math.round(Math.min(coordinatePath.length / 4 - 1, 20))
     );
 
     // Sometimes while 3D tiles are still loading, the queryTerrainElevation method doesn't hit,
@@ -342,7 +343,7 @@
     let attempts = 0;
 
     while (
-      attempts < 10 &&
+      attempts < 8 &&
       (elevations === null || elevations.every((d) => d === null))
     ) {
       await sleep(200);
