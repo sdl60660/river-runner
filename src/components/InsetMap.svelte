@@ -9,6 +9,8 @@
 
   import CloseButton from "./CloseButton.svelte";
 
+  import config from "../config.json";
+
   export let bounds = [
     [-125, 24],
     [-66, 51],
@@ -43,8 +45,8 @@
   let currentStartLocation = null;
   let currentStoppingFeature = null;
 
-  $: containerWidth = width > 700 ? "26rem" : "100%";
-  $: containerHeight = width > 700 ? "14rem" : "20vh";
+  $: containerWidth = width > config.mobile_breakpoint ? "26rem" : "100%";
+  $: containerHeight = width > config.mobile_breakpoint ? "14rem" : "20vh";
 
   const mainPathLayerID = "locator-path";
   const colorPalette = [
@@ -121,7 +123,7 @@
       marker = new mapbox.Marker({ element: markerEl })
         .setLngLat([0, 0])
         .addTo(map);
-      
+
       const unsubscribeStoppingFeature = stoppingFeature.subscribe(
         (featureName) => {
           currentStoppingFeature = featureName;
@@ -251,8 +253,8 @@
       const coordinateSet = lineString(riverPath[0].geometry.coordinates);
       const boundProps = { animate: true, padding: 30, speed: 1.2 };
       if (suggestionModalActive === false) {
-        boundProps.maxZoom = maxZoom
-      };
+        boundProps.maxZoom = maxZoom;
+      }
       map.fitBounds(bbox(coordinateSet), boundProps);
 
       map.once("moveend", () => {
@@ -476,7 +478,9 @@
   bind:this={markerEl}
 />
 
-<style>
+<style type="text/scss">
+  @import "../settings.scss";
+
   .map {
     /* width: 26rem;
     height: 14rem; */
@@ -550,7 +554,7 @@
   }
 
   /* Mobile */
-  @media only screen and (max-width: 700px) {
+  @media only screen and (max-width: $mobile-breakpoint) {
     .map {
       position: absolute;
       width: 100%;
@@ -563,7 +567,7 @@
   }
 
   /* Keyboard open */
-  @media only screen and (max-width: 700px) and (max-height: 400px) {
+  @media only screen and (max-width: $mobile-breakpoint) and (max-height: 400px) {
     .map {
       opacity: 0 !important;
       z-index: -100;
@@ -573,8 +577,8 @@
   /* Tablet */
   @media only screen and (min-width: 701px) and (max-width: 1100px) {
     .map {
-      width: 20.4rem;
-      height: 11rem;
+      width: 19rem !important;
+      height: 11rem !important;
     }
   }
 </style>

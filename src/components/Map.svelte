@@ -64,9 +64,11 @@
     ? { lngLat: { lat: +urlParams.get("lat"), lng: +urlParams.get("lng") } }
     : null;
 
+  const mobileBreakpoint = 700;
+
   let container;
   let map;
-  let mapBounds = bounds;
+  // let mapBounds = bounds;
   let geocoder = null;
   let runSettings = {};
 
@@ -86,7 +88,8 @@
   let phaseJump;
 
   // Zoom level won't be adjustable on mobile, but it will be set slightly higher to avoid jiterriness
-  const defaultAltitudeMultiplier = window.innerWidth < 700 ? 1.1 : 0.9;
+  const defaultAltitudeMultiplier =
+    window.innerWidth < mobileBreakpoint ? 1.1 : 0.9;
   let altitudeMultiplier = defaultAltitudeMultiplier;
   let altitudeChange = false;
   let paused = false;
@@ -116,25 +119,21 @@
         container,
         style: mapStyle || "mapbox://styles/mapbox/light-v10",
         center: [0, 0],
-        zoom: 9,
-        minZoom: 2,
-        maxBounds: [
-          [-500, -65],
-          [500, 85],
-        ],
-        // projection: 'naturalEarth'
+        minZoom: window.innerWidth > mobileBreakpoint ? 2 : 1.4,
+        zoom: window.innerWidth > mobileBreakpoint ? 2.001 : 1.4001,
+        projection: "globe",
       });
 
-      map.fitBounds(bounds, { animate: false, padding: 30 });
+      map.fitBounds(bounds, { animate: false, padding: 10 });
       if (startingSearch) {
         map.jumpTo({
           center: startingSearch.lngLat,
         });
       }
-      mapBounds = map.getBounds();
+      // mapBounds = map.getBounds();
 
-      map.dragRotate.disable();
-      map.touchZoomRotate.disableRotation();
+      // map.dragRotate.disable();
+      // map.touchZoomRotate.disableRotation();
 
       map.on("load", () => {
         // If there's feature data passed in as a prop (doesn't really happen anymore), render rivers on load
@@ -156,12 +155,12 @@
 
         // Initialize and add explicit zoom controls in top-left corner, if not on mobile
         const nav = new mapbox.NavigationControl({
-          showCompass: false,
+          showCompass: true,
           visualizePitch: true,
         });
-        if (window.innerWidth > 700) {
-          map.addControl(nav, "top-left");
-        }
+        // if (window.innerWidth > mobileBreakpoint) {
+        map.addControl(nav, "top-left");
+        // }
 
         // If starting coordinates were passed in as a parameter (from a shared link), load starting path
         if (startingSearch) {
@@ -172,7 +171,7 @@
 
       map.on("click", async (e) => {
         if (vizState === "uninitialized") {
-          initRunner({ map, e });
+          initRunner({ map, e, searched: false });
         }
       });
     };
@@ -196,7 +195,7 @@
       flyTo: false,
     });
 
-    if (window.innerWidth < 700) {
+    if (window.innerWidth < mobileBreakpoint) {
       geocoderControl.setLimit(4);
     }
 
@@ -208,16 +207,17 @@
       };
       geocoderControl.clear();
 
-      initRunner({ map, e: result });
+      initRunner({ map, e: result, searched: true });
     });
 
-    const position = window.innerWidth > 700 ? "top-right" : "bottom-left";
+    const position =
+      window.innerWidth > mobileBreakpoint ? "top-right" : "bottom-left";
     map.addControl(geocoderControl, position);
 
     return geocoderControl;
   };
 
-  const initRunner = async ({ map, e }) => {
+  const initRunner = async ({ map, e, searched = false }) => {
     // If a click is in the middle of processing, just return
     if (map.interactive === false) {
       return;
@@ -241,24 +241,18 @@
     currentLocation = e.lngLat;
     startCoordinates = e.lngLat;
 
-    try {
-      mapBounds = map.getBounds();
-    } catch (e) {
-      // console.error(e);
-      return;
-    }
-
-    if (!mapBounds.contains(e.lngLat)) {
+    // if (!mapBounds.contains(e.lngLat)) {
+    if (searched === true) {
       map.flyTo({
         center: e.lngLat,
-        speed: 0.9,
-        zoom: 4,
+        speed: 0.8,
+        zoom: 4.8,
       });
 
       map.once("moveend", () => {
         setTimeout(() => {
           initializeData({ map, e });
-        }, 300);
+        }, 400);
       });
     } else {
       initializeData({ map, e });
@@ -336,9 +330,10 @@
 
     let terrainElevationMultiplier = 1.2;
     let cameraBaseAltitude = 4300;
+
     const elevationArrayStep = Math.max(
       2,
-      Math.round(Math.min(coordinatePath.length / 4 - 1, 100))
+      Math.round(Math.min(coordinatePath.length / 4 - 1, 20))
     );
 
     // Sometimes while 3D tiles are still loading, the queryTerrainElevation method doesn't hit,
@@ -348,7 +343,7 @@
     let attempts = 0;
 
     while (
-      attempts < 10 &&
+      attempts < 8 &&
       (elevations === null || elevations.every((d) => d === null))
     ) {
       await sleep(200);
@@ -444,7 +439,7 @@
 
     // When using the vizState change/return instead of startRun, it displays the overview before automatically starting the run
     // We'll do this with a countdown timer on desktop, and just right into it on mobile
-    if (window.innerWidth > 700) {
+    if (window.innerWidth > mobileBreakpoint) {
       vizState = "overview";
       // map.scrollZoom.enable();
       // map.dragPan.enable();
@@ -1047,7 +1042,7 @@
       pitch: 0,
       padding: 70,
       maxZoom: 12,
-      offset: window.innerWidth < 700 ? [0, -20] : [0, 0], // On mobile, the search bar will get in the way so we actually want it a little off center
+      offset: window.innerWidth < mobileBreakpoint ? [0, -20] : [0, 0], // On mobile, the search bar will get in the way so we actually want it a little off center
     });
 
     map.once("moveend", () => {
@@ -1098,9 +1093,9 @@
     clearRiverLines({ map, sourceID: "highlighted-section" });
   };
 
-  const handleResize = () => {
-    mapBounds = map.getBounds();
-  };
+  // const handleResize = () => {
+  //   mapBounds = map.getBounds();
+  // };
 
   const exitFunction = () => {
     aborted = true;
@@ -1187,17 +1182,18 @@
     }
   };
 
-  $: coordinates.update(() => {
-    if (mapBounds._sw) {
-      return [
-        [mapBounds._sw.lat, mapBounds._ne.lat],
-        [mapBounds._sw.lng, mapBounds._ne.lng],
-      ];
-    }
-  });
+  // $: coordinates.update(() => {
+  //   console.log(mapBounds)
+  //   if (mapBounds._sw) {
+  //     return [
+  //       [mapBounds._sw.lat, mapBounds._ne.lat],
+  //       [mapBounds._sw.lng, mapBounds._ne.lng],
+  //     ];
+  //   }
+  // });
 </script>
 
-<svelte:window on:resize={handleResize} on:keydown={handleKeydown} />
+<svelte:window on:keydown={handleKeydown} />
 
 <div
   class="map-wrapper"
@@ -1234,7 +1230,7 @@
     {suggestionModalActive}
     on:hide-suggestion-modal={hideSuggestionModal}
   />
-  {#if window.innerWidth > 700 && advancedFeaturesOn === true}
+  {#if window.innerWidth > mobileBreakpoint && advancedFeaturesOn === true}
     <WaterLevelDisplay
       {currentFlowrate}
       {maxFlowrate}
@@ -1289,7 +1285,9 @@
   {/if}
 </div>
 
-<style>
+<style type="text/scss">
+  @import "../settings.scss";
+
   .map-wrapper {
     position: absolute;
     width: 100vw;
@@ -1341,7 +1339,7 @@
     }
   }
 
-  @media only screen and (max-width: 700px) {
+  @media only screen and (max-width: $mobile-breakpoint) {
     .map-wrapper {
       /* this prevents some weird stuff on mobile screens when the geolocator search suggestons come up*/
       /* height: max(400px, calc(100% - 20vh)); */
@@ -1352,7 +1350,7 @@
   }
 
   /* Keyboard open */
-  @media only screen and (max-width: 700px) and (max-height: 400px) {
+  @media only screen and (max-width: $mobile-breakpoint) and (max-height: 400px) {
     .map-wrapper {
       height: 100%;
       top: 0;
@@ -1364,6 +1362,12 @@
     .right-column {
       bottom: 3rem;
     }
+
+    // .left-column {
+    //   left: 1rem;
+    //   top: 1rem;
+    //   bottom: 1rem;
+    // }
 
     :global(.mapboxgl-ctrl-top-left .mapboxgl-ctrl) {
       margin: 1.5rem 0 0 1rem !important;
