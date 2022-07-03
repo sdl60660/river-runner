@@ -342,6 +342,8 @@
     let elevations = null;
     let attempts = 0;
 
+    await map.once("idle");
+
     while (
       attempts < 8 &&
       (elevations === null || elevations.every((d) => d === null))
@@ -410,7 +412,7 @@
     d3.selectAll(".mapboxgl-ctrl-geocoder").style("display", "none");
 
     // Pre-calculate initial camera center/zoom based on starting coordinates, so that flyTo function can end in correct place
-    const { zoom, center } = precalculateInitialCamera({
+    const { zoom, center } = await precalculateInitialCamera({
       map,
       cameraStart,
       initialElevation,
@@ -420,6 +422,8 @@
       distanceGap,
       routeDistance,
     });
+
+    console.log("precalculated", { zoom });
 
     runSettings = {
       zoom,
@@ -788,10 +792,21 @@
     );
 
     camera.setPitchBearing(pitch, bearing);
-    map.setFreeCameraOptions(camera);
+
+    // console.log("inside function", {
+    //   map,
+    //   cameraCoordinates,
+    //   elevation,
+    //   pitch,
+    //   bearing,
+    //   camera,
+    //   position: camera.position,
+    // });
+
+    map.setFreeCameraOptions(camera, { preloadOnly: true });
   };
 
-  const precalculateInitialCamera = ({
+  const precalculateInitialCamera = async ({
     map,
     cameraStart,
     initialElevation,
@@ -820,12 +835,31 @@
     const bearing = bearingBetween(alongCamera, alongTarget);
 
     // Position the camera how it will be positioned on the first tick of the run
+    // positionCamera({
+    //   map,
+    //   cameraCoordinates: alongCamera,
+    //   elevation: initialElevation,
+    //   pitch: cameraPitch,
+    //   bearing,
+    // });
+
+    map.flyTo({
+      // duration: 0,
+      zoom: 13,
+      center: alongCamera,
+      pitch: cameraPitch,
+      bearing,
+      preloadOnly: true,
+    });
+
+    await map.once("idle");
+
     positionCamera({
       map,
       cameraCoordinates: alongCamera,
       elevation: initialElevation,
-      bearing,
       pitch: cameraPitch,
+      bearing,
     });
 
     // Log the zoom/center
@@ -985,6 +1019,10 @@
         pitch: cameraPitch,
         bearing,
       });
+
+      if (tick === 0) {
+        console.log("tick", { zoom: map.getZoom() });
+      }
 
       if (advancedFeaturesOn === true) {
         // Set new flowrate value for water level gauge
