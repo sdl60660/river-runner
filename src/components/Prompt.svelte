@@ -9,9 +9,11 @@
   export let errorStatus;
   export let bannerVisible;
 
+  let windowWidth;
+
   let loading = false;
   let eventActionName =
-    window.innerWidth > config.mobile_breakpoint ? "Click" : "Tap";
+    windowWidth > config.mobile_breakpoint ? "Click" : "Tap";
   let message = `${eventActionName} to drop a raindrop anywhere in the world and watch where it ends up`;
 
   $: if (currentLocation?.lat && message !== "") {
@@ -23,7 +25,7 @@
     loading = false;
   } else if (vizState === "overview") {
     message =
-      window.innerWidth > config.mobile_breakpoint
+      windowWidth > config.mobile_breakpoint
         ? ""
         : "Run the path again, copy a link to share, or exit and try another path using the buttons below.";
     loading = false;
@@ -90,6 +92,8 @@
   };
 </script>
 
+<svelte:window bind:innerWidth={windowWidth} />
+
 <div
   class="wrapper"
   style="display: {bannerVisible ? 'none' : 'block'};"
@@ -109,7 +113,7 @@
   <div
     style="display:{vizState === 'uninitialized' &&
     loading === false &&
-    window.innerWidth > config.mobile_breakpoint
+    windowWidth > config.mobile_breakpoint
       ? 'block'
       : 'none'};"
     class="scroll-helper"

@@ -47,6 +47,8 @@
     getFlowrateData,
   } from "./utils/mapUtils";
 
+  import config from "../config.json";
+
   export let bounds;
   export let stateBoundaries;
   export let activeNWISSites;
@@ -64,7 +66,8 @@
     ? { lngLat: { lat: +urlParams.get("lat"), lng: +urlParams.get("lng") } }
     : null;
 
-  const mobileBreakpoint = 700;
+  const mobileBreakpoint = config.mobile_breakpoint;
+  let windowWidth;
 
   let container;
   let map;
@@ -88,8 +91,7 @@
   let phaseJump;
 
   // Zoom level won't be adjustable on mobile, but it will be set slightly higher to avoid jiterriness
-  const defaultAltitudeMultiplier =
-    window.innerWidth < mobileBreakpoint ? 1.1 : 0.9;
+  const defaultAltitudeMultiplier = windowWidth < mobileBreakpoint ? 1.1 : 0.9;
   let altitudeMultiplier = defaultAltitudeMultiplier;
   let altitudeChange = false;
   let paused = false;
@@ -119,8 +121,8 @@
         container,
         style: mapStyle || "mapbox://styles/mapbox/light-v10",
         center: [0, 0],
-        minZoom: window.innerWidth > mobileBreakpoint ? 2 : 1.4,
-        zoom: window.innerWidth > mobileBreakpoint ? 2.001 : 1.4001,
+        minZoom: windowWidth > mobileBreakpoint ? 2 : 1.4,
+        zoom: windowWidth > mobileBreakpoint ? 2.001 : 1.4001,
         projection: "globe",
       });
 
@@ -158,7 +160,7 @@
           showCompass: true,
           visualizePitch: true,
         });
-        // if (window.innerWidth > mobileBreakpoint) {
+        // if (windowWidth > mobileBreakpoint) {
         map.addControl(nav, "top-left");
         // }
 
@@ -195,7 +197,7 @@
       flyTo: false,
     });
 
-    if (window.innerWidth < mobileBreakpoint) {
+    if (windowWidth < mobileBreakpoint) {
       geocoderControl.setLimit(4);
     }
 
@@ -211,7 +213,7 @@
     });
 
     const position =
-      window.innerWidth > mobileBreakpoint ? "top-right" : "bottom-left";
+      windowWidth > mobileBreakpoint ? "top-right" : "bottom-left";
     map.addControl(geocoderControl, position);
 
     return geocoderControl;
@@ -439,7 +441,7 @@
 
     // When using the vizState change/return instead of startRun, it displays the overview before automatically starting the run
     // We'll do this with a countdown timer on desktop, and just right into it on mobile
-    if (window.innerWidth > mobileBreakpoint) {
+    if (windowWidth > mobileBreakpoint) {
       vizState = "overview";
       // map.scrollZoom.enable();
       // map.dragPan.enable();
@@ -1042,7 +1044,7 @@
       pitch: 0,
       padding: 70,
       maxZoom: 12,
-      offset: window.innerWidth < mobileBreakpoint ? [0, -20] : [0, 0], // On mobile, the search bar will get in the way so we actually want it a little off center
+      offset: windowWidth < mobileBreakpoint ? [0, -20] : [0, 0], // On mobile, the search bar will get in the way so we actually want it a little off center
     });
 
     map.once("moveend", () => {
@@ -1193,7 +1195,7 @@
   // });
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
+<svelte:window on:keydown={handleKeydown} bind:innerWidth={windowWidth} />
 
 <div
   class="map-wrapper"
@@ -1230,7 +1232,7 @@
     {suggestionModalActive}
     on:hide-suggestion-modal={hideSuggestionModal}
   />
-  {#if window.innerWidth > mobileBreakpoint && advancedFeaturesOn === true}
+  {#if windowWidth > mobileBreakpoint && advancedFeaturesOn === true}
     <WaterLevelDisplay
       {currentFlowrate}
       {maxFlowrate}

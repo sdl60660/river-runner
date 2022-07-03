@@ -1,14 +1,18 @@
 <script>
   export let vizState;
+
+  let windowWidth;
 </script>
 
+<svelte:window bind:innerWidth={windowWidth} />
+
 <div
-  style="display: {vizState === 'running' && window.innerWidth > 700
+  style="display: {vizState === 'running' && windowWidth > 700
     ? 'none'
     : 'block'};"
   class={"contact-box"}
 >
-  {#if window.innerWidth > 700}
+  {#if windowWidth > 700}
     <p>
       <strong
         >Visualization by <a
