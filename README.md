@@ -12,9 +12,9 @@ I've hosted a dataset with NHDPlus [Value Added Attributes](https://www.usgs.gov
 
 Here are a couple of examples of what it looks like in action.
 
-This is a section of the path from Yellowstone National Park out to the Atlantic Ocean:
+This is a section of the path from eastern Turkey to the Persian Gulf:
 
-![Screenshot of the river runner in progress from Yellowstone National Park to the Atlantic Ocean. Mountain features and river are visible.](https://github.com/sdl60660/river-runner/blob/main/public/images/preview_image.png?raw=true)
+![Screenshot of the river runner in progress from eastern Turkey to the Persian Gulf. Mountain features and river are visible.](https://github.com/sdl60660/river-runner/blob/main/public/images/preview_image.png?raw=true)
 
 Here's part of the path from Southwest Arizona down to the Mexican border:
 
