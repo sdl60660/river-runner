@@ -544,7 +544,7 @@
     }
 
     .info-box {
-      background-color: rgba(243, 243x, 243, 0.9);
+      background-color: rgba(243, 243, 243, 0.9);
       z-index: 20;
       border: 1px solid black;
       font-size: 1rem;
