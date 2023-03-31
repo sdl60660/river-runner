@@ -52,6 +52,7 @@
     "@turf/points-within-polygon": "^6.5.0",
     "@turf/polygon-to-line": "^6.3.0",
     "d3": "^6.7.0",
+    "d3-ease": "^3.0.1",
     "d3-fetch": "^2.0.0",
     "dateformat": "^4.5.1",
     "fast-xml-parser": "^3.19.0",

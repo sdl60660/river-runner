@@ -1,5 +1,7 @@
+import mapboxgl from "mapbox-gl";
 import { mapbox } from "../../mapbox.js";
 import { mapboxAccessToken } from "../../access_tokens";
+import { easeCubicOut, easeLinear } from "d3-ease";
 import circle from "@turf/circle";
 
 export const getElevations = async (coordinatePath, arrayStep = 10) => {
@@ -35,7 +37,9 @@ export const getElevationsMapQuery = (coordinatePath, map, arrayStep = 10) => {
     return index % arrayStep === 0;
   });
 
-  return elevationCoordinates.map((d) => map.queryTerrainElevation(d, { exaggerated: true }));
+  return elevationCoordinates.map((d) =>
+    map.queryTerrainElevation(d, { exaggerated: true })
+  );
 };
 
 export const addFeatureExtrusions = ({
@@ -85,8 +89,12 @@ export const addFeatureExtrusions = ({
 
   map.on("click", layerID, (e) => {
     if (
-      (layerID === "wqp-points" || layerID === "wade-points" || layerID === "ca-gage-points") &&
-      map.queryRenderedFeatures(e.point).some((feature) => feature.source === "nwis-points")
+      (layerID === "wqp-points" ||
+        layerID === "wade-points" ||
+        layerID === "ca-gage-points") &&
+      map
+        .queryRenderedFeatures(e.point)
+        .some((feature) => feature.source === "nwis-points")
     ) {
       return;
     }
@@ -245,4 +253,142 @@ export const addRivers = ({
       "line-width": lineWidth,
     },
   });
+};
+
+// This method and the two below it come from here: https://github.com/mapbox/impact-tools/blob/master/journey-animation-sequence/js/fly-in-and-rotate.js
+// Written by @chriswhong and I think will solve the seam on the fly to path run issue that has been buggin me for forever
+export const flyInAndRotate = async ({
+  map,
+  targetLngLat,
+  duration,
+  startAltitude,
+  endAltitude,
+  startBearing,
+  endBearing,
+  startPitch,
+  endPitch,
+  prod,
+}) => {
+  return new Promise(async (resolve) => {
+    let start;
+
+    var currentAltitude;
+    var currentBearing;
+    var currentPitch;
+
+    // the animation frame will run as many times as necessary until the duration has been reached
+    const frame = async (time) => {
+      if (!start) {
+        start = time;
+      }
+
+      // otherwise, use the current time to determine how far along in the duration we are
+      let animationPhase = (time - start) / duration;
+
+      // because the phase calculation is imprecise, the final zoom can vary
+      // if it ended up greater than 1, set it to 1 so that we get the exact endAltitude that was requested
+      if (animationPhase > 1) {
+        animationPhase = 1;
+      }
+
+      currentAltitude =
+        startAltitude +
+        (endAltitude - startAltitude) * easeCubicOut(animationPhase);
+      // rotate the camera between startBearing and endBearing
+      currentBearing =
+        startBearing +
+        (endBearing - startBearing) * easeCubicOut(animationPhase);
+
+      currentPitch =
+        startPitch + (endPitch - startPitch) * easeCubicOut(animationPhase);
+
+      // compute corrected camera ground position, so the start of the path is always in view
+      var correctedPosition = computeCameraPosition(
+        currentPitch,
+        currentBearing,
+        targetLngLat,
+        currentAltitude
+      );
+
+      // set the pitch and bearing of the camera
+      const camera = map.getFreeCameraOptions();
+      camera.setPitchBearing(currentPitch, currentBearing);
+
+      // set the position and altitude of the camera
+      camera.position = mapboxgl.MercatorCoordinate.fromLngLat(
+        correctedPosition,
+        currentAltitude
+      );
+
+      // apply the new camera options
+      map.setFreeCameraOptions(camera);
+
+      // when the animationPhase is done, resolve the promise so the parent function can move on to the next step in the sequence
+      if (animationPhase === 1) {
+        resolve({
+          bearing: currentBearing,
+          altitude: currentAltitude,
+        });
+
+        // return so there are no further iterations of this frame
+        return;
+      }
+
+      await window.requestAnimationFrame(frame);
+    };
+
+    await window.requestAnimationFrame(frame);
+  });
+};
+
+// Comment from @chriswhong below
+// amazingly simple, via https://codepen.io/ma77os/pen/OJPVrP
+export function lerp(start, end, amt) {
+  return (1 - amt) * start + amt * end;
+}
+
+let previousCameraPosition;
+export const computeCameraPosition = (
+  pitch,
+  bearing,
+  targetPosition,
+  altitude,
+  smooth = false
+) => {
+  var bearingInRadian = bearing / 57.29;
+  var pitchInRadian = (90 - pitch) / 57.29;
+
+  var lngDiff =
+    ((altitude / Math.tan(pitchInRadian)) * Math.sin(-bearingInRadian)) / 70000; // ~70km/degree longitude
+  var latDiff =
+    ((altitude / Math.tan(pitchInRadian)) * Math.cos(-bearingInRadian)) /
+    110000; // 110km/degree latitude
+
+  var correctedLng = targetPosition.lng + lngDiff;
+  var correctedLat = targetPosition.lat - latDiff;
+
+  const newCameraPosition = {
+    lng: correctedLng,
+    lat: correctedLat,
+  };
+
+  if (smooth) {
+    if (previousCameraPosition) {
+      const SMOOTH_FACTOR = 0.95;
+      newCameraPosition.lng = lerp(
+        newCameraPosition.lng,
+        previousCameraPosition.lng,
+        SMOOTH_FACTOR
+      );
+      newCameraPosition.lat = lerp(
+        newCameraPosition.lat,
+        previousCameraPosition.lat,
+        SMOOTH_FACTOR
+      );
+    }
+  }
+
+  previousCameraPosition = newCameraPosition;
+
+  return newCameraPosition;
 };

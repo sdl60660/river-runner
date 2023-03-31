@@ -1,5 +1,6 @@
 <script>
   import { tick, onMount } from "svelte";
+  import {LngLat } from 'mapbox-gl';
   import { mapbox } from "../mapbox.js";
   import { mapboxAccessToken } from "../access_tokens";
   import * as d3 from "d3";
@@ -29,6 +30,7 @@
     clearRiverLines,
     drawFlowPath,
     addRivers,
+    flyInAndRotate
   } from "./utils/mapboxUtils";
   import {
     bearingBetween,
@@ -482,17 +484,37 @@
     resetRiverHighlight();
 
     // Fly to clicked point and pitch camera (initial "raindrop" animation)
-    map.flyTo({
-      center,
-      zoom,
-      speed: 0.9,
-      curve: 1,
-      pitch: cameraPitch,
-      bearing: initialBearing,
-      easing(t) {
-        return t;
-      },
-    });
+    const initialElevation = getTickElevation(
+      0,
+      elevations,
+      altitudeMultiplier,
+      cameraBaseAltitude,
+      terrainElevationMultiplier
+    );
+    console.log('here', new LngLat(...coordinatePath[0]), center)
+    flyInAndRotate({
+      map,
+      targetLngLat: center,
+      duration: 4000,
+      startAltitude: 3000000,
+      endAltitude: initialElevation,
+      startBearing: map.getBearing(),
+      endBearing: initialBearing,
+      startPitch:map.getPitch(),
+      endPitch: cameraPitch
+    })
+
+    // map.flyTo({
+    //   center,
+    //   zoom,
+    //   speed: 0.9,
+    //   curve: 1,
+    //   pitch: cameraPitch,
+    //   bearing: initialBearing,
+    //   easing(t) {
+    //     return t;
+    //   },
+    // });
 
     vizState = "running";
 
@@ -503,6 +525,10 @@
 
     map.once("moveend", () => {
       // map.interactive = true;
+      // console.log('here', map.getFreeCameraOptions()._elevation, map.getFreeCameraOptions()._position.toLngLat())
+      // const firstElevation = map.queryTerrainElevation(center, { exaggerated: true });
+      // console.log({elevations, firstElevation})
+      // elevations[0] = firstElevation;
 
       // When "raindrop" animation (flyto) is finished, begin the river run
       runRiver({
