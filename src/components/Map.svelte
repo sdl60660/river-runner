@@ -96,7 +96,7 @@
   let altitudeChange = false;
   let paused = false;
   let playbackSpeed = 1;
-  const smoothingCoefficient = 3;
+  const smoothingCoefficient = 4;
 
   // let currentFlowrateIndex = 0;
   let currentFlowrate = { level: 10000, index: 0 };
