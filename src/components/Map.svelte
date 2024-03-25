@@ -1209,7 +1209,7 @@
 </div>
 
 <Prompt {vizState} {errorStatus} {currentLocation} />
-<ContactBox {vizState} />
+<!-- <ContactBox {vizState} /> -->
 
 <div
   class="left-column"
@@ -1294,7 +1294,19 @@
     position: absolute;
     width: 100vw;
     height: 100vh;
-    z-index: 1;
+    z-index: 1; 
+  }
+
+  :global(div.mapboxgl-ctrl-attrib-inner a) {
+    cursor: not-allowed;
+    pointer-events: none;
+    text-decoration: none;
+  }
+
+  :global(div.mapboxgl-ctrl a.mapboxgl-ctrl-logo) {
+    cursor: not-allowed;
+    pointer-events: none;
+    text-decoration: none;
   }
 
   :global(.mapboxgl-canvas) {

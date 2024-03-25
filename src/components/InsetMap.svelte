@@ -490,6 +490,18 @@
     /* transition: height 1s linear, width 1s linear; */
   }
 
+  :global(div.mapboxgl-ctrl-attrib-inner a) {
+    cursor: not-allowed;
+    pointer-events: none;
+    text-decoration: none;
+  }
+
+  :global(div.mapboxgl-ctrl a.mapboxgl-ctrl-logo) {
+    cursor: not-allowed;
+    pointer-events: none;
+    text-decoration: none;
+  }
+
   .marker {
     background-color: red;
     opacity: 0.7;
