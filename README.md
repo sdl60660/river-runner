@@ -41,4 +41,4 @@ Thank you to [Mapbox](https://www.mapbox.com/) for sponsoring this project!
 ## Updates
 * **January 2022**: The [global version](https://river-runner-global.samlearner.com/) of this tool is now released and in beta! While some lingering issues are resolved and it remains in beta, it can be found on this branch, while the original, US-only version is preserved [here](https://github.com/sdl60660/river-runner/tree/us-only) in Github, and at its original URL: https://river-runner.samlearner.com/. This is to avoid any breaking changes to existing share links/paths due to any discrepancies and because minor US issues persist on the global version, mainly when paths involve dams, canals, or conduits.
 
-If you'd like to be notified about major updates to the tool, you can sign up for an email list [here](https://tinyletter.com/samlearner).
+If you'd like to be notified about major updates to the tool, you can sign up for an email list [here](https://tinyletter.com/samlearner)
