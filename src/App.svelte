@@ -5,6 +5,7 @@
   import Map from "./components/Map.svelte";
   import Loader from "./components/Loader.svelte";
 
+
   const dataFilePromises = [
     d3.json("data/us_states.json"),
     d3.json("data/stopping_features.json"),

@@ -4,11 +4,11 @@
   import { mapboxAccessToken } from "../access_tokens";
   import * as d3 from "d3";
 
-  import along from "@turf/along";
+  import { along } from "@turf/along";
   import { lineString } from "@turf/helpers";
-  import distance from "@turf/distance";
+  import {distance} from "@turf/distance";
 
-  import { distanceToPolygon, getDataBounds } from "../utils";
+  import { distanceToPolygon, getDataBounds, removeRedundantCoords } from "../utils";
   import { coordinates, stoppingFeature } from "../state";
 
   import Prompt from "./Prompt.svelte";
@@ -563,12 +563,12 @@
   const findClosestFeature = async (e) => {
     let closestFeature;
     let resultFound = false;
-    let roundingDigits = 6;
+    let roundingDigits = 5;
     while (resultFound === false && roundingDigits >= 0 && aborted === false) {
       roundingDigits -= 1;
 
       try {
-        const closestFeatureURL = `https://labs.waterdata.usgs.gov/api/nldi/linked-data/comid/position?coords=POINT%28${e.lngLat.lng.toFixed(
+        const closestFeatureURL = `https://api.water.usgs.gov/nldi/linked-data/comid/position?f=json&coords=POINT%28${e.lngLat.lng.toFixed(
           roundingDigits
         )}%20${e.lngLat.lat.toFixed(roundingDigits)}%29`;
         const coordinateResponse = await fetch(closestFeatureURL);
