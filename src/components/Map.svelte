@@ -52,16 +52,6 @@
   export let addTopo;
   export let advancedFeaturesOn;
 
-  console.log(stoppingFeatures)
-  const cleanedStoppingFeatures = stoppingFeatures.map(feature => {
-      const outputFeature = {...feature};
-      console.log(outputFeature)
-      outputFeature.geometry.coordinates = removeRedundantCoords(outputFeature.geometry.coordinates).map(coord => [Number(coord[0].toFixed(5), Number(coord[1].toFixed(5)))])
-      return outputFeature;
-    })
-
-
-
   const urlParams = new URLSearchParams(window.location.search);
   let startingSearch = urlParams.has("lat")
     ? { lngLat: { lat: +urlParams.get("lat"), lng: +urlParams.get("lng") } }
