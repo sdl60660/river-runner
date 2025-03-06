@@ -6,7 +6,7 @@
 
   import { along } from "@turf/along";
   import { lineString } from "@turf/helpers";
-  import {distance} from "@turf/distance";
+  import { distance } from "@turf/distance";
 
   import { distanceToPolygon, getDataBounds, removeRedundantCoords } from "../utils";
   import { coordinates, stoppingFeature } from "../state";
