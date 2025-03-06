@@ -4,11 +4,11 @@
   import { mapboxAccessToken } from "../access_tokens";
   import * as d3 from "d3";
 
-  import along from "@turf/along";
+  import { along } from "@turf/along";
   import { lineString } from "@turf/helpers";
-  import distance from "@turf/distance";
+  import {distance} from "@turf/distance";
 
-  import { distanceToPolygon, getDataBounds } from "../utils";
+  import { distanceToPolygon, getDataBounds, removeRedundantCoords } from "../utils";
   import { coordinates, stoppingFeature } from "../state";
 
   import Prompt from "./Prompt.svelte";
@@ -51,6 +51,16 @@
   export let mapStyle;
   export let addTopo;
   export let advancedFeaturesOn;
+
+  console.log(stoppingFeatures)
+  const cleanedStoppingFeatures = stoppingFeatures.map(feature => {
+      const outputFeature = {...feature};
+      console.log(outputFeature)
+      outputFeature.geometry.coordinates = removeRedundantCoords(outputFeature.geometry.coordinates).map(coord => [Number(coord[0].toFixed(5), Number(coord[1].toFixed(5)))])
+      return outputFeature;
+    })
+
+
 
   const urlParams = new URLSearchParams(window.location.search);
   let startingSearch = urlParams.has("lat")
